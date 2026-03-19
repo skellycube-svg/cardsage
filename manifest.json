@@ -2,7 +2,7 @@
   "name": "CardSage",
   "short_name": "CardSage",
   "description": "Credit card benefit tracking and points optimization",
-  "start_url": "./CardSage.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#3730a3",

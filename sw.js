@@ -1,12 +1,12 @@
 // ── INCREMENT THIS when deploying updates to force cache refresh ──────────
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 // ─────────────────────────────────────────────────────────────────────────
 
 const CACHE = 'cardsage-' + CACHE_VERSION;
 
 // Local app files — always pre-cached on install
 const LOCAL_ASSETS = [
-  './CardSage.html',
+  './index.html',
   './cards-data.js',
   './manifest.json',
   './icon-192.png',
