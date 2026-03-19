@@ -33,24 +33,24 @@ const firebaseConfig = {
   appId: "1:522775842118:web:3e1003379b008c09262947"
 };
 // ─────────────────────────────────────────────────────────────────────────────
-if (!firebaseConfig.apiKey) {
-  console.info('CardSage: Firebase not configured — running in local-only mode.');
-} else {
-  try {
-    const v = '12.0.0';
-    const [{ initializeApp }, { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged }, { getFirestore, doc, getDoc, setDoc }] = await Promise.all([
-      import(`https://www.gstatic.com/firebasejs/${v}/firebase-app.js`),
-      import(`https://www.gstatic.com/firebasejs/${v}/firebase-auth.js`),
-      import(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore.js`)
-    ]);
-    const app = initializeApp(firebaseConfig);
-    window.CS_FB = {
-      auth: getAuth(app), db: getFirestore(app),
-      GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword,
-      createUserWithEmailAndPassword, signOut, onAuthStateChanged,
-      doc, getDoc, setDoc
+// Use Promise.then (not top-level await) so DOMContentLoaded isn't delayed
+// and React can listen for the 'cs-firebase-ready' event after it mounts
+if (firebaseConfig.apiKey) {
+  const v = '12.0.0';
+  Promise.all([
+    import(`https://www.gstatic.com/firebasejs/${v}/firebase-app.js`),
+    import(`https://www.gstatic.com/firebasejs/${v}/firebase-auth.js`),
+    import(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore.js`)
+  ]).then(([{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged},{getFirestore,doc,getDoc,setDoc}])=>{
+    const app=initializeApp(firebaseConfig);
+    window.CS_FB={
+      auth:getAuth(app),db:getFirestore(app),
+      GoogleAuthProvider,signInWithPopup,signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,signOut,onAuthStateChanged,
+      doc,getDoc,setDoc
     };
-  } catch(e) { console.warn('Firebase init failed:', e.message); }
+    window.dispatchEvent(new CustomEvent('cs-firebase-ready'));
+  }).catch(e=>console.warn('Firebase init failed:',e.message));
 }
 </script>
 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -126,16 +126,12 @@ input,select,button{font-family:inherit}
   border-bottom:1px solid var(--br2);
   box-shadow:0 4px 28px rgba(15,23,42,.06)}
 .top-nav::after{display:none}
-/* Brand masthead — centered wordmark, card count pinned right */
-.top-nav-brand{display:flex;justify-content:center;align-items:center;position:relative;
-  padding:20px 56px 16px;border-bottom:1px solid var(--br)}
-/* Override the inline display:flex/align-items:baseline to stack vertically */
-.top-nav-brand > div:first-child{display:flex!important;flex-direction:column!important;align-items:center!important;gap:3px!important}
-/* CardSage wordmark */
+/* Brand masthead — 3-col grid: [spacer] [title] [right-controls] */
+.top-nav-brand{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  padding:14px 16px;border-bottom:1px solid var(--br)}
+.top-nav-brand-title{display:flex;flex-direction:column;align-items:center;gap:2px}
 .top-nav-brand .grad-text{font-size:36px!important;letter-spacing:-1px!important}
-/* Card count — absolute right so brand stays centered */
-.top-nav-brand > div:last-child{position:absolute;right:16px;top:50%;transform:translateY(-50%);
-  font-family:'Source Code Pro',monospace}
+.top-nav-brand-right{display:flex;align-items:center;justify-content:flex-end;gap:8px}
 /* Tab strip — centered, scrollable on mobile */
 .top-nav-tabs{display:flex;justify-content:center;overflow-x:auto;scrollbar-width:none;padding:0 8px;gap:0}
 .top-nav-tabs::-webkit-scrollbar{display:none}
@@ -265,8 +261,7 @@ input,select,button{font-family:inherit}
 /* ── RESPONSIVE LAYOUT ──────────────────────────────────────────────────── */
 /* Tablet ≥768px */
 @media(min-width:768px){
-  .top-nav-brand{padding-left:48px;padding-right:48px}
-  .top-nav-brand > div:last-child{right:48px}
+  .top-nav-brand{padding-left:24px;padding-right:24px}
   .top-nav-tabs{padding-left:28px;padding-right:28px}
   .card-browser-grid{grid-template-columns:repeat(3,1fr)!important}
   .cat-grid{grid-template-columns:repeat(4,1fr)!important}
@@ -278,9 +273,8 @@ input,select,button{font-family:inherit}
 /* Desktop ≥1024px */
 @media(min-width:1024px){
   /* Nav: centered masthead layout on desktop */
-  .top-nav-brand{padding:26px 64px 20px}
+  .top-nav-brand{padding:20px 32px 16px}
   .top-nav-brand .grad-text{font-size:44px!important}
-  .top-nav-brand > div:last-child{right:64px}
   .top-nav-tabs{overflow-x:visible;padding:0 64px}
   .nav-tab{padding:13px 22px 14px}
   /* Content area: centered, padded */
@@ -2356,10 +2350,9 @@ function AuthModal({onClose}){
 }
 
 /* ── AUTH BUTTON (header) ────────────────────────────────────────────────── */
-function AuthButton({user,onSignIn}){
+function AuthButton({user,onSignIn,fbReady}){
   const [open,setOpen]=useState(false);
   const wrapRef=useRef(null);
-  const fb=window.CS_FB;
 
   useEffect(()=>{
     if(!open) return;
@@ -2368,12 +2361,12 @@ function AuthButton({user,onSignIn}){
     return()=>document.removeEventListener('mousedown',handler);
   },[open]);
 
-  if(!fb) return null;
+  if(!fbReady) return null;
 
   if(!user){
     return(
       <button className="auth-btn" onClick={onSignIn}>
-        <span style={{fontSize:12,lineHeight:1}}>☁</span> Sync
+        Login
       </button>
     );
   }
@@ -2417,16 +2410,17 @@ const NAV_TABS=[
   {id:"wallet", label:"Wallet",   sub:"My Cards"},
 ];
 
-function TopNav({tab,setTab,cardCount,user,onAuthClick}){
+function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady}){
   return (
     <div className="top-nav">
       <div className="top-nav-brand">
-        <div>
+        <div/>{/* left spacer — keeps title centered in grid */}
+        <div className="top-nav-brand-title">
           <span className="grad-text" style={{fontSize:19,fontWeight:900,letterSpacing:-.5}}>CardSage</span>
         </div>
-        <div style={{display:'flex',alignItems:'center',gap:10,fontFamily:"'Source Code Pro',monospace"}}>
-          <span style={{fontSize:11,color:"var(--tx3)",fontWeight:700}}>💳 {cardCount} card{cardCount!==1?"s":""}</span>
-          <AuthButton user={user} onSignIn={onAuthClick}/>
+        <div className="top-nav-brand-right">
+          <span style={{fontSize:11,color:"var(--tx3)",fontWeight:700,fontFamily:"'Source Code Pro',monospace"}}>💳 {cardCount} card{cardCount!==1?"s":""}</span>
+          <AuthButton user={user} onSignIn={onAuthClick} fbReady={fbReady}/>
         </div>
       </div>
       <div className="top-nav-tabs">
@@ -2449,6 +2443,7 @@ function App(){
   const [stratModal,setStratModal]=useState(null);
   const [user,setUser]=useState(null);
   const [authModal,setAuthModal]=useState(false);
+  const [fbReady,setFbReady]=useState(!!window.CS_FB);
 
   // Refs so async callbacks always see latest values
   const cardsRef=useRef(myCards);   cardsRef.current=myCards;
@@ -2464,8 +2459,17 @@ function App(){
     setCheckedArr([...newSet]);
   }
 
-  // ── Firebase auth + Firestore sync ────────────────────────────────────────
+  // ── Wait for Firebase module to finish loading ─────────────────────────────
   useEffect(()=>{
+    if(window.CS_FB){setFbReady(true);return;}
+    const handler=()=>setFbReady(true);
+    window.addEventListener('cs-firebase-ready',handler);
+    return()=>window.removeEventListener('cs-firebase-ready',handler);
+  },[]);
+
+  // ── Firebase auth + Firestore sync (runs once Firebase is ready) ──────────
+  useEffect(()=>{
+    if(!fbReady) return;
     const fb=window.CS_FB;
     if(!fb) return;
     const unsub=fb.onAuthStateChanged(fb.auth,async u=>{
@@ -2489,7 +2493,7 @@ function App(){
       mountedRef.current=true;
     });
     return unsub;
-  },[]);
+  },[fbReady]);
 
   // ── Write to Firestore on every change (when signed in) ───────────────────
   useEffect(()=>{
@@ -2508,7 +2512,7 @@ function App(){
   return (
     <div style={{minHeight:"100vh",paddingBottom:48}}>
       {authModal&&<AuthModal onClose={()=>setAuthModal(false)}/>}
-      <TopNav tab={tab} setTab={setTab} cardCount={myCards.length} user={user} onAuthClick={()=>setAuthModal(true)}/>
+      <TopNav tab={tab} setTab={setTab} cardCount={myCards.length} user={user} onAuthClick={()=>setAuthModal(true)} fbReady={fbReady}/>
       <div className="tab-content-wrap" style={{paddingTop:8}}>
         {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal}/>}
         {tab==="benefits"&&<BenefitsTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits}/>}
