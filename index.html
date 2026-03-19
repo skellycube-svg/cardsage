@@ -307,7 +307,17 @@ const {useState,useEffect,useCallback,useMemo,useRef}=React;
 })();
 
 /* LS hook */
-function useLS(k,d){const[v,sv]=useState(()=>{try{const s=localStorage.getItem(k);return s?JSON.parse(s):d}catch{return d}});const set=useCallback(x=>{sv(x);try{localStorage.setItem(k,JSON.stringify(x))}catch{}},[k]);return[v,set];}
+function useLS(k,d){
+  const[v,sv]=useState(()=>{try{const s=localStorage.getItem(k);return s?JSON.parse(s):d}catch{return d}});
+  const vRef=useRef(v);
+  vRef.current=v;
+  const set=useCallback(x=>{
+    const next=typeof x==='function'?x(vRef.current):x;
+    sv(next);
+    try{localStorage.setItem(k,JSON.stringify(next))}catch{};
+  },[k]);
+  return[v,set];
+}
 
 /* ── Data loaded from cards-data.js ─────────────────────────────────────── */
 
