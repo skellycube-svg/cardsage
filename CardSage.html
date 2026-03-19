@@ -1,0 +1,2289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<title>CardSage — Credit Card Intelligence</title>
+<meta name="theme-color" content="#3730a3"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="CardSage"/>
+<link rel="manifest" href="./manifest.json"/>
+<link rel="apple-touch-icon" href="./icon-192.png"/>
+<meta name="description" content="CardSage helps you track credit card benefits, maximize points, and never miss a monthly credit. Free tool for points &amp; miles enthusiasts."/>
+<meta name="robots" content="index, follow"/>
+<link rel="canonical" href="https://cardsage.co/"/>
+<meta property="og:title" content="CardSage — Credit Card Optimization"/>
+<meta property="og:description" content="CardSage helps you track credit card benefits, maximize points, and never miss a monthly credit. Free tool for points &amp; miles enthusiasts."/>
+<meta property="og:image" content="https://cardsage.co/icon-512.png"/>
+<meta property="og:url" content="https://cardsage.co/"/>
+<meta property="og:type" content="website"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Barlow:wght@400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+<script defer data-domain="YOUR_DOMAIN" src="https://plausible.io/js/script.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f8f7f4;--s1:#ffffff;--s2:#ffffff;--s3:#f4f3f0;--s4:#eceae5;
+  --br:rgba(15,23,42,.08);--br2:rgba(15,23,42,.13);--br3:rgba(15,23,42,.2);
+  --tx:#0f172a;--tx2:#475569;--tx3:#94a3b8;--tx4:#c8d0dc;
+  --acc:#3730a3;--acc2:#4f46e5;--pur:#4f46e5;--pur2:#6366f1;
+  --gold:#9a6e1a;--gld2:#b8891e;--gld3:#d4a840;
+  --grn:#166534;--grn2:#16a34a;--grn3:#22c55e;
+  --red:#991b1b;--red2:#dc2626;
+  --sky:#0284c7;--pnk:#db2777;--teal:#0d9488;
+}
+body{background:var(--bg);font-family:'Barlow',-apple-system,sans-serif;color:var(--tx);overscroll-behavior:none;min-height:100vh}
+canvas#bg{display:none}
+#root{position:relative;z-index:1}
+/* Precise dot grid — like graph paper */
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(15,23,42,.065) 1px,transparent 1px);
+  background-size:22px 22px}
+/* Subtle indigo bloom at top */
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 35% at 50% -5%,rgba(55,48,163,.045) 0%,transparent 65%),
+             radial-gradient(ellipse 45% 25% at 95% 100%,rgba(55,48,163,.025) 0%,transparent 55%)}
+/* Keyframes */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.91)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(55,48,163,.15)}50%{box-shadow:0 0 44px rgba(55,48,163,.28)}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes goldPulse{0%,100%{opacity:1}50%{opacity:.72}}
+@keyframes cardShimmer{0%{transform:translateX(-160%) skewX(-18deg)}100%{transform:translateX(260%) skewX(-18deg)}}
+@keyframes quizSlideIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
+.quiz-slide{animation:quizSlideIn .22s cubic-bezier(.25,.46,.45,.94) both}
+.quiz-opt:hover{background:var(--s3)!important;border-color:var(--br3)!important}
+.fu{animation:fadeUp .28s ease both}
+.fu:nth-child(1){animation-delay:.04s}
+.fu:nth-child(2){animation-delay:.08s}
+.fu:nth-child(3){animation-delay:.12s}
+.fu:nth-child(4){animation-delay:.16s}
+.fu:nth-child(5){animation-delay:.20s}
+.fu:nth-child(6){animation-delay:.24s}
+.fu:nth-child(7){animation-delay:.28s}
+.fu:nth-child(8){animation-delay:.32s}
+.pi{animation:popIn .22s cubic-bezier(.34,1.56,.64,1) both}
+::-webkit-scrollbar{width:2px;height:2px}
+::-webkit-scrollbar-thumb{background:rgba(15,23,42,.18);border-radius:99px}
+input,select,button{font-family:inherit}
+.hscroll{display:flex;gap:8px;overflow-x:auto;padding:2px 0;scrollbar-width:none}
+.hscroll::-webkit-scrollbar{display:none}
+/* ── TYPOGRAPHY ── */
+.grad-text{
+  font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;
+  background:linear-gradient(110deg,#9a6e1a 0%,#d4a840 40%,#b8891e 65%,#9a6e1a 100%);
+  background-size:220% 100%;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:shimmer 5s ease infinite}
+.gold-text{background:linear-gradient(135deg,#9a6e1a,#b8891e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.grn-text{background:linear-gradient(135deg,#166534,#16a34a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+/* Precise mono for financial values */
+.stat-val,.mono{font-family:'Source Code Pro',monospace;font-weight:600}
+/* ── TOP NAV ── */
+.top-nav{position:sticky;top:0;z-index:200;
+  background:rgba(248,247,244,.96);
+  backdrop-filter:blur(18px) saturate(1.1);
+  -webkit-backdrop-filter:blur(18px) saturate(1.1);
+  border-bottom:1px solid var(--br2);
+  box-shadow:0 4px 28px rgba(15,23,42,.06)}
+.top-nav::after{display:none}
+/* Brand masthead — centered wordmark, card count pinned right */
+.top-nav-brand{display:flex;justify-content:center;align-items:center;position:relative;
+  padding:20px 56px 16px;border-bottom:1px solid var(--br)}
+/* Override the inline display:flex/align-items:baseline to stack vertically */
+.top-nav-brand > div:first-child{display:flex!important;flex-direction:column!important;align-items:center!important;gap:3px!important}
+/* CardSage wordmark */
+.top-nav-brand .grad-text{font-size:36px!important;letter-spacing:-1px!important}
+/* Card count — absolute right so brand stays centered */
+.top-nav-brand > div:last-child{position:absolute;right:16px;top:50%;transform:translateY(-50%);
+  font-family:'Source Code Pro',monospace}
+/* Tab strip — centered, scrollable on mobile */
+.top-nav-tabs{display:flex;justify-content:center;overflow-x:auto;scrollbar-width:none;padding:0 8px;gap:0}
+.top-nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{display:flex;flex-direction:column;align-items:center;padding:11px 16px 12px;cursor:pointer;
+  background:transparent;border:none;border-bottom:2.5px solid transparent;
+  transition:border-color .18s,opacity .18s;flex-shrink:0;gap:3px;position:relative}
+.nav-tab:hover{opacity:.75}
+.nav-tab.active{border-bottom-color:var(--acc)}
+.nav-tab.active:hover{opacity:1}
+.nav-tab-label{font-size:11.5px;font-weight:700;font-family:'Cormorant Garamond',Georgia,serif;
+  color:var(--tx3);transition:color .18s;white-space:nowrap;letter-spacing:.6px;text-transform:uppercase}
+.nav-tab.active .nav-tab-label{color:var(--tx)}
+.nav-tab-sub{font-size:9px;color:var(--tx4);transition:color .18s;white-space:nowrap;
+  font-weight:400;letter-spacing:.2px;font-family:'Source Code Pro',monospace}
+.nav-tab.active .nav-tab-sub{color:var(--acc2)}
+/* ── SURFACES ── */
+.surf{background:var(--s2);border:1px solid var(--br);border-radius:14px;padding:16px;
+  box-shadow:0 1px 4px rgba(15,23,42,.06)}
+.surf2{background:var(--s3);border:1px solid var(--br2);border-radius:12px;padding:14px}
+.surf-glow{
+  background:linear-gradient(135deg,rgba(55,48,163,.05),rgba(79,70,229,.03));
+  border:1px solid rgba(55,48,163,.15);border-radius:14px;padding:16px}
+/* ── INPUTS / BUTTONS ── */
+.inp{width:100%;background:#ffffff;border:1.5px solid var(--br2);border-radius:11px;padding:12px 16px;color:var(--tx);font-size:14px;outline:none;transition:border .18s,box-shadow .18s;
+  box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.inp:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(55,48,163,.09)}
+.inp::placeholder{color:var(--tx4)}
+.btn{
+  background:linear-gradient(135deg,#3730a3,#4f46e5);
+  color:#ffffff;border:none;border-radius:11px;padding:12px 22px;
+  font-size:13px;font-weight:700;cursor:pointer;
+  transition:opacity .18s,transform .12s,box-shadow .18s;
+  font-family:'Cormorant Garamond',Georgia,serif;letter-spacing:.3px;
+  box-shadow:0 2px 14px rgba(55,48,163,.32)}
+.btn:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 5px 22px rgba(55,48,163,.42)}
+.btn:active{transform:translateY(0)}
+.btn-sm{padding:6px 13px;font-size:11px;border-radius:8px}
+.btn-ghost{background:#ffffff;color:var(--tx2);border:1px solid var(--br2);border-radius:9px;padding:7px 14px;font-size:12px;cursor:pointer;font-weight:600;transition:all .18s;
+  box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.btn-ghost:hover{background:var(--s3);color:var(--tx);border-color:var(--br3)}
+/* ── PILLS ── */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .18s;white-space:nowrap}
+.pill-a{background:linear-gradient(135deg,rgba(55,48,163,.1),rgba(79,70,229,.06));color:var(--acc);border-color:rgba(55,48,163,.22)}
+.pill-i{background:#ffffff;color:var(--tx2);border-color:var(--br2);box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.pill-i:hover{background:var(--s3);color:var(--tx)}
+/* ── CATEGORY TILES ── */
+.cat-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-radius:12px;padding:13px 6px;cursor:pointer;border:1.5px solid var(--br);transition:all .2s;background:#ffffff;position:relative;overflow:hidden;
+  box-shadow:0 1px 3px rgba(15,23,42,.05)}
+.cat-tile::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.6),transparent);pointer-events:none}
+.cat-tile:hover{border-color:rgba(55,48,163,.28);transform:translateY(-2px);box-shadow:0 4px 14px rgba(55,48,163,.1)}
+.cat-tile.sel{transform:scale(1.03);border-color:rgba(55,48,163,.3);background:rgba(55,48,163,.03)}
+/* ── CARD ART ── */
+.card-art{
+  border-radius:10px;padding:10px 12px;
+  display:flex;flex-direction:column;justify-content:space-between;
+  height:80px;position:relative;overflow:hidden;flex-shrink:0;width:130px;
+  box-shadow:0 4px 16px rgba(15,23,42,.2),inset 0 1px 0 rgba(255,255,255,.15)}
+.card-art::before{content:'';position:absolute;bottom:-25%;left:-15%;width:72%;height:72%;background:rgba(255,255,255,.07);border-radius:50%;pointer-events:none}
+.card-art::after{content:'';position:absolute;top:-10%;left:0;width:40%;height:120%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);
+  transform:translateX(-160%) skewX(-18deg);
+  animation:cardShimmer 4s ease-in-out infinite;pointer-events:none}
+/* ── MODAL / SHEET ── */
+.sheet-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(8px);z-index:400;display:flex;align-items:flex-end;justify-content:center}
+.sheet{
+  background:#ffffff;
+  border-radius:22px 22px 0 0;width:100%;max-width:700px;max-height:91vh;overflow-y:auto;
+  padding:0 0 56px;
+  border-top:2px solid var(--acc);
+  box-shadow:0 -8px 48px rgba(15,23,42,.18);
+  animation:slideSheet .3s cubic-bezier(.34,1.56,.64,1)}
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:.3px}
+.biz-badge{background:rgba(154,110,26,.1);color:#7a5a12;border:1px solid rgba(154,110,26,.22)}
+.new-badge{background:rgba(22,163,74,.1);color:#15803d;border:1px solid rgba(22,163,74,.22)}
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:14px}
+.stat-box{background:#ffffff;border:1px solid var(--br);border-radius:12px;padding:12px 8px;text-align:center;
+  box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.stat-val{font-size:20px;font-weight:600;letter-spacing:-.5px;line-height:1;font-family:'Source Code Pro',monospace}
+.stat-lbl{font-size:9px;color:var(--tx3);margin-top:5px;font-weight:600;text-transform:uppercase;letter-spacing:.9px;font-family:'Barlow',sans-serif}
+/* ── PROGRESS BAR ── */
+.prog-track{height:4px;background:rgba(15,23,42,.08);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+/* ── BENEFIT CHECK ── */
+.ben-row{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--br)}
+.ben-check{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--br3);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;margin-top:2px;background:#ffffff}
+.ben-check.done{background:var(--grn2);border-color:var(--grn2)}
+/* ── TIP CARD ── */
+.tip-card{background:#ffffff;border:1px solid var(--br);border-radius:13px;padding:15px;margin-bottom:8px;cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s;
+  box-shadow:0 1px 3px rgba(15,23,42,.05)}
+.tip-card:hover{border-color:rgba(55,48,163,.24);box-shadow:0 2px 10px rgba(55,48,163,.07),inset 2px 0 0 rgba(55,48,163,.3)}
+.tip-card.open{border-color:rgba(55,48,163,.2);background:rgba(55,48,163,.025);box-shadow:0 2px 10px rgba(55,48,163,.07),inset 2px 0 0 var(--acc)}
+/* ── SECTION HEADER ── */
+.section-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.section-title{
+  font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:var(--tx3);
+  display:flex;align-items:center;gap:7px;font-family:'Cormorant Garamond',Georgia,serif}
+.section-title::before{
+  content:'';display:inline-block;width:2px;height:11px;
+  background:linear-gradient(to bottom,var(--gold),rgba(154,110,26,0));
+  border-radius:2px;flex-shrink:0}
+/* ── VALUE METER ── */
+.value-badge{display:inline-flex;align-items:center;gap:2px}
+.value-badge span{width:7px;height:7px;border-radius:2px;opacity:.15}
+.value-badge span.lit{opacity:1}
+/* ── APPLY BUTTON ── */
+.apply-btn{
+  display:inline-flex;align-items:center;gap:6px;padding:9px 18px;
+  background:linear-gradient(135deg,rgba(55,48,163,.08),rgba(79,70,229,.05));
+  border:1px solid rgba(55,48,163,.2);border-radius:10px;
+  color:var(--acc);font-size:12px;font-weight:700;
+  cursor:pointer;text-decoration:none;transition:all .2s;letter-spacing:.2px;
+  font-family:'Cormorant Garamond',Georgia,serif}
+.apply-disclose{font-size:10px;color:var(--tx4);margin-top:5px;line-height:1.4;font-weight:400}
+.apply-btn:hover{
+  background:linear-gradient(135deg,rgba(55,48,163,.13),rgba(79,70,229,.09));
+  border-color:rgba(55,48,163,.35);transform:translateY(-1px);
+  box-shadow:0 4px 14px rgba(55,48,163,.15)}
+/* ── GLOW CARDS ── */
+.glow-card{position:relative}
+.glow-card::before{content:'';position:absolute;inset:-1px;border-radius:15px;
+  background:linear-gradient(135deg,rgba(55,48,163,.12),rgba(79,70,229,.06),transparent);
+  z-index:-1;opacity:0;transition:opacity .3s}
+.glow-card:hover::before{opacity:1}
+
+/* ── RESPONSIVE LAYOUT ──────────────────────────────────────────────────── */
+/* Tablet ≥768px */
+@media(min-width:768px){
+  .top-nav-brand{padding-left:48px;padding-right:48px}
+  .top-nav-brand > div:last-child{right:48px}
+  .top-nav-tabs{padding-left:28px;padding-right:28px}
+  .card-browser-grid{grid-template-columns:repeat(3,1fr)!important}
+  .cat-grid{grid-template-columns:repeat(4,1fr)!important}
+  .tips-list{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  .tips-list .tip-card{margin-bottom:0}
+  .merchants-list{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  .merchants-list .tip-card{margin-bottom:0}
+}
+/* Desktop ≥1024px */
+@media(min-width:1024px){
+  /* Nav: centered masthead layout on desktop */
+  .top-nav-brand{padding:26px 64px 20px}
+  .top-nav-brand .grad-text{font-size:44px!important}
+  .top-nav-brand > div:last-child{right:64px}
+  .top-nav-tabs{overflow-x:visible;padding:0 64px}
+  .nav-tab{padding:13px 22px 14px}
+  /* Content area: centered, padded */
+  .tab-content-wrap{max-width:1400px;margin:0 auto;padding:0 48px}
+  /* Tips: 2 columns */
+  .tips-list{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  .tips-list .tip-card{margin-bottom:0}
+  /* Benefits: 2 columns */
+  .benefits-list{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  .benefits-list>div{margin-bottom:0!important}
+  /* Strategies: 2 columns */
+  .strats-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+  .strats-list>.surf{margin-bottom:0!important}
+  /* Category tiles: 5 columns */
+  .cat-grid{grid-template-columns:repeat(5,1fr)!important}
+  /* Add-cards browser: 3 columns */
+  .card-browser-grid{grid-template-columns:repeat(3,1fr)!important}
+  /* Wallet my-cards: 2 columns */
+  .wallet-cards-list{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  .wallet-cards-list>.surf{margin-bottom:0!important}
+  /* Merchant offers: 2 columns */
+  .merchants-list{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  .merchants-list .tip-card{margin-bottom:0}
+  /* Stats bar: expand across the row */
+  .stats-grid{grid-template-columns:repeat(6,1fr)}
+}
+/* Wide desktop ≥1280px */
+@media(min-width:1280px){
+  .cat-grid{grid-template-columns:repeat(6,1fr)!important}
+  .card-browser-grid{grid-template-columns:repeat(4,1fr)!important}
+  .wallet-cards-list{grid-template-columns:repeat(3,1fr)}
+  .merchants-list{grid-template-columns:repeat(3,1fr)}
+  .benefits-list{grid-template-columns:repeat(3,1fr)}
+  .tips-list{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div id="root"></div>
+<script src="cards-data.js"></script>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useMemo,useRef}=React;
+
+/* PARTICLE BG */
+(function(){
+  const c=document.getElementById('bg'),ctx=c.getContext('2d');
+  let W,H,orbs=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;
+    orbs=Array.from({length:14},()=>({x:Math.random()*W,y:Math.random()*H,r:30+Math.random()*110,vx:(Math.random()-.5)*.09,vy:(Math.random()-.5)*.09,hue:30+Math.random()*30,a:.025+Math.random()*.04}));}
+  function draw(){ctx.clearRect(0,0,W,H);
+    orbs.forEach(o=>{const g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);g.addColorStop(0,`hsla(${o.hue},75%,65%,${o.a})`);g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill();o.x+=o.vx;o.y+=o.vy;if(o.x<-o.r)o.x=W+o.r;if(o.x>W+o.r)o.x=-o.r;if(o.y<-o.r)o.y=H+o.r;if(o.y>H+o.r)o.y=-o.r;});
+    requestAnimationFrame(draw);}
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+/* LS hook */
+function useLS(k,d){const[v,sv]=useState(()=>{try{const s=localStorage.getItem(k);return s?JSON.parse(s):d}catch{return d}});const set=useCallback(x=>{sv(x);try{localStorage.setItem(k,JSON.stringify(x))}catch{}},[k]);return[v,set];}
+
+/* ── Data loaded from cards-data.js ─────────────────────────────────────── */
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CARDSAGE v3 — PART 2: REACT COMPONENTS
+   Combines with cs_v3_part1.html (data layer + CSS)
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── VALUE METER ──────────────────────────────────────────────────────────── */
+function ValueMeter({v=1,max=3}){
+  return <span className="value-badge" title={`Value: ${v}/${max}`}>
+    {Array.from({length:max},(_,i)=>(
+      <span key={i} className={i<v?"lit":""} style={{background:i<v?"#f59e0b":"#334155"}}/>
+    ))}
+  </span>;
+}
+
+/* ── CARD ART ─────────────────────────────────────────────────────────────── */
+function CardArt({card,large}){
+  const s=large?{width:"100%",height:110,borderRadius:18,padding:"18px 20px"}:{};
+  return (
+    <div className="card-art" style={{background:`linear-gradient(135deg,${card.c1},${card.c2})`,...s}}>
+      <div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.55)",letterSpacing:1.2,textTransform:"uppercase"}}>{card.issuer}</div>
+      <div>
+        <div style={{fontSize:large?15:11,fontWeight:700,color:"#fff",lineHeight:1.2,marginBottom:2}}>{card.short||card.name}</div>
+        <div style={{fontSize:9,color:"rgba(255,255,255,.45)"}}>{card.network}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── STRATEGY MODAL ───────────────────────────────────────────────────────── */
+function StratModal({stratId,myCards,onClose}){
+  if(!stratId)return null;
+  const s=STRATS[stratId];
+  if(!s)return null;
+  const hasAll=s.req.every(id=>myCards.includes(id));
+  const hasAlt=s.alt&&s.alt.some(arr=>arr.every(id=>myCards.includes(id)));
+  const canUse=hasAll||hasAlt;
+  const reqCards=s.req.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet" onClick={e=>e.stopPropagation()}>
+        <div style={{padding:"0 20px"}}>
+          {/* Handle bar */}
+          <div style={{width:36,height:4,background:"rgba(255,255,255,.15)",borderRadius:99,margin:"12px auto 0"}}/>
+
+          {/* Header */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"18px 0 14px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:30}}>{s.emoji}</span>
+              <div>
+                <div style={{fontSize:19,fontWeight:900,color:"var(--tx)",letterSpacing:-.3}}>{s.name}</div>
+                <div style={{fontSize:12,color:"var(--grn2)",fontWeight:700,marginTop:2}}>{s.value} estimated value</div>
+              </div>
+            </div>
+            <button onClick={onClose} style={{background:"rgba(255,255,255,.08)",border:"none",color:"var(--tx2)",borderRadius:"50%",width:32,height:32,cursor:"pointer",fontSize:16,flexShrink:0}}>✕</button>
+          </div>
+
+          {/* Status banner */}
+          {canUse?(
+            <div style={{background:"rgba(16,185,129,.1)",border:"1px solid rgba(16,185,129,.25)",borderRadius:12,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:16}}>✅</span>
+              <span style={{fontSize:13,color:"var(--grn2)",fontWeight:600}}>You have the cards for this strategy!</span>
+            </div>
+          ):(
+            <div style={{background:"rgba(245,158,11,.08)",border:"1px solid rgba(245,158,11,.2)",borderRadius:12,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:16}}>💡</span>
+              <span style={{fontSize:13,color:"var(--gld2)",fontWeight:600}}>Add the required cards to unlock this strategy</span>
+            </div>
+          )}
+
+          {/* Required cards */}
+          <div style={{marginBottom:16}}>
+            <div className="section-title" style={{marginBottom:8}}>REQUIRED CARDS</div>
+            <div className="hscroll" style={{paddingBottom:6}}>
+              {reqCards.map(c=>(
+                <div key={c.id} style={{flexShrink:0,textAlign:"center"}}>
+                  <CardArt card={c}/>
+                  <div style={{fontSize:10,fontWeight:700,color:myCards.includes(c.id)?"var(--grn2)":"var(--tx4)",marginTop:4}}>
+                    {myCards.includes(c.id)?"✓ In wallet":"+ Needed"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Strategy overview */}
+          {s.desc&&(
+            <div style={{marginBottom:16,padding:"2px 0 4px"}}>
+              <div style={{fontSize:15,color:"var(--tx2)",lineHeight:1.75,fontWeight:400}}>{s.desc}</div>
+            </div>
+          )}
+
+          {/* What this actually means */}
+          <div style={{background:"rgba(99,102,241,.07)",border:"1px solid rgba(99,102,241,.2)",borderRadius:14,padding:"14px 16px",marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:800,color:"var(--acc2)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🎓 What This Actually Means</div>
+            <div style={{fontSize:13,color:"var(--tx2)",lineHeight:1.7}}>{s.forBeginners}</div>
+          </div>
+
+          {/* Analogy */}
+          <div style={{background:"rgba(139,92,246,.07)",border:"1px solid rgba(139,92,246,.2)",borderRadius:14,padding:"14px 16px",marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:800,color:"var(--pur2)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>💡 Think of It Like This</div>
+            <div style={{fontSize:13,color:"var(--tx2)",lineHeight:1.7}}>{s.analogy}</div>
+          </div>
+
+          {/* How to start */}
+          <div style={{background:"rgba(16,185,129,.06)",border:"1px solid rgba(16,185,129,.2)",borderRadius:14,padding:"14px 16px",marginBottom:14}}>
+            <div style={{fontSize:10,fontWeight:800,color:"var(--grn2)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🚀 How to Start</div>
+            <div style={{fontSize:13,color:"var(--tx2)",lineHeight:1.8,whiteSpace:"pre-line"}}>{s.firstStep}</div>
+          </div>
+
+          {/* Plays */}
+          <div style={{marginBottom:14}}>
+            <div className="section-title" style={{marginBottom:10}}>⚡ PROVEN PLAYS</div>
+            {s.play.map((p,i)=>(
+              <div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:"1px solid var(--br)"}}>
+                <div style={{color:"var(--acc2)",fontSize:13,marginTop:1,flexShrink:0}}>▸</div>
+                <div style={{fontSize:13,color:"var(--tx2)",lineHeight:1.55}}>{p}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Common mistake */}
+          {s.learn&&(
+            <div style={{background:"rgba(244,63,94,.06)",border:"1px solid rgba(244,63,94,.2)",borderRadius:14,padding:"14px 16px",marginBottom:16}}>
+              <div style={{fontSize:10,fontWeight:800,color:"var(--red2)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>⚠️ COMMON MISTAKE</div>
+              <div style={{fontSize:13,color:"var(--tx2)",lineHeight:1.6}}>{s.learn}</div>
+            </div>
+          )}
+
+          {/* Apply Now section */}
+          {s.req.some(id=>!myCards.includes(id))&&(
+            <div style={{marginBottom:24}}>
+              <div className="section-title" style={{marginBottom:10}}>APPLY FOR THESE CARDS</div>
+              {s.req.map((cardId,i)=>{
+                if(myCards.includes(cardId))return null;
+                const card=CARDS.find(c=>c.id===cardId);
+                if(!card)return null;
+                return (
+                  <div key={cardId} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid var(--br)"}}>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{s.req_names[i]}</div>
+                      <div style={{fontSize:11,color:"var(--tx3)"}}>Annual fee: {card.fee===0?"Free":"$"+card.fee}</div>
+                    </div>
+                    <div>
+                      <a className="apply-btn" href={APPLY_URLS[cardId]||"#apply-"+cardId} target="_blank" rel="noopener noreferrer">Apply Now →</a>
+                      <div className="apply-disclose">Affiliate link — we may earn a commission at no cost to you.</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── EMAIL CAPTURE ────────────────────────────────────────────────────────── */
+function EmailCapture({context}){
+  const [saved,setSaved]=useLS('cs_email','');
+  const [draft,setDraft]=useState('');
+  const [invalid,setInvalid]=useState(false);
+
+  const submit=e=>{
+    e.preventDefault();
+    const v=draft.trim();
+    if(!v||!v.includes('@')){setInvalid(true);return;}
+    setInvalid(false);
+    setSaved(v);
+    const sub=encodeURIComponent('CardSage Email Signup');
+    const bod=encodeURIComponent('New subscriber:\n\nEmail: '+v+'\n');
+    window.location.href='mailto:cardsage.co@gmail.com?subject='+sub+'&body='+bod;
+  };
+
+  const isHome=context==='home';
+
+  if(saved){
+    return(
+      <div style={{display:"flex",alignItems:"center",gap:6,padding:isHome?"12px 16px":"10px 14px",
+        background:"rgba(16,185,129,.07)",border:"1px solid rgba(16,185,129,.2)",
+        borderRadius:12,marginBottom:isHome?14:12}}>
+        <span style={{fontSize:13,color:"var(--grn2)"}}>✓</span>
+        <span style={{fontSize:11,color:"var(--grn)",fontWeight:600}}>Subscribed</span>
+        <span style={{fontSize:11,color:"var(--tx3)"}}>— reminders go to {saved}</span>
+      </div>
+    );
+  }
+
+  return(
+    <div style={{padding:isHome?"13px 16px":"12px 14px",
+      background:isHome?"rgba(55,48,163,.04)":"rgba(245,158,11,.05)",
+      border:isHome?"1px solid rgba(55,48,163,.1)":"1px solid rgba(245,158,11,.18)",
+      borderRadius:12,marginBottom:isHome?14:12}}>
+      <div style={{fontSize:12,fontWeight:600,color:"var(--tx2)",marginBottom:8,lineHeight:1.4}}>
+        {isHome
+          ?"Get monthly benefit reminders by email"
+          :"Never miss a monthly credit again — get reminders on the 1st"}
+      </div>
+      <form onSubmit={submit} style={{display:"flex",gap:7,alignItems:"flex-start",flexWrap:"wrap"}}>
+        <input type="email" placeholder="you@email.com" value={draft}
+          onChange={e=>{setDraft(e.target.value);setInvalid(false)}}
+          style={{flex:1,minWidth:160,padding:"7px 11px",
+            fontSize:12,background:"var(--s1)",color:"var(--tx)",
+            border:`1px solid ${invalid?"var(--red2)":"var(--br2)"}`,
+            borderRadius:8,outline:"none",fontFamily:"inherit"}}
+          onFocus={e=>e.target.style.borderColor="var(--acc)"}
+          onBlur={e=>e.target.style.borderColor=invalid?"var(--red2)":"var(--br2)"}/>
+        <button type="submit"
+          style={{padding:"7px 14px",background:"var(--acc)",color:"#fff",border:"none",
+            borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",
+            transition:"opacity .15s",flexShrink:0}}
+          onMouseEnter={e=>e.currentTarget.style.opacity='.85'}
+          onMouseLeave={e=>e.currentTarget.style.opacity='1'}>
+          Subscribe
+        </button>
+      </form>
+      {invalid&&<div style={{fontSize:11,color:"var(--red2)",marginTop:5}}>Please enter a valid email address.</div>}
+    </div>
+  );
+}
+
+/* ── HOME TAB ─────────────────────────────────────────────────────────────── */
+function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
+  const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
+
+  const totalFees=useMemo(()=>cards.reduce((s,c)=>s+c.fee,0),[cards]);
+  const totalCredits=useMemo(()=>cards.reduce((s,c)=>{
+    const ann=c.annual.reduce((a,b)=>a+(b.v||0),0);
+    const mon=c.monthly.reduce((a,b)=>a+((b.v||0)*12),0);
+    return s+ann+mon;
+  },0),[cards]);
+  const netValue=totalCredits-totalFees;
+
+  const myStratIds=useMemo(()=>{
+    const seen=new Set();
+    cards.forEach(c=>(c.strat||[]).forEach(s=>seen.add(s)));
+    return [...seen];
+  },[cards]);
+
+  const oneCardAway=useMemo(()=>{
+    if(!myCards.length)return[];
+    return Object.values(STRATS).filter(s=>{
+      if(myStratIds.includes(s.id))return false;
+      if(s.req.filter(id=>!myCards.includes(id)).length===1)return true;
+      if(s.alt)return s.alt.some(arr=>arr.filter(id=>!myCards.includes(id)).length===1);
+      return false;
+    }).slice(0,3);
+  },[myCards,myStratIds]);
+
+  const monthlyAlerts=useMemo(()=>{
+    const list=[];
+    cards.forEach(card=>{
+      card.monthly.forEach(b=>{
+        const key=card.id+"-"+b.n;
+        if(!checkedSet.has(key))list.push({card,b,key});
+      });
+    });
+    return list.slice(0,4);
+  },[cards,checkedSet]);
+
+  if(!myCards.length){
+    return (
+      <div style={{padding:"52px 24px",textAlign:"center"}}>
+        <div style={{fontSize:52,marginBottom:16}}>💳</div>
+        <div className="grad-text" style={{fontSize:24,fontWeight:900,marginBottom:8}}>Welcome to CardSage</div>
+        <div style={{fontSize:14,color:"var(--tx3)",lineHeight:1.7,maxWidth:300,margin:"0 auto 28px"}}>
+          Add your credit cards to track benefits, discover strategies, and maximize every dollar you spend.
+        </div>
+        <button className="btn" onClick={()=>setTab("wallet")}>Add Your Cards →</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{padding:"16px 16px 0"}}>
+      {/* Stats grid */}
+      <div className="stats-grid fu">
+        <div className="stat-box">
+          <div className="stat-val" style={{color:"var(--red2)"}}>${totalFees}</div>
+          <div className="stat-lbl">Annual Fees</div>
+        </div>
+        <div className="stat-box">
+          <div className="stat-val grn-text">${totalCredits}</div>
+          <div className="stat-lbl">Total Credits</div>
+        </div>
+        <div className="stat-box">
+          <div className="stat-val" style={{color:netValue>=0?"var(--grn2)":"var(--red2)"}}>
+            {netValue>=0?"+":""}{netValue}
+          </div>
+          <div className="stat-lbl">Net Value</div>
+        </div>
+      </div>
+
+      <EmailCapture context="home"/>
+
+      {/* Monthly credits alert */}
+      {monthlyAlerts.length>0&&(
+        <div style={{marginBottom:16}}>
+          <div className="section-hdr">
+            <div className="section-title">⚡ MONTHLY CREDITS TO USE</div>
+            <button className="btn-ghost btn-sm" onClick={()=>setTab("benefits")}>See All</button>
+          </div>
+          {monthlyAlerts.map(({card,b,key})=>(
+            <div key={key} className="surf" style={{marginBottom:8,display:"flex",alignItems:"center",gap:12}}>
+              <CardArt card={card}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:2}}>{b.n}</div>
+                <div style={{fontSize:11,color:"var(--tx3)",marginBottom:5}}>{card.short}</div>
+                <div style={{display:"inline-flex",alignItems:"center",gap:4,padding:"2px 9px",background:"rgba(16,185,129,.12)",borderRadius:99,fontSize:11,color:"var(--grn2)",fontWeight:700}}>
+                  💰 ${b.v}/mo — expires soon!
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Active strategies */}
+      {myStratIds.length>0&&(
+        <div style={{marginBottom:16}}>
+          <div className="section-title" style={{marginBottom:10}}>🔱 YOUR ACTIVE STRATEGIES</div>
+          <div className="strats-list">{myStratIds.map(sid=>{
+            const s=STRATS[sid];
+            if(!s)return null;
+            return (
+              <div key={sid} className="surf glow-card" style={{marginBottom:8,cursor:"pointer"}} onClick={()=>setStratModal(sid)}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{fontSize:26}}>{s.emoji}</span>
+                    <div>
+                      <div style={{fontSize:14,fontWeight:800,color:"var(--tx)"}}>{s.name}</div>
+                      <div style={{fontSize:11,color:"var(--grn2)",fontWeight:700,marginTop:1}}>{s.value}</div>
+                    </div>
+                  </div>
+                  <span style={{color:"var(--tx3)",fontSize:14}}>→</span>
+                </div>
+                <div style={{fontSize:12,color:"var(--tx3)",marginTop:8,lineHeight:1.5}}>{s.desc.slice(0,110)}…</div>
+              </div>
+            );
+          })}</div>
+        </div>
+      )}
+
+      {/* One Card Away */}
+      {oneCardAway.length>0&&(
+        <div style={{marginBottom:16}}>
+          <div className="section-title" style={{marginBottom:10}}>🎯 ONE CARD AWAY FROM…</div>
+          {oneCardAway.map(s=>{
+            const missingId=s.req.find(id=>!myCards.includes(id))||
+              (s.alt&&s.alt.find(arr=>arr.filter(id=>!myCards.includes(id)).length===1)||[]).find(id=>!myCards.includes(id));
+            const mc=CARDS.find(c=>c.id===missingId);
+            return (
+              <div key={s.id} className="surf glow-card" style={{marginBottom:8,cursor:"pointer",borderColor:"rgba(245,158,11,.2)"}} onClick={()=>setStratModal(s.id)}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:22}}>{s.emoji}</span>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:800,color:"var(--tx)"}}>{s.name}</div>
+                      <div style={{fontSize:11,color:"var(--gld2)",fontWeight:700}}>{s.value} potential</div>
+                    </div>
+                  </div>
+                  <div className="badge" style={{background:"rgba(245,158,11,.12)",color:"#fbbf24",border:"1px solid rgba(245,158,11,.25)",flexShrink:0}}>1 Card Needed</div>
+                </div>
+                {mc&&(
+                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"rgba(245,158,11,.06)",borderRadius:10,marginBottom:8}}>
+                    <span style={{fontSize:11,color:"var(--tx3)"}}>Add:</span>
+                    <span style={{fontSize:12,fontWeight:700,color:"var(--gld2)"}}>{mc.name}</span>
+                    <span style={{fontSize:11,color:"var(--tx4)"}}>• {mc.fee===0?"Free":"$"+mc.fee+"/yr"}</span>
+                  </div>
+                )}
+                <div style={{fontSize:11,color:"var(--tx4)",lineHeight:1.55}}>{(s.forBeginners||"").slice(0,120)}… <span style={{color:"var(--acc2)"}}>Tap to learn more →</span></div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* My cards strip */}
+      <div style={{marginBottom:16}}>
+        <div className="section-hdr">
+          <div className="section-title">MY WALLET ({cards.length})</div>
+          <button className="btn-ghost btn-sm" onClick={()=>setTab("wallet")}>Edit</button>
+        </div>
+        <div className="hscroll" style={{paddingBottom:8}}>
+          {cards.map(c=><CardArt key={c.id} card={c}/>)}
+          <div onClick={()=>setTab("wallet")} style={{width:136,height:82,flexShrink:0,borderRadius:14,border:"2px dashed var(--br2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"var(--tx3)",fontSize:24}}>+</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── BENEFITS TAB ─────────────────────────────────────────────────────────── */
+function BenefitsTab({myCards,checkedSet,setCheckedBenefits}){
+  const [filterCat,setFilterCat]=useState("all");
+  const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
+
+  const allBenefits=useMemo(()=>{
+    const list=[];
+    cards.forEach(card=>{
+      card.annual.forEach(b=>list.push({...b,cardId:card.id,card,key:card.id+"-"+b.n,isMonthly:false}));
+      card.monthly.forEach(b=>list.push({...b,cardId:card.id,card,key:card.id+"-m-"+b.n,isMonthly:true}));
+    });
+    return list;
+  },[cards]);
+
+  const filtered=useMemo(()=>{
+    if(filterCat==="all")return allBenefits;
+    if(filterCat==="unused")return allBenefits.filter(b=>!checkedSet.has(b.key));
+    return allBenefits.filter(b=>b.cat===filterCat);
+  },[allBenefits,filterCat,checkedSet]);
+
+  const checkedCount=allBenefits.filter(b=>checkedSet.has(b.key)).length;
+  const pct=allBenefits.length?Math.round((checkedCount/allBenefits.length)*100):0;
+  const usedValue=allBenefits.filter(b=>checkedSet.has(b.key)&&b.v).reduce((s,b)=>s+(b.isMonthly?(b.v*12):b.v),0);
+  const totalValue=allBenefits.filter(b=>b.v).reduce((s,b)=>s+(b.isMonthly?(b.v*12):b.v),0);
+
+  function toggle(key){
+    setCheckedBenefits(prev=>{
+      const n=new Set(prev);
+      n.has(key)?n.delete(key):n.add(key);
+      return n;
+    });
+  }
+
+  if(!myCards.length){
+    return <div style={{padding:40,textAlign:"center",color:"var(--tx3)"}}>Add cards to see your benefits.</div>;
+  }
+
+  return (
+    <div style={{padding:"16px 16px 0"}}>
+      {/* Progress */}
+      <div className="surf fu" style={{marginBottom:14}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+          <div>
+            <div style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>Benefits Used This Year</div>
+            <div style={{fontSize:11,color:"var(--tx3)",marginTop:2}}>${usedValue.toLocaleString()} of ${totalValue.toLocaleString()} in credits redeemed</div>
+          </div>
+          <div style={{fontSize:26,fontWeight:900,color:pct>60?"var(--grn2)":"var(--gld2)",lineHeight:1}}>{pct}%</div>
+        </div>
+        <div className="prog-track">
+          <div className="prog-fill" style={{width:pct+"%",background:"linear-gradient(90deg,var(--acc),var(--pur))"}}/>
+        </div>
+      </div>
+
+      {/* Category filter */}
+      <div className="hscroll" style={{marginBottom:14,gap:6}}>
+        {[{id:"all",label:"All",icon:"📋"},{id:"unused",label:"Unused",icon:"⚡"},
+          ...Object.entries(BCAT).map(([id,b])=>({id,label:b.label,icon:b.icon}))
+        ].map(f=>(
+          <button key={f.id} className={"pill "+(filterCat===f.id?"pill-a":"pill-i")} onClick={()=>setFilterCat(f.id)}>
+            {f.icon} {f.label}
+          </button>
+        ))}
+      </div>
+
+      <EmailCapture context="benefits"/>
+
+      {filtered.length===0?(
+        <div style={{textAlign:"center",padding:"32px 0",color:"var(--tx3)"}}>No benefits in this category.</div>
+      ):(
+        <div className="benefits-list">{cards.map(card=>{
+          const cardBens=filtered.filter(b=>b.cardId===card.id);
+          if(!cardBens.length)return null;
+          const usedHere=cardBens.filter(b=>checkedSet.has(b.key)).length;
+          return (
+            <div key={card.id} style={{marginBottom:18}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                <CardArt card={card}/>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>{card.short||card.name}</div>
+                  <div style={{fontSize:11,color:"var(--tx3)"}}>{usedHere}/{cardBens.length} benefits used</div>
+                  <div className="prog-track" style={{width:80,marginTop:4}}>
+                    <div className="prog-fill" style={{width:(cardBens.length?Math.round(usedHere/cardBens.length*100):0)+"%",background:"var(--grn)"}}/>
+                  </div>
+                </div>
+              </div>
+              <div className="surf" style={{padding:"0 14px"}}>
+                {cardBens.map((b,i)=>{
+                  const done=checkedSet.has(b.key);
+                  const bc=BCAT[b.cat]||BCAT.statement;
+                  return (
+                    <div key={b.key} className="ben-row" style={{borderBottom:i<cardBens.length-1?"1px solid var(--br)":"none"}}>
+                      <button className={"ben-check"+(done?" done":"")} onClick={()=>toggle(b.key)}>
+                        {done&&<span style={{color:"#fff",fontSize:13,lineHeight:1}}>✓</span>}
+                      </button>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:3}}>
+                          <span style={{fontSize:13,fontWeight:600,color:done?"var(--tx3)":"var(--tx)",textDecoration:done?"line-through":"none"}}>{b.n}</span>
+                          <span style={{padding:"1px 7px",borderRadius:99,fontSize:10,fontWeight:700,color:bc.color,background:bc.bg}}>{bc.icon} {bc.label}</span>
+                          {b.isMonthly&&<span style={{padding:"1px 6px",borderRadius:99,fontSize:10,background:"rgba(239,68,68,.12)",color:"#fb7185",fontWeight:700}}>Monthly</span>}
+                        </div>
+                        {b.d&&<div style={{fontSize:11,color:"var(--tx3)",lineHeight:1.5}}>{b.d}</div>}
+                        {b.v&&<div style={{fontSize:11,color:"var(--grn2)",fontWeight:700,marginTop:2}}>Up to ${b.isMonthly?b.v+"/mo ("+b.v*12+"/yr)":b.v}</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}</div>
+      )}
+    </div>
+  );
+}
+
+/* ── TIPS TAB ─────────────────────────────────────────────────────────────── */
+const TIP_CAT_LIST=[
+  {id:"all",label:"All Tips",icon:"💡"},
+  {id:"sweetspot",label:"Sweet Spots",icon:"🎯"},
+  {id:"routing",label:"Routing & Stopovers",icon:"🗺️"},
+  {id:"stacking",label:"Stacking",icon:"📚"},
+  {id:"timing",label:"Timing",icon:"⏰"},
+  {id:"arbitrage",label:"Arbitrage",icon:"📈"},
+  {id:"application",label:"Apply Strategy",icon:"📋"},
+];
+
+function TipsTab({myCards}){
+  const [filterCat,setFilterCat]=useState("all");
+  const [openTip,setOpenTip]=useState(null);
+  const DIFF_COLOR={beginner:"var(--grn2)",intermediate:"var(--gld2)",advanced:"var(--red2)"};
+
+  const filtered=useMemo(()=>filterCat==="all"?TIPS_DB:TIPS_DB.filter(t=>t.cat===filterCat),[filterCat]);
+
+  const {playbook,unlock}=useMemo(()=>{
+    const pb=[],ul=[];
+    filtered.forEach(tip=>{
+      const ownedCount=tip.cards.filter(id=>myCards.includes(id)).length;
+      if(ownedCount>0) pb.push({...tip,allOwned:ownedCount===tip.cards.length});
+      else ul.push(tip);
+    });
+    pb.sort((a,b)=>(b.allOwned?1:0)-(a.allOwned?1:0));
+    return {playbook:pb,unlock:ul};
+  },[filtered,myCards]);
+
+  const getPartners=tip=>{
+    const s=new Set();
+    tip.cards.forEach(id=>{const c=CARDS.find(x=>x.id===id);if(c&&c.partners)c.partners.forEach(p=>s.add(p));});
+    return [...s];
+  };
+
+  const renderTip=(tip,dim)=>{
+    const isOpen=openTip===tip.id;
+    const tipCards=tip.cards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
+    const partners=isOpen?getPartners(tip):[];
+    const unlockCard=dim?tipCards[0]:null;
+    const label=!dim?(tip.allOwned?"✓ Ready to Use":"⬆ Almost There"):null;
+    const labelColor=!dim?(tip.allOwned?"var(--grn2)":"var(--gld2)"):null;
+    const labelBg=!dim?(tip.allOwned?"rgba(16,185,129,.12)":"rgba(202,138,4,.12)"):null;
+    return (
+      <div key={tip.id} className={"tip-card"+(isOpen?" open":"")}
+           style={dim?{opacity:.82,background:"var(--s3)"}:{}}
+           onClick={()=>setOpenTip(isOpen?null:tip.id)}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5,flexWrap:"wrap"}}>
+              <span style={{fontSize:10,fontWeight:800,color:DIFF_COLOR[tip.difficulty]||"var(--tx3)",textTransform:"uppercase",letterSpacing:.5}}>{tip.difficulty}</span>
+              {label&&<span style={{fontSize:10,fontWeight:700,color:labelColor,background:labelBg,padding:"1px 7px",borderRadius:99}}>{label}</span>}
+              <ValueMeter v={tip.value}/>
+            </div>
+            <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",lineHeight:1.4}}>{tip.title}</div>
+          </div>
+          <span style={{color:"var(--tx3)",fontSize:14,transition:"transform .2s",transform:isOpen?"rotate(90deg)":"none",flexShrink:0,marginTop:2}}>▸</span>
+        </div>
+
+        {isOpen&&(
+          <div style={{marginTop:12,borderTop:"1px solid var(--br)",paddingTop:12}}>
+            <div style={{fontSize:13,color:"var(--tx2)",lineHeight:1.75,marginBottom:12}}>{tip.body}</div>
+            <div style={{marginBottom:partners.length>0?12:dim?12:0}}>
+              <div style={{fontSize:10,color:"var(--tx4)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>USE WITH</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {tipCards.map(c=>(
+                  <div key={c.id} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",background:"rgba(255,255,255,.05)",borderRadius:8,border:"1px solid var(--br)"}}>
+                    <div style={{width:8,height:8,borderRadius:2,background:c.c1}}/>
+                    <span style={{fontSize:11,fontWeight:600,color:myCards.includes(c.id)?"var(--tx)":"var(--tx3)"}}>{c.short}</span>
+                    {myCards.includes(c.id)&&<span style={{fontSize:10,color:"var(--grn2)"}}>✓</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+            {partners.length>0&&(
+              <div style={{marginBottom:dim?12:0}}>
+                <div style={{fontSize:10,color:"var(--tx4)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>TRANSFER PARTNERS</div>
+                <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                  {partners.map(p=>(
+                    <span key={p} style={{fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:99,background:"rgba(55,48,163,.1)",color:"var(--acc)",border:"1px solid rgba(55,48,163,.2)"}}>{p}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {dim&&unlockCard&&(
+              <div style={{padding:"10px 12px",background:"rgba(55,48,163,.06)",borderRadius:10,border:"1px dashed rgba(55,48,163,.2)"}}>
+                <div style={{fontSize:11,color:"var(--tx2)",marginBottom:8}}>Add <strong style={{color:"var(--tx)"}}>{unlockCard.name}</strong> to unlock this play</div>
+                <a href={APPLY_URLS[unlockCard.id]||"#apply-"+unlockCard.id} target="_blank"
+                   onClick={e=>e.stopPropagation()}
+                   style={{display:"inline-block",fontSize:11,fontWeight:700,color:"var(--acc)",background:"rgba(55,48,163,.1)",padding:"5px 12px",borderRadius:8,border:"1px solid rgba(55,48,163,.25)",textDecoration:"none"}}>
+                  Apply for {unlockCard.short} →
+                </a>
+                <div className="apply-disclose">Affiliate link — we may earn a commission at no cost to you.</div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const hasWallet=myCards.length>0;
+
+  return (
+    <div style={{padding:"16px 16px 0"}}>
+      {/* Category filter */}
+      <div className="hscroll" style={{marginBottom:16,gap:6}}>
+        {TIP_CAT_LIST.map(c=>(
+          <button key={c.id} className={"pill "+(filterCat===c.id?"pill-a":"pill-i")} onClick={()=>setFilterCat(c.id)}>
+            {c.icon} {c.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Empty wallet prompt */}
+      {!hasWallet&&(
+        <div className="surf fu" style={{marginBottom:14,textAlign:"center",padding:"24px 16px"}}>
+          <div style={{fontSize:24,marginBottom:8}}>🗂️</div>
+          <div style={{fontSize:14,fontWeight:700,color:"var(--acc)",marginBottom:6}}>Add cards to see your playbook</div>
+          <div style={{fontSize:12,color:"var(--tx3)"}}>Go to the Wallet tab, add your cards, then come back for personalized strategy plays.</div>
+        </div>
+      )}
+
+      {/* YOUR PLAYBOOK */}
+      {hasWallet&&playbook.length>0&&(
+        <div style={{marginBottom:28}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+            <div style={{flex:1,height:1,background:"var(--br)"}}/>
+            <div style={{fontSize:11,fontWeight:800,color:"var(--acc)",textTransform:"uppercase",letterSpacing:1.5,whiteSpace:"nowrap"}}>Your Playbook</div>
+            <div style={{flex:1,height:1,background:"var(--br)"}}/>
+          </div>
+          <div style={{fontSize:11,color:"var(--tx3)",marginBottom:12,textAlign:"center"}}>Plays you can run right now with cards you own</div>
+          <div className="tips-list">{playbook.map(tip=>renderTip(tip,false))}</div>
+        </div>
+      )}
+
+      {hasWallet&&playbook.length===0&&(
+        <div style={{textAlign:"center",padding:"20px",color:"var(--tx3)",fontSize:13,marginBottom:20}}>No plays in this category match your wallet. Try "All".</div>
+      )}
+
+      {/* UNLOCK WITH ONE MORE CARD */}
+      {unlock.length>0&&(
+        <div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+            <div style={{flex:1,height:1,background:"var(--br)"}}/>
+            <div style={{fontSize:11,fontWeight:800,color:"var(--tx3)",textTransform:"uppercase",letterSpacing:1.5,whiteSpace:"nowrap"}}>Unlock With One More Card</div>
+            <div style={{flex:1,height:1,background:"var(--br)"}}/>
+          </div>
+          <div style={{fontSize:11,color:"var(--tx3)",marginBottom:12,textAlign:"center"}}>Just out of reach — add one card to unlock these plays</div>
+          <div className="tips-list">{unlock.map(tip=>renderTip(tip,true))}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── USE CARD TAB ─────────────────────────────────────────────────────────── */
+function UsecardTab({myCards}){
+  const [mode,setMode]=useState("basic");
+  const [selCat,setSelCat]=useState(null);
+  const [merchant,setMerchant]=useState("");
+  const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
+
+  function getBestForCat(catId){
+    const priority=EARN_PRIORITY[catId]||[];
+    const inWallet=priority.filter(id=>myCards.includes(id));
+    const results=inWallet.slice(0,3).map(id=>{
+      const c=CARDS.find(x=>x.id===id);
+      return c?{card:c,rate:(c.earn&&c.earn[catId])||"1x"}:null;
+    }).filter(Boolean);
+    if(!results.length&&cards.length){
+      return cards.slice(0,2).map(c=>({card:c,rate:(c.earn&&c.earn[catId])||"1x"}));
+    }
+    return results;
+  }
+
+  const merchantResults=useMemo(()=>{
+    if(merchant.trim().length<2)return[];
+    const q=merchant.toLowerCase();
+    const hints={
+      grocery:["g"],grocer:["g"],supermarket:["g"],safeway:["g"],kroger:["g"],"whole foods":["g"],"trader joe":["g"],walmart:["g"],target:["g"],costco:["g"],
+      restaurant:["d"],dining:["d"],cafe:["d"],coffee:["d"],starbucks:["d"],chipotle:["d"],mcdonald:["d"],pizza:["d"],sushi:["d"],burger:["d"],taco:["d"],
+      gas:["gas"],shell:["gas"],chevron:["gas"],bp:["gas"],exxon:["gas"],mobil:["gas"],
+      uber:["tr","d"],lyft:["tr"],
+      amazon:["a"],
+      pharmacy:["p"],cvs:["p"],walgreens:["p"],
+      airline:["t"],flight:["t"],hotel:["t"],airbnb:["t"],marriott:["t"],hilton:["t"],hyatt:["t"],
+      streaming:["s"],netflix:["s"],hulu:["s"],spotify:["s"],disney:["s"],
+    };
+    let bestCats=["o"];
+    for(const[kw,cats] of Object.entries(hints)){
+      if(q.includes(kw)){bestCats=cats;break;}
+    }
+    return bestCats.flatMap(cid=>getBestForCat(cid));
+  },[merchant,myCards]);
+
+  const MODE_TABS=[
+    {id:"basic",l:"Basic",s:"Everyday categories"},
+    {id:"specialty",l:"Specialty",s:"Airline & hotel cards"},
+    {id:"rotating",l:"Rotating",s:"Q1 2026 bonuses"},
+    {id:"merchant",l:"Merchant",s:"Specific stores"},
+  ];
+
+  if(!myCards.length){
+    return <div style={{padding:40,textAlign:"center",color:"var(--tx3)"}}>Add cards to get recommendations.</div>;
+  }
+
+  return (
+    <div style={{padding:"16px 16px 0"}}>
+      {/* Mode toggle */}
+      <div style={{display:"flex",gap:6,marginBottom:16,overflowX:"auto",scrollbarWidth:"none",paddingBottom:2}}>
+        {MODE_TABS.map(m=>(
+          <button key={m.id} onClick={()=>{setMode(m.id);setSelCat(null);}}
+            style={{flexShrink:0,padding:"9px 14px",borderRadius:12,border:"1.5px solid",
+              borderColor:mode===m.id?"var(--acc)":"var(--br2)",
+              background:mode===m.id?"rgba(99,102,241,.12)":"rgba(255,255,255,.03)",
+              cursor:"pointer",textAlign:"left"}}>
+            <div style={{fontSize:12,fontWeight:700,color:mode===m.id?"var(--tx)":"var(--tx3)",whiteSpace:"nowrap"}}>{m.l}</div>
+            <div style={{fontSize:9,color:mode===m.id?"var(--acc2)":"var(--tx4)",whiteSpace:"nowrap"}}>{m.s}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* ── BASIC ── */}
+      {mode==="basic"&&(
+        <div>
+          <div className="cat-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+            {BASIC_CATS.map(cat=>(
+              <div key={cat.id} className={"cat-tile"+(selCat===cat.id?" sel":"")}
+                style={{borderColor:selCat===cat.id?cat.color:"var(--br)"}}
+                onClick={()=>setSelCat(selCat===cat.id?null:cat.id)}>
+                <span style={{fontSize:22}}>{cat.icon}</span>
+                <div style={{fontSize:11,fontWeight:700,color:"var(--tx)",textAlign:"center"}}>{cat.label}</div>
+                <div style={{fontSize:9,color:"var(--tx3)",textAlign:"center"}}>{cat.sub}</div>
+              </div>
+            ))}
+          </div>
+          {selCat&&(()=>{
+            const cat=BASIC_CATS.find(c=>c.id===selCat);
+            const results=getBestForCat(selCat);
+            return (
+              <div className="surf fu" style={{borderColor:cat.color+"44"}}>
+                <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:12}}>
+                  Best card for <span style={{color:cat.color}}>{cat.label}</span>:
+                </div>
+                {!results.length?(
+                  <div style={{color:"var(--tx3)",fontSize:13}}>No matching cards in wallet for this category.</div>
+                ):(
+                  results.map(({card,rate},i)=>(
+                    <div key={card.id} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 0",borderBottom:i<results.length-1?"1px solid var(--br)":"none"}}>
+                      <div style={{width:30,height:30,borderRadius:9,background:`linear-gradient(135deg,${card.c1},${card.c2})`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"rgba(255,255,255,.8)"}}>#{i+1}</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{card.short}</div>
+                        <div style={{fontSize:11,color:"var(--tx3)"}}>{card.cur}</div>
+                      </div>
+                      <div style={{fontSize:19,fontWeight:800,color:i===0?"var(--gld2)":"var(--tx2)"}}>{rate}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ── SPECIALTY ── */}
+      {mode==="specialty"&&(
+        <div>
+          <div style={{fontSize:11,color:"var(--tx3)",marginBottom:12}}>Cards with maximum earn rates on their own brand properties:</div>
+          {SPECIAL_CATS.filter(sc=>myCards.includes(sc.cardId)).length===0?(
+            <div style={{textAlign:"center",padding:"28px 0",color:"var(--tx3)"}}>
+              <div style={{marginBottom:6}}>No specialty cards in your wallet yet.</div>
+              <div style={{fontSize:12}}>Add airline or hotel cards to see brand-specific earning rates.</div>
+            </div>
+          ):(
+            <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+              {SPECIAL_CATS.filter(sc=>myCards.includes(sc.cardId)).map(sc=>{
+                const c=CARDS.find(x=>x.id===sc.cardId);
+                return (
+                  <div key={sc.id} className="surf" style={{padding:12}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                      <span style={{fontSize:18}}>{sc.icon}</span>
+                      <div>
+                        <div style={{fontSize:12,fontWeight:700,color:"var(--tx)"}}>{sc.label}</div>
+                        <div style={{fontSize:10,color:"var(--tx3)"}}>{sc.sub}</div>
+                      </div>
+                    </div>
+                    <div style={{fontSize:22,fontWeight:800,color:"var(--gld2)"}}>{sc.rate}</div>
+                    <div style={{fontSize:10,color:"var(--tx3)",marginTop:2}}>Use: {c?.short}</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── ROTATING ── */}
+      {mode==="rotating"&&(
+        <div>
+          <div className="surf-glow" style={{marginBottom:14,padding:"10px 14px"}}>
+            <div style={{fontSize:11,fontWeight:800,color:"var(--acc2)",marginBottom:4}}>📅 Q1 2026 ROTATING BONUS CATEGORIES</div>
+            <div style={{fontSize:11,color:"var(--tx3)"}}>You MUST activate each quarter — missing it means earning only 1x instead of 5x</div>
+          </div>
+          {ROTATING_Q1.filter(r=>myCards.includes(r.id)).length===0?(
+            <div style={{textAlign:"center",padding:"28px 0",color:"var(--tx3)"}}>
+              <div style={{marginBottom:6}}>No rotating bonus cards in your wallet.</div>
+              <div style={{fontSize:12}}>Rotating cards: Chase Freedom Flex, Discover it, U.S. Bank Cash+</div>
+            </div>
+          ):(
+            ROTATING_Q1.filter(r=>myCards.includes(r.id)).map(r=>(
+              <div key={r.id} className="surf" style={{marginBottom:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>{r.card}</div>
+                  <div style={{fontSize:20,fontWeight:800,color:"var(--gld2)"}}>{r.rate}</div>
+                </div>
+                <div style={{fontSize:13,color:"var(--acc2)",fontWeight:600,marginBottom:6}}>{r.cats}</div>
+                <div style={{fontSize:11,color:"var(--tx3)"}}>{r.note}</div>
+                {!r.verified&&<div style={{fontSize:10,color:"var(--gld2)",marginTop:4}}>⚠️ Verify current quarter at card issuer's website</div>}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* ── MERCHANT ── */}
+      {mode==="merchant"&&(
+        <div>
+          <div style={{marginBottom:14}}>
+            <input className="inp" placeholder="Type a merchant — e.g. Whole Foods, Shell, Uber Eats…"
+              value={merchant} onChange={e=>setMerchant(e.target.value)}/>
+          </div>
+          {merchantResults.length>0?(
+            <div className="surf fu">
+              <div style={{fontSize:12,color:"var(--tx3)",marginBottom:10}}>Best card to use at <strong style={{color:"var(--tx)"}}>{merchant}</strong>:</div>
+              {merchantResults.slice(0,3).map(({card,rate},i)=>(
+                <div key={card.id} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 0",borderBottom:i<2?"1px solid var(--br)":"none"}}>
+                  <CardArt card={card}/>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>{card.short}</div>
+                    <div style={{fontSize:11,color:"var(--tx3)"}}>{card.cur}</div>
+                  </div>
+                  <div style={{fontSize:22,fontWeight:800,color:i===0?"var(--gld2)":"var(--tx2)"}}>{rate}</div>
+                </div>
+              ))}
+            </div>
+          ):merchant.length>1?(
+            <div style={{textAlign:"center",padding:"28px 0",color:"var(--tx3)"}}>
+              No exact match. Try category keywords: "grocery", "gas", "restaurant", "hotel", "airline".
+            </div>
+          ):null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── OFFERS TAB ───────────────────────────────────────────────────────────── */
+const MERCHANT_OFFERS=[
+// ── SHOPPING ──────────────────────────────────────────────────────────────
+{merchant:"Nike",slug:"nike",cat:"shopping",icon:"👟",programs:[
+  {prog:"Amex Offers",typical:"$10–$15 back on $50+",freq:"frequent",note:"Check Amex app under 'Amex Offers'. Activate before purchasing in-store or online."},
+  {prog:"Chase Offers",typical:"10% back (up to $15)",freq:"seasonal",note:"Most common around back-to-school and the holidays. Find in the Chase app or chase.com/offers."},
+]},
+{merchant:"Adidas",slug:"adidas",cat:"shopping",icon:"🏃",programs:[
+  {prog:"Amex Offers",typical:"$15–$20 back on $75+",freq:"seasonal",note:"Often runs in fall around new product launches. Activate in Amex app."},
+  {prog:"Capital One Offers",typical:"5–8% back",freq:"occasional",note:"Check the Capital One app or shopping portal."},
+]},
+{merchant:"Apple",slug:"apple",cat:"shopping",icon:"🍎",programs:[
+  {prog:"Amex Offers",typical:"$10–$20 back on $100+",freq:"seasonal",note:"Runs around September product launches and the holiday season."},
+  {prog:"Chase Offers",typical:"5% back (up to $20)",freq:"occasional",note:"Check the Chase app. More likely in December."},
+]},
+{merchant:"Best Buy",slug:"bestbuy",cat:"shopping",icon:"🛒",aliases:["best buy"],programs:[
+  {prog:"Amex Offers",typical:"$15–$25 back on $100+",freq:"frequent",note:"One of the most consistent Amex Offers. Activate before any electronics purchase."},
+  {prog:"Chase Offers",typical:"10% back (up to $30)",freq:"frequent",note:"Appears reliably in the Chase app. Always check before a Best Buy run."},
+  {prog:"Citi Offers",typical:"8% back",freq:"seasonal",note:"Check your Citi app around Black Friday and tax-refund season."},
+]},
+{merchant:"Target",slug:"target",cat:"shopping",icon:"🎯",programs:[
+  {prog:"Amex Offers",typical:"$10 back on $50+",freq:"frequent",note:"Appears frequently in the Amex app. Activate before every trip."},
+  {prog:"BofA Deals",typical:"5% back (up to $20)",freq:"occasional",note:"Found in the BofA app under 'Deals'."},
+]},
+{merchant:"Walmart",slug:"walmart",cat:"shopping",icon:"🏪",programs:[
+  {prog:"Chase Offers",typical:"5% back (up to $10)",freq:"seasonal",note:"Check the Chase app around the holiday season and back-to-school."},
+  {prog:"BofA Deals",typical:"3% back",freq:"occasional",note:"Check your BofA app's deals section."},
+]},
+{merchant:"Nordstrom",slug:"nordstrom",cat:"shopping",icon:"👗",programs:[
+  {prog:"Amex Offers",typical:"$25–$50 back on $100+",freq:"seasonal",note:"Often runs during the Nordstrom Anniversary Sale (July) and the holiday season."},
+  {prog:"Chase Offers",typical:"10% back (up to $25)",freq:"seasonal",note:"Check the Chase app around major Nordstrom sale events."},
+]},
+{merchant:"Macy's",slug:"macys",cat:"shopping",icon:"🛍️",aliases:["macys","macy"],programs:[
+  {prog:"Amex Offers",typical:"$15 back on $75+",freq:"frequent",note:"Amex frequently offers Macy's deals. Activate in your Amex app."},
+  {prog:"Citi Offers",typical:"10% back",freq:"seasonal",note:"Often appears around department store sale events."},
+]},
+{merchant:"Sephora",slug:"sephora",cat:"shopping",icon:"💄",programs:[
+  {prog:"Amex Offers",typical:"$10–$15 back on $50+",freq:"frequent",note:"One of the most consistent Amex Offers merchants. Check before every order."},
+  {prog:"Chase Offers",typical:"10% back (up to $15)",freq:"seasonal",note:"Check the Chase app during Sephora sale events."},
+]},
+{merchant:"Ulta Beauty",slug:"ulta",cat:"shopping",icon:"🌸",aliases:["ulta"],programs:[
+  {prog:"Amex Offers",typical:"$10 back on $50+",freq:"frequent",note:"Activate in your Amex app before in-store or online purchases."},
+  {prog:"Citi Offers",typical:"8% back",freq:"seasonal",note:"Check during Ulta's 21 Days of Beauty event."},
+]},
+{merchant:"Home Depot",slug:"homedepot",cat:"shopping",icon:"🔨",aliases:["home depot"],programs:[
+  {prog:"Amex Offers",typical:"$20–$30 back on $100+",freq:"frequent",note:"Among the highest-value and most frequent Amex Offers. Check before any home improvement run."},
+  {prog:"Chase Offers",typical:"5–10% back (up to $30)",freq:"seasonal",note:"Often runs in spring and around the holidays."},
+]},
+{merchant:"Lowe's",slug:"lowes",cat:"shopping",icon:"🪚",aliases:["lowes"],programs:[
+  {prog:"Amex Offers",typical:"$20 back on $100+",freq:"seasonal",note:"Check your Amex app in spring and fall."},
+  {prog:"Wells Fargo Deals",typical:"5% back",freq:"occasional",note:"Look in the Wells Fargo app under 'My Deals'."},
+]},
+{merchant:"Wayfair",slug:"wayfair",cat:"shopping",icon:"🛋️",programs:[
+  {prog:"Amex Offers",typical:"$20–$30 back on $100+",freq:"seasonal",note:"Runs during Way Day and Black Friday. Activate in your Amex app."},
+  {prog:"Chase Offers",typical:"8% back (up to $20)",freq:"seasonal",note:"Check the Chase app around major Wayfair sale events."},
+]},
+{merchant:"Gap / Old Navy",slug:"gap",cat:"shopping",icon:"👕",aliases:["gap","old navy","oldnavy","banana republic","athleta"],programs:[
+  {prog:"Amex Offers",typical:"$15–$20 back on $75+",freq:"seasonal",note:"Works at Gap, Old Navy, Banana Republic, and Athleta. Activate in Amex app."},
+  {prog:"Citi Offers",typical:"10% back",freq:"seasonal",note:"Check your Citi app during seasonal sale events."},
+]},
+{merchant:"Amazon",slug:"amazon",cat:"shopping",icon:"📦",programs:[
+  {prog:"Chase Offers",typical:"5% back on select items",freq:"occasional",note:"Prime Day often triggers Chase offers. Always check before a large order."},
+  {prog:"Amex Offers",typical:"$10–$20 back on $50+",freq:"seasonal",note:"Less common but worth checking around Prime Day and the holidays."},
+]},
+{merchant:"Microsoft",slug:"microsoft",cat:"shopping",icon:"💻",aliases:["microsoft store","xbox","surface"],programs:[
+  {prog:"Amex Offers",typical:"$20–$30 back on $100+",freq:"seasonal",note:"Activate in your Amex app around back-to-school and the holiday season."},
+  {prog:"Chase Offers",typical:"5–10% back",freq:"seasonal",note:"Check the Chase app."},
+]},
+{merchant:"Dell",slug:"dell",cat:"shopping",icon:"🖥️",programs:[
+  {prog:"Amex Offers",typical:"$30–$50 back on $200+",freq:"seasonal",note:"High-value offer — check your Amex app around back-to-school."},
+  {prog:"Citi Offers",typical:"10% back",freq:"seasonal",note:"Check your Citi app."},
+]},
+{merchant:"Samsung",slug:"samsung",cat:"shopping",icon:"📱",programs:[
+  {prog:"Amex Offers",typical:"$25–$50 back on $200+",freq:"seasonal",note:"Often runs during Galaxy launches and the holiday season. Activate in Amex app."},
+  {prog:"Chase Offers",typical:"8–10% back",freq:"seasonal",note:"Check the Chase app."},
+]},
+// ── DINING ────────────────────────────────────────────────────────────────
+{merchant:"Starbucks",slug:"starbucks",cat:"dining",icon:"☕",programs:[
+  {prog:"Amex Offers",typical:"$5–$10 back on $20+",freq:"frequent",note:"Among the most frequently activated Amex Offers. Check your app monthly."},
+  {prog:"Chase Offers",typical:"10% back (up to $5)",freq:"frequent",note:"Chase consistently runs Starbucks offers. Find in the Chase app."},
+  {prog:"Capital One Offers",typical:"5% back",freq:"frequent",note:"Check Capital One's offers in the app."},
+]},
+{merchant:"Chipotle",slug:"chipotle",cat:"dining",icon:"🌯",programs:[
+  {prog:"Amex Offers",typical:"$5 back on $25+",freq:"frequent",note:"Activate in your Amex app. Works in-store and online."},
+  {prog:"Chase Offers",typical:"10% back (up to $5)",freq:"frequent",note:"Regularly in the Chase app. Check before every order."},
+]},
+{merchant:"DoorDash",slug:"doordash",cat:"dining",icon:"🛵",aliases:["door dash"],programs:[
+  {prog:"Chase Offers",typical:"$5–$10 back on $30+",freq:"frequent",note:"CSR includes complimentary DashPass. Additional spend-back offers also appear regularly in the Chase app."},
+  {prog:"Amex Offers",typical:"10% back on orders",freq:"frequent",note:"Activate in your Amex app. Check around major food delivery promotions."},
+]},
+{merchant:"Uber Eats",slug:"ubereats",cat:"dining",icon:"🍔",aliases:["uber eats"],programs:[
+  {prog:"Amex Offers",typical:"$10 back on $30+",freq:"frequent",note:"Amex Platinum includes monthly Uber Cash — Amex Offers are additional and can stack. Activate in app."},
+  {prog:"Capital One Offers",typical:"5% back",freq:"seasonal",note:"Check Capital One's dining offers section."},
+]},
+{merchant:"Grubhub",slug:"grubhub",cat:"dining",icon:"🥡",programs:[
+  {prog:"Chase Offers",typical:"$10 back on $30+",freq:"frequent",note:"Freedom and Sapphire cards often feature Grubhub. Check the Chase app."},
+]},
+{merchant:"Shake Shack",slug:"shakeshack",cat:"dining",icon:"🍔",aliases:["shake shack"],programs:[
+  {prog:"Amex Offers",typical:"$5 back on $25+",freq:"seasonal",note:"Activate in your Amex app before visiting."},
+  {prog:"Chase Offers",typical:"15% back",freq:"seasonal",note:"Less frequent but a high-percentage return when it does appear."},
+]},
+{merchant:"Sweetgreen",slug:"sweetgreen",cat:"dining",icon:"🥗",programs:[
+  {prog:"Amex Offers",typical:"$5 back on $20+",freq:"seasonal",note:"Tends to appear in Q1 and Q3. Check your Amex app."},
+]},
+{merchant:"McDonald's",slug:"mcdonalds",cat:"dining",icon:"🍟",aliases:["mcdonalds","mcdonald"],programs:[
+  {prog:"Amex Offers",typical:"$3–$5 back on $15+",freq:"occasional",note:"Lower value but occasionally appears — activate in your Amex app."},
+  {prog:"Chase Offers",typical:"10% back",freq:"seasonal",note:"Check the Chase app during promotions."},
+]},
+// ── TRAVEL ────────────────────────────────────────────────────────────────
+{merchant:"Marriott",slug:"marriott",cat:"travel",icon:"🏨",programs:[
+  {prog:"Amex Offers",typical:"$50–$75 back on $250+ stay",freq:"frequent",note:"Amex Gold and Platinum are excellent for Marriott offers. Activate before booking."},
+  {prog:"Chase Offers",typical:"10% back on stays (up to $50)",freq:"frequent",note:"Sapphire Reserve and Preferred regularly feature Marriott offers. May stack with Bonvoy card benefits."},
+]},
+{merchant:"Hyatt",slug:"hyatt",cat:"travel",icon:"🛎️",programs:[
+  {prog:"Chase Offers",typical:"$50–$100 back or 5,000 bonus pts",freq:"frequent",note:"Strong Hyatt–Chase partnership. Offers appear on Sapphire cards, the Hyatt Card, and Freedom cards."},
+  {prog:"Amex Offers",typical:"$25 back on $150+ stay",freq:"occasional",note:"Worth checking in your Amex app before any Hyatt booking."},
+]},
+{merchant:"Hilton",slug:"hilton",cat:"travel",icon:"🏩",programs:[
+  {prog:"Amex Offers",typical:"$50–$100 back on stays",freq:"frequent",note:"Amex is Hilton's primary partner. Offers are most common on Hilton Amex cards and the Platinum."},
+  {prog:"Capital One Offers",typical:"5–10% back on stays",freq:"seasonal",note:"Check Capital One's travel offers section."},
+]},
+{merchant:"Delta",slug:"delta",cat:"travel",icon:"✈️",programs:[
+  {prog:"Amex Offers",typical:"Bonus miles or $25–$50 back on flights",freq:"frequent",note:"Amex is Delta's exclusive co-brand partner. Offers appear often on all Delta Amex cards and the Platinum."},
+  {prog:"Chase Offers",typical:"5% back on Delta purchases",freq:"occasional",note:"Less common but does appear — check your Chase app."},
+]},
+{merchant:"United Airlines",slug:"united",cat:"travel",icon:"✈️",aliases:["united airlines","mileageplus"],programs:[
+  {prog:"Chase Offers",typical:"$50–$75 back or 5,000 bonus miles",freq:"frequent",note:"Chase is United's primary partner. Offers appear on United Explorer, Club, and Sapphire cards."},
+  {prog:"Amex Offers",typical:"5% back on United flights",freq:"occasional",note:"Occasional — check your Amex app."},
+]},
+{merchant:"Southwest Airlines",slug:"southwest",cat:"travel",icon:"✈️",aliases:["southwest airlines","rapid rewards"],programs:[
+  {prog:"Chase Offers",typical:"$25–$50 back on $100+",freq:"frequent",note:"Southwest co-brands with Chase. Offers appear on Southwest Priority, Plus, and Sapphire cards."},
+]},
+{merchant:"American Airlines",slug:"aa",cat:"travel",icon:"✈️",aliases:["american airlines","aadvantage"],programs:[
+  {prog:"Citi Offers",typical:"Bonus miles or 5% back",freq:"frequent",note:"Citi co-brands with AA. Offers appear on AAdvantage cards and occasionally on the Double Cash and Premier."},
+  {prog:"Amex Offers",typical:"5% back on AA flights",freq:"occasional",note:"Check your Amex app."},
+]},
+{merchant:"Airbnb",slug:"airbnb",cat:"travel",icon:"🏠",programs:[
+  {prog:"Amex Offers",typical:"$25–$50 back on $200+",freq:"seasonal",note:"Runs around major travel seasons. Activate in your Amex app before booking."},
+  {prog:"Chase Offers",typical:"10% back (up to $30)",freq:"seasonal",note:"Check the Chase app, especially before summer and holiday travel."},
+]},
+{merchant:"Hertz",slug:"hertz",cat:"travel",icon:"🚗",programs:[
+  {prog:"Amex Offers",typical:"$20–$30 back on car rentals",freq:"frequent",note:"One of the most consistent Amex Offers. Platinum cardholders get Gold Plus Rewards — offers can stack."},
+  {prog:"Chase Offers",typical:"10–15% back (up to $30)",freq:"frequent",note:"Regularly in the Chase app. CSR provides primary rental insurance — a natural pairing."},
+]},
+{merchant:"Avis",slug:"avis",cat:"travel",icon:"🚙",programs:[
+  {prog:"Amex Offers",typical:"$20–$30 back on rentals",freq:"frequent",note:"Activate in your Amex app before renting. Preferred membership benefits may stack."},
+  {prog:"Citi Offers",typical:"10% back",freq:"occasional",note:"Check your Citi app."},
+]},
+{merchant:"IHG Hotels",slug:"ihg",cat:"travel",icon:"🏨",aliases:["ihg","holiday inn","intercontinental","crowne plaza"],programs:[
+  {prog:"Chase Offers",typical:"$25–$50 back on stays",freq:"frequent",note:"Chase IHG Premier cardholders see the best offers. Also appears on Sapphire cards."},
+  {prog:"Amex Offers",typical:"$20 back on $100+ stay",freq:"occasional",note:"Check your Amex app before booking."},
+]},
+// ── STREAMING ─────────────────────────────────────────────────────────────
+{merchant:"Spotify",slug:"spotify",cat:"streaming",icon:"🎵",programs:[
+  {prog:"Amex Offers",typical:"$5–$10 back on subscription",freq:"seasonal",note:"Often runs at the start of the year or Q4. Activate in your Amex app."},
+  {prog:"Chase Offers",typical:"10–20% back",freq:"seasonal",note:"Check the Chase app. Usually runs once or twice a year."},
+]},
+{merchant:"Netflix",slug:"netflix",cat:"streaming",icon:"🎬",programs:[
+  {prog:"Amex Offers",typical:"$5–$10 back on subscription",freq:"seasonal",note:"Check your Amex app. Usually runs once or twice per year."},
+  {prog:"Chase Offers",typical:"5–10% back",freq:"occasional",note:"Occasional — worth checking before your renewal date."},
+]},
+{merchant:"Disney+",slug:"disneyplus",cat:"streaming",icon:"🏰",aliases:["disney plus","disney+"],programs:[
+  {prog:"Amex Offers",typical:"$10–$15 back on annual plan",freq:"seasonal",note:"Commonly runs around Disney's annual subscription renewal periods."},
+  {prog:"Capital One Offers",typical:"5% back",freq:"seasonal",note:"Check your Capital One app."},
+]},
+{merchant:"Hulu",slug:"hulu",cat:"streaming",icon:"📺",programs:[
+  {prog:"Chase Offers",typical:"10–20% back on subscription",freq:"seasonal",note:"Check the Chase app. Usually runs in Q4 or early Q1."},
+  {prog:"Amex Offers",typical:"$5 back",freq:"occasional",note:"Check your Amex app."},
+]},
+{merchant:"Apple TV+",slug:"appletv",cat:"streaming",icon:"📱",aliases:["apple tv","apple tv+","appletv+"],programs:[
+  {prog:"Amex Offers",typical:"$5–$10 back on annual subscription",freq:"seasonal",note:"Often runs around Apple's September product launch season."},
+]},
+// ── GAS ───────────────────────────────────────────────────────────────────
+{merchant:"Shell",slug:"shell",cat:"gas",icon:"⛽",programs:[
+  {prog:"Amex Offers",typical:"$10 back on $50+",freq:"frequent",note:"Shell offers appear often in the Amex app. Activate before filling up."},
+  {prog:"Chase Offers",typical:"10% back (up to $10)",freq:"seasonal",note:"Check the Chase app, especially in summer driving season."},
+]},
+{merchant:"BP",slug:"bp",cat:"gas",icon:"⛽",programs:[
+  {prog:"Amex Offers",typical:"$5–$10 back on $30+",freq:"frequent",note:"BP offers appear regularly in the Amex app. Activate before you pump."},
+  {prog:"Citi Offers",typical:"5% back",freq:"seasonal",note:"Check your Citi card app."},
+]},
+{merchant:"ExxonMobil",slug:"exxon",cat:"gas",icon:"⛽",aliases:["exxon","mobil","exxonmobil"],programs:[
+  {prog:"Amex Offers",typical:"$10–$15 back on $50+",freq:"frequent",note:"One of the most reliable gas-station Amex Offers. Check before filling up."},
+  {prog:"Capital One Offers",typical:"5% back",freq:"occasional",note:"Check the Capital One app."},
+]},
+{merchant:"Chevron",slug:"chevron",cat:"gas",icon:"⛽",aliases:["texaco"],programs:[
+  {prog:"Amex Offers",typical:"$10 back on $50+",freq:"seasonal",note:"Activate in your Amex app."},
+  {prog:"Wells Fargo Deals",typical:"5% back",freq:"occasional",note:"Look in the Wells Fargo app under 'My Deals'."},
+]},
+// ── HEALTH ────────────────────────────────────────────────────────────────
+{merchant:"Walgreens",slug:"walgreens",cat:"health",icon:"💊",programs:[
+  {prog:"Chase Offers",typical:"10% back (up to $10)",freq:"frequent",note:"Freedom cards often feature Walgreens. Check around flu season and Q4."},
+  {prog:"Amex Offers",typical:"$5–$10 back on $25+",freq:"frequent",note:"Activate in your Amex app."},
+]},
+{merchant:"CVS",slug:"cvs",cat:"health",icon:"🏥",programs:[
+  {prog:"Amex Offers",typical:"$5–$10 back on $25+",freq:"frequent",note:"Activate in your Amex app before shopping."},
+  {prog:"Chase Offers",typical:"10% back (up to $10)",freq:"frequent",note:"Freedom Unlimited gives 3x on pharmacy — combine with a Chase Offer for max value."},
+]},
+{merchant:"Peloton",slug:"peloton",cat:"health",icon:"🚴",programs:[
+  {prog:"Amex Offers",typical:"$50–$100 back on $500+",freq:"seasonal",note:"High-value offer. Typically runs around New Year and Black Friday."},
+  {prog:"Capital One Offers",typical:"5% back",freq:"seasonal",note:"Check the Capital One app."},
+]},
+{merchant:"Orangetheory",slug:"orangetheory",cat:"health",icon:"🏋️",aliases:["orange theory"],programs:[
+  {prog:"Amex Offers",typical:"$30–$50 back on monthly membership",freq:"seasonal",note:"Runs around New Year's fitness season. Activate in your Amex app."},
+]},
+// ── GROCERY ───────────────────────────────────────────────────────────────
+{merchant:"Whole Foods",slug:"wholefoods",cat:"grocery",icon:"🥦",aliases:["whole foods","amazon fresh"],programs:[
+  {prog:"Amex Offers",typical:"$10–$15 back on $50+",freq:"frequent",note:"Activate in your Amex app. Amex Gold gives 4x on grocery stores — combine for maximum value."},
+  {prog:"Chase Offers",typical:"5% back (up to $10)",freq:"seasonal",note:"Check the Chase app."},
+]},
+{merchant:"Kroger",slug:"kroger",cat:"grocery",icon:"🛒",aliases:["fred meyer","ralphs","king soopers","harris teeter","fry's"],programs:[
+  {prog:"Amex Offers",typical:"$10 back on $50+",freq:"seasonal",note:"Activate in Amex app. Works at Kroger-family stores (Fred Meyer, Ralphs, King Soopers, Harris Teeter)."},
+  {prog:"Wells Fargo Deals",typical:"5% back",freq:"occasional",note:"Check your Wells Fargo app."},
+]},
+{merchant:"Instacart",slug:"instacart",cat:"grocery",icon:"🛍️",programs:[
+  {prog:"Amex Offers",typical:"$15–$20 back on $75+",freq:"frequent",note:"Amex Platinum includes complimentary Instacart+ — spend-back offers can stack. Activate in Amex app."},
+  {prog:"Chase Offers",typical:"10% back (up to $15)",freq:"seasonal",note:"Check the Chase app."},
+]},
+];
+
+const PROG_COLORS={
+  "Amex Offers":       {bg:"rgba(0,111,203,.1)",  text:"#005a9e", border:"rgba(0,111,203,.22)"},
+  "Chase Offers":      {bg:"rgba(0,34,100,.1)",   text:"#002264", border:"rgba(0,34,100,.22)"},
+  "Capital One Offers":{bg:"rgba(204,0,0,.1)",    text:"#a00000", border:"rgba(204,0,0,.22)"},
+  "Citi Offers":       {bg:"rgba(0,63,141,.1)",   text:"#003f8d", border:"rgba(0,63,141,.22)"},
+  "BofA Deals":        {bg:"rgba(227,24,55,.1)",  text:"#b8001a", border:"rgba(227,24,55,.22)"},
+  "Wells Fargo Deals": {bg:"rgba(198,37,22,.1)",  text:"#9a1c0f", border:"rgba(198,37,22,.22)"},
+  "Discover Cashback": {bg:"rgba(247,111,32,.1)", text:"#c85200", border:"rgba(247,111,32,.22)"},
+  "US Bank Offers":    {bg:"rgba(0,83,159,.1)",   text:"#00539f", border:"rgba(0,83,159,.22)"},
+};
+
+const FREQ_CONFIG={
+  frequent:  {label:"Frequent",  bg:"rgba(22,163,74,.1)",   text:"#15803d"},
+  seasonal:  {label:"Seasonal",  bg:"rgba(154,110,26,.12)", text:"#7a5a12"},
+  occasional:{label:"Occasional",bg:"rgba(15,23,42,.07)",   text:"#6b7280"},
+};
+
+const ISSUER_TO_PROG={
+  "American Express":"Amex Offers",
+  "Chase":"Chase Offers",
+  "Capital One":"Capital One Offers",
+  "Citi":"Citi Offers",
+  "Bank of America":"BofA Deals",
+  "Wells Fargo":"Wells Fargo Deals",
+  "Discover":"Discover Cashback",
+  "US Bank":"US Bank Offers",
+};
+
+function MerchantOfferCard({m, myPrograms, showOnlyMine}){
+  const [open,setOpen]=useState(false);
+  const pColor=p=>PROG_COLORS[p.prog]||{bg:"rgba(55,48,163,.1)",text:"var(--acc)",border:"rgba(55,48,163,.22)"};
+
+  const noWallet=myPrograms.size===0;
+  const myProgs=m.programs.filter(p=>myPrograms.has(p.prog));
+  const otherProgs=m.programs.filter(p=>!myPrograms.has(p.prog));
+  const hasMatch=noWallet||myProgs.length>0;
+
+  // Pills in header: user's programs first
+  const previewProgs=noWallet?m.programs:[...myProgs,...otherProgs];
+
+  const renderProg=(p,dim)=>{
+    const pc=pColor(p);
+    const fc=FREQ_CONFIG[p.freq]||FREQ_CONFIG.occasional;
+    return(
+      <div key={p.prog} style={{background:pc.bg,border:`1px solid ${pc.border}`,borderRadius:10,
+        padding:"10px 12px",marginBottom:8,opacity:dim?.4:1,transition:"opacity .15s"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+          <span style={{fontSize:12,fontWeight:700,color:pc.text}}>{p.prog}</span>
+          <span style={{padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:600,
+            background:fc.bg,color:fc.text,whiteSpace:"nowrap"}}>{fc.label}</span>
+        </div>
+        <div style={{fontSize:13,fontWeight:600,color:"var(--tx)",marginBottom:p.note?5:0}}>
+          Typical: {p.typical}
+        </div>
+        {p.note&&<div style={{fontSize:11,color:"var(--tx2)",lineHeight:1.55}}>{p.note}</div>}
+      </div>
+    );
+  };
+
+  return(
+    <div className={`tip-card fu${open?" open":""}`}
+      style={{marginBottom:8,opacity:hasMatch?1:.38,transition:"opacity .2s"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,cursor:"pointer"}}
+        onClick={()=>setOpen(o=>!o)}>
+        <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0}}>
+          <span style={{fontSize:22,flexShrink:0,lineHeight:1}}>{m.icon}</span>
+          <div style={{minWidth:0}}>
+            <div style={{fontWeight:700,fontSize:14,color:"var(--tx)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{m.merchant}</div>
+            <div style={{fontSize:10,color:"var(--tx3)",textTransform:"capitalize",marginTop:1}}>{m.cat}</div>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
+          {previewProgs.slice(0,2).map(p=>{
+            const pc=pColor(p);
+            const isMine=myPrograms.has(p.prog);
+            return(
+              <span key={p.prog} style={{padding:"2px 7px",borderRadius:99,fontSize:9,fontWeight:700,
+                background:pc.bg,color:pc.text,border:`1px solid ${pc.border}`,letterSpacing:.2,
+                whiteSpace:"nowrap",opacity:noWallet||isMine?1:.35}}>
+                {p.prog.split(" ")[0]}
+              </span>
+            );
+          })}
+          {m.programs.length>2&&<span style={{fontSize:10,color:"var(--tx3)",fontWeight:600}}>+{m.programs.length-2}</span>}
+          <span style={{fontSize:11,color:"var(--tx3)",marginLeft:2}}>{open?"▲":"▼"}</span>
+        </div>
+      </div>
+      {open&&(
+        <div style={{marginTop:12,borderTop:"1px solid var(--br)",paddingTop:12,cursor:"default"}}
+          onClick={e=>e.stopPropagation()}>
+          {/* User's matching programs */}
+          {!noWallet&&myProgs.length>0&&(
+            <>
+              {!showOnlyMine&&<div style={{fontSize:10,color:"var(--tx3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Your cards' programs</div>}
+              {myProgs.map(p=>renderProg(p,false))}
+            </>
+          )}
+          {/* No match message */}
+          {!noWallet&&myProgs.length===0&&(
+            <div style={{textAlign:"center",padding:"10px 0 6px",color:"var(--tx3)",fontSize:12}}>
+              None of your cards have tracked offers here.
+            </div>
+          )}
+          {/* Other programs (show-all mode only) */}
+          {!showOnlyMine&&otherProgs.length>0&&(
+            <>
+              {!noWallet&&myProgs.length>0&&(
+                <div style={{fontSize:10,color:"var(--tx4)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,margin:"10px 0 8px"}}>Other programs</div>
+              )}
+              {otherProgs.map(p=>renderProg(p,!noWallet))}
+            </>
+          )}
+          {/* No wallet: show everything normally */}
+          {noWallet&&m.programs.map(p=>renderProg(p,false))}
+          <div style={{fontSize:11,color:"var(--tx3)",fontStyle:"italic",lineHeight:1.5,paddingTop:2}}>
+            💡 Historical patterns only — always verify and activate in your card's app before spending.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OffersTab({myCards}){
+  const [q,setQ]=useState("");
+  const [cat,setCat]=useState("all");
+  const [showOnlyMine,setShowOnlyMine]=useState(true);
+
+  const CATS=[
+    {id:"all",label:"All"},
+    {id:"shopping",label:"Shopping"},
+    {id:"dining",label:"Dining"},
+    {id:"travel",label:"Travel"},
+    {id:"streaming",label:"Streaming"},
+    {id:"gas",label:"Gas"},
+    {id:"health",label:"Health"},
+    {id:"grocery",label:"Grocery"},
+  ];
+
+  // Build set of offer programs the user has
+  const myPrograms=useMemo(()=>{
+    const s=new Set();
+    (myCards||[]).forEach(id=>{
+      const c=CARDS.find(x=>x.id===id);
+      if(c){const prog=ISSUER_TO_PROG[c.issuer];if(prog)s.add(prog);}
+    });
+    return s;
+  },[myCards]);
+
+  // Cards that have known offer programs
+  const offerCards=useMemo(()=>(myCards||[])
+    .map(id=>CARDS.find(c=>c.id===id))
+    .filter(c=>c&&ISSUER_TO_PROG[c.issuer])
+  ,[myCards]);
+
+  const catCounts=useMemo(()=>{
+    const out={all:MERCHANT_OFFERS.length};
+    MERCHANT_OFFERS.forEach(m=>{out[m.cat]=(out[m.cat]||0)+1;});
+    return out;
+  },[]);
+
+  const filtered=useMemo(()=>{
+    let list=MERCHANT_OFFERS;
+    if(cat!=="all")list=list.filter(m=>m.cat===cat);
+    const q2=q.trim().toLowerCase();
+    if(q2)list=list.filter(m=>
+      m.merchant.toLowerCase().includes(q2)||
+      m.slug.includes(q2)||
+      (m.aliases&&m.aliases.some(a=>a.includes(q2)))
+    );
+    if(myPrograms.size>0){
+      if(showOnlyMine){
+        list=list.filter(m=>m.programs.some(p=>myPrograms.has(p.prog)));
+      }else{
+        // Sort: matched merchants first, unmatched after
+        list=[...list].sort((a,b)=>{
+          const am=a.programs.some(p=>myPrograms.has(p.prog));
+          const bm=b.programs.some(p=>myPrograms.has(p.prog));
+          return am===bm?0:am?-1:1;
+        });
+      }
+    }
+    return list;
+  },[q,cat,myPrograms,showOnlyMine]);
+
+  const hasWallet=myPrograms.size>0;
+
+  return(
+    <div style={{padding:"20px 16px"}}>
+      <div style={{marginBottom:14}}>
+        <div className="grad-text" style={{fontSize:22,fontWeight:700,marginBottom:3}}>Merchant Offers</div>
+        <div style={{fontSize:13,color:"var(--tx3)",lineHeight:1.5}}>
+          Search a merchant to see which card programs historically run offers there — then verify and activate in your card's app.
+        </div>
+      </div>
+
+      {/* Wallet summary */}
+      {hasWallet?(
+        <div style={{background:"rgba(16,185,129,.07)",border:"1px solid rgba(16,185,129,.2)",
+          borderRadius:12,padding:"11px 14px",marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:700,color:"var(--grn)",marginBottom:6}}>
+            You have {offerCards.length} card{offerCards.length!==1?"s":""} that frequently get merchant offers
+          </div>
+          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+            {[...myPrograms].map(prog=>{
+              const pc=PROG_COLORS[prog]||{};
+              return(
+                <span key={prog} style={{padding:"2px 9px",borderRadius:99,fontSize:10,fontWeight:700,
+                  background:pc.bg||"rgba(55,48,163,.1)",color:pc.text||"var(--acc)",
+                  border:`1px solid ${pc.border||"rgba(55,48,163,.2)"}`}}>
+                  {prog}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      ):(myCards&&myCards.length>0)?(
+        <div style={{background:"var(--s3)",border:"1px solid var(--br)",borderRadius:12,
+          padding:"11px 14px",marginBottom:14,fontSize:12,color:"var(--tx3)"}}>
+          Your cards don't include issuers with tracked offer programs (Amex, Chase, Capital One, Citi, etc.).
+        </div>
+      ):null}
+
+      {/* Personalization toggle */}
+      {hasWallet&&(
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,padding:"9px 12px",
+          background:"var(--s1)",border:"1px solid var(--br2)",borderRadius:10}}>
+          <button onClick={()=>setShowOnlyMine(true)}
+            style={{flex:1,padding:"6px 0",fontSize:12,fontWeight:600,border:"none",cursor:"pointer",borderRadius:7,
+              background:showOnlyMine?"var(--acc)":"transparent",
+              color:showOnlyMine?"#fff":"var(--tx3)",transition:"all .15s"}}>
+            Only my cards' offers
+          </button>
+          <button onClick={()=>setShowOnlyMine(false)}
+            style={{flex:1,padding:"6px 0",fontSize:12,fontWeight:600,border:"none",cursor:"pointer",borderRadius:7,
+              background:!showOnlyMine?"var(--s4)":"transparent",
+              color:!showOnlyMine?"var(--tx)":"var(--tx3)",transition:"all .15s"}}>
+            Show all merchants
+          </button>
+        </div>
+      )}
+
+      <div style={{position:"relative",marginBottom:10}}>
+        <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:15,
+          pointerEvents:"none",color:"var(--tx3)"}}>🔍</span>
+        <input className="inp" style={{paddingLeft:42}} value={q} onChange={e=>setQ(e.target.value)}
+          placeholder="Nike, Hyatt, Starbucks, Home Depot…"/>
+        {q&&<button onClick={()=>setQ("")} style={{position:"absolute",right:12,top:"50%",
+          transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",
+          fontSize:18,color:"var(--tx3)",lineHeight:1}}>×</button>}
+      </div>
+      <div className="hscroll" style={{marginBottom:14,gap:6}}>
+        {CATS.map(c=>(
+          <button key={c.id} onClick={()=>setCat(c.id)}
+            className={`pill ${cat===c.id?"pill-a":"pill-i"}`}
+            style={{fontSize:11}}>
+            {c.label}{catCounts[c.id]?` · ${catCounts[c.id]}`:""}
+          </button>
+        ))}
+      </div>
+      <div style={{background:"rgba(55,48,163,.06)",border:"1px solid rgba(55,48,163,.14)",
+        borderRadius:10,padding:"9px 14px",marginBottom:14,fontSize:12,color:"var(--tx2)",
+        lineHeight:1.5,display:"flex",gap:8,alignItems:"flex-start"}}>
+        <span style={{flexShrink:0}}>⚡</span>
+        <span>Offer history is curated from public sources. Always verify and activate in your card issuer's app before purchasing.</span>
+      </div>
+      {filtered.length===0?(
+        <div style={{textAlign:"center",padding:"44px 20px",color:"var(--tx3)"}}>
+          <div style={{fontSize:36,marginBottom:10}}>🔍</div>
+          <div style={{fontSize:15,fontWeight:700,color:"var(--tx)",marginBottom:5}}>
+            {q?`No results for "${q}"`:"No merchants match your cards' programs"}
+          </div>
+          <div style={{fontSize:13}}>
+            {q?"Try a different spelling or browse a category above":"Try switching to \"Show all merchants\""}
+          </div>
+        </div>
+      ):(
+        <>
+          <div className="section-title" style={{marginBottom:10}}>
+            {q
+              ?`${filtered.length} RESULT${filtered.length!==1?"S":""} · "${q.toUpperCase()}"`
+              :cat!=="all"
+                ?`${filtered.length} MERCHANTS · ${cat.toUpperCase()}`
+                :showOnlyMine&&hasWallet
+                  ?`${filtered.length} MERCHANTS WITH YOUR CARDS' OFFERS`
+                  :`${MERCHANT_OFFERS.length} MERCHANTS TRACKED`}
+          </div>
+          <div className="merchants-list">
+            {filtered.map(m=>(
+              <MerchantOfferCard key={m.slug} m={m}
+                myPrograms={myPrograms} showOnlyMine={showOnlyMine}/>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── WALLET TAB ───────────────────────────────────────────────────────────── */
+function WalletTab({myCards,setMyCards}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [issuerFilter,setIssuerFilter]=useState("All");
+  const [detailId,setDetailId]=useState(null);
+  const myCardObjs=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
+  const issuers=["All",...[...new Set(CARDS.map(c=>c.issuer))].sort()];
+  const filtered=issuerFilter==="All"?CARDS:CARDS.filter(c=>c.issuer===issuerFilter);
+
+  function toggleCard(id){setMyCards(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);}
+
+  // ── Card detail view ──
+  if(detailId){
+    const c=CARDS.find(x=>x.id===detailId);
+    if(!c)return null;
+    const annCredits=c.annual.reduce((s,b)=>s+(b.v||0),0);
+    const monCredits=c.monthly.reduce((s,b)=>s+((b.v||0)*12),0);
+    const totalCredits=annCredits+monCredits;
+    return (
+      <div style={{padding:"16px 16px 0"}}>
+        <button className="btn-ghost btn-sm" onClick={()=>setDetailId(null)} style={{marginBottom:14}}>← Back</button>
+        <div className="fu">
+          {/* Card hero */}
+          <div style={{background:`linear-gradient(135deg,${c.c1},${c.c2})`,borderRadius:20,padding:"22px 20px 18px",marginBottom:14,position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:-50,right:-30,width:130,height:130,background:"rgba(255,255,255,.06)",borderRadius:"50%",pointerEvents:"none"}}/>
+            <div style={{position:"absolute",bottom:-20,left:10,width:90,height:90,background:"rgba(255,255,255,.04)",borderRadius:"50%",pointerEvents:"none"}}/>
+            <div style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,.5)",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{c.issuer}</div>
+            <div style={{fontSize:20,fontWeight:900,color:"#fff",marginBottom:6,lineHeight:1.2}}>{c.name}</div>
+            <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+              <div><div style={{fontSize:10,color:"rgba(255,255,255,.5)"}}>Annual Fee</div><div style={{fontSize:16,fontWeight:800,color:"#fff"}}>{c.fee===0?"Free":"$"+c.fee}</div></div>
+              <div><div style={{fontSize:10,color:"rgba(255,255,255,.5)"}}>Currency</div><div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,.9)"}}>{c.cur}</div></div>
+              {c.isNew&&<span className="badge new-badge" style={{alignSelf:"flex-end"}}>NEW</span>}
+              {c.isBiz&&<span className="badge biz-badge" style={{alignSelf:"flex-end"}}>Business</span>}
+            </div>
+          </div>
+
+          {/* Signup bonus */}
+          {c.signup&&(
+            <div style={{background:"rgba(245,158,11,.08)",border:"1px solid rgba(245,158,11,.2)",borderRadius:12,padding:"12px 14px",marginBottom:12}}>
+              <div style={{fontSize:10,fontWeight:800,color:"var(--gld2)",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>🎁 Signup Bonus</div>
+              <div style={{fontSize:13,color:"var(--tx2)",lineHeight:1.5}}>{c.signup}</div>
+            </div>
+          )}
+
+          {/* Value math */}
+          <div className="stats-grid" style={{marginBottom:12}}>
+            <div className="stat-box"><div className="stat-val" style={{color:"var(--red2)"}}>-${c.fee}</div><div className="stat-lbl">Annual Fee</div></div>
+            <div className="stat-box"><div className="stat-val grn-text">+${totalCredits}</div><div className="stat-lbl">Credits/yr</div></div>
+            <div className="stat-box">
+              <div className="stat-val" style={{color:totalCredits-c.fee>=0?"var(--grn2)":"var(--red2)"}}>
+                {totalCredits-c.fee>=0?"+":""}{totalCredits-c.fee}
+              </div>
+              <div className="stat-lbl">Net Value</div>
+            </div>
+          </div>
+
+          {/* Benefits list */}
+          {(c.annual.length>0||c.monthly.length>0)&&(
+            <div style={{marginBottom:12}}>
+              <div className="section-title" style={{marginBottom:10}}>BENEFITS</div>
+              <div className="surf" style={{padding:"0 14px"}}>
+                {[...c.annual.map(b=>({...b,type:"Annual"})),...c.monthly.map(b=>({...b,type:"Monthly"}))].map((b,i,arr)=>{
+                  const bc=BCAT[b.cat]||BCAT.statement;
+                  return (
+                    <div key={i} style={{padding:"10px 0",borderBottom:i<arr.length-1?"1px solid var(--br)":"none"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                        <div style={{flex:1}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:3}}>
+                            <span style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{b.n}</span>
+                            <span style={{padding:"1px 7px",borderRadius:99,fontSize:10,color:bc.color,background:bc.bg,fontWeight:700}}>{bc.icon} {bc.label}</span>
+                            <span style={{padding:"1px 6px",borderRadius:99,fontSize:10,background:"rgba(255,255,255,.07)",color:"var(--tx3)",fontWeight:600}}>{b.type}</span>
+                          </div>
+                          {b.d&&<div style={{fontSize:11,color:"var(--tx3)",lineHeight:1.5}}>{b.d}</div>}
+                        </div>
+                        {b.v&&<div style={{fontSize:14,fontWeight:800,color:"var(--grn2)",flexShrink:0}}>${b.v}</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Transfer partners */}
+          {c.partners&&c.partners.length>0&&(
+            <div style={{marginBottom:12}}>
+              <div className="section-title" style={{marginBottom:8}}>TRANSFER PARTNERS</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {c.partners.map(p=>(
+                  <span key={p} style={{padding:"4px 10px",background:"rgba(99,102,241,.1)",border:"1px solid rgba(99,102,241,.2)",borderRadius:99,fontSize:11,color:"var(--acc2)",fontWeight:600}}>{p}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Apply / Remove */}
+          <div style={{marginBottom:24}}>
+            <div style={{display:"flex",gap:10,marginBottom:4}}>
+              {!myCards.includes(c.id)?(
+                <a className="apply-btn" href={APPLY_URLS[c.id]||"#apply-"+c.id} target="_blank" rel="noopener noreferrer" style={{flex:1,justifyContent:"center",textDecoration:"none"}}>
+                  🚀 Apply for {c.short||c.name} →
+                </a>
+              ):(
+                <button className="btn-ghost" style={{flex:1}} onClick={()=>{toggleCard(c.id);setDetailId(null);}}>Remove from Wallet</button>
+              )}
+            </div>
+            {!myCards.includes(c.id)&&<div className="apply-disclose" style={{textAlign:"center"}}>Affiliate link — we may earn a commission at no cost to you.</div>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Add cards view ──
+  if(showAdd){
+    return (
+      <div style={{padding:"16px 16px 0"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontSize:16,fontWeight:800}}>Add Cards</div>
+          <button className="btn-ghost btn-sm" onClick={()=>setShowAdd(false)}>← Done ({myCards.length} selected)</button>
+        </div>
+        <div className="hscroll" style={{marginBottom:14,gap:6}}>
+          {issuers.map(iss=>(
+            <button key={iss} className={"pill "+(issuerFilter===iss?"pill-a":"pill-i")} onClick={()=>setIssuerFilter(iss)}>{iss}</button>
+          ))}
+        </div>
+        <div className="card-browser-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,paddingBottom:16}}>
+          {filtered.map(card=>{
+            const inWallet=myCards.includes(card.id);
+            return (
+              <div key={card.id} onClick={()=>toggleCard(card.id)}
+                style={{background:"rgba(255,255,255,.03)",border:"1.5px solid",borderColor:inWallet?"var(--grn)":"var(--br2)",borderRadius:14,padding:12,cursor:"pointer",transition:"all .18s"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                  <div style={{width:10,height:10,borderRadius:3,background:card.c1,flexShrink:0,marginTop:2}}/>
+                  <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                    {card.isBiz&&<span className="badge biz-badge">Biz</span>}
+                    {card.isNew&&<span className="badge new-badge">New</span>}
+                  </div>
+                </div>
+                <div style={{fontSize:11,fontWeight:700,color:"var(--tx)",marginBottom:2,lineHeight:1.3}}>{card.name}</div>
+                <div style={{fontSize:10,color:"var(--tx3)",marginBottom:6}}>{card.issuer}</div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontSize:11,color:card.fee===0?"var(--grn2)":"var(--tx3)",fontWeight:700}}>{card.fee===0?"No fee":"$"+card.fee+"/yr"}</span>
+                  <div style={{width:20,height:20,borderRadius:"50%",background:inWallet?"var(--grn)":"rgba(255,255,255,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#fff",transition:"all .18s",flexShrink:0}}>
+                    {inWallet?"✓":"+"}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Main wallet view ──
+  return (
+    <div style={{padding:"16px 16px 0"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <div>
+          <div style={{fontSize:16,fontWeight:800}}>My Wallet</div>
+          <div style={{fontSize:11,color:"var(--tx3)"}}>{myCards.length} card{myCards.length!==1?"s":""} added</div>
+        </div>
+        <button className="btn btn-sm" onClick={()=>setShowAdd(true)}>+ Add Cards</button>
+      </div>
+      {!myCardObjs.length?(
+        <div style={{textAlign:"center",padding:"44px 20px"}}>
+          <div style={{fontSize:44,marginBottom:16}}>💳</div>
+          <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>No cards yet</div>
+          <div style={{fontSize:13,color:"var(--tx3)",marginBottom:20,lineHeight:1.6}}>Add your credit cards to start tracking benefits and discovering earning strategies.</div>
+          <button className="btn" onClick={()=>setShowAdd(true)}>Browse All Cards</button>
+        </div>
+      ):(
+        <div className="wallet-cards-list">{myCardObjs.map(c=>{
+          const totalAnnual=c.annual.reduce((s,b)=>s+(b.v||0),0)+c.monthly.reduce((s,b)=>s+((b.v||0)*12),0);
+          return (
+            <div key={c.id} className="surf glow-card" style={{marginBottom:10,cursor:"pointer"}} onClick={()=>setDetailId(c.id)}>
+              <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+                <CardArt card={c}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:4}}>
+                    <span style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>{c.short||c.name}</span>
+                    {c.isBiz&&<span className="badge biz-badge">Business</span>}
+                    {c.isNew&&<span className="badge new-badge">New</span>}
+                  </div>
+                  <div style={{fontSize:11,color:"var(--tx3)",marginBottom:6}}>{c.cur}</div>
+                  <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+                    <div><span style={{fontSize:11,color:"var(--tx3)"}}>Fee: </span><span style={{fontSize:11,fontWeight:700,color:c.fee===0?"var(--grn2)":"var(--tx2)"}}>{c.fee===0?"Free":"$"+c.fee}</span></div>
+                    {totalAnnual>0&&<div><span style={{fontSize:11,color:"var(--tx3)"}}>Credits: </span><span style={{fontSize:11,fontWeight:700,color:"var(--grn2)"}}>+${totalAnnual}/yr</span></div>}
+                  </div>
+                </div>
+                <span style={{color:"var(--tx3)",fontSize:14,marginTop:6,flexShrink:0}}>→</span>
+              </div>
+            </div>
+          );
+        })}</div>
+      )}
+    </div>
+  );
+}
+
+/* ── TOP NAV ──────────────────────────────────────────────────────────────── */
+/* ── QUIZ ─────────────────────────────────────────────────────────────────── */
+const QUIZ_QS=[
+  {id:"spend",q:"What do you spend the most on?",multi:false,opts:[
+    {id:"dining",   label:"Dining & Restaurants",icon:"🍽️"},
+    {id:"grocery",  label:"Groceries",           icon:"🛒"},
+    {id:"travel",   label:"Travel",              icon:"✈️"},
+    {id:"gas",      label:"Gas",                 icon:"⛽"},
+    {id:"everything",label:"Everything Equally", icon:"📊"},
+  ]},
+  {id:"monthly",q:"How much do you spend per month?",multi:false,opts:[
+    {id:"1k2k",  label:"$1,000 – $2,000"},
+    {id:"2k4k",  label:"$2,000 – $4,000"},
+    {id:"4k8k",  label:"$4,000 – $8,000"},
+    {id:"8kplus",label:"$8,000+"},
+  ]},
+  {id:"brand",q:"Preferred airline or hotel? Pick all that apply.",multi:true,opts:[
+    {id:"none",     label:"No preference",     excl:true},
+    {id:"united",   label:"United Airlines"},
+    {id:"delta",    label:"Delta Air Lines"},
+    {id:"aa",       label:"American Airlines"},
+    {id:"southwest",label:"Southwest Airlines"},
+    {id:"hyatt",    label:"World of Hyatt"},
+    {id:"marriott", label:"Marriott Bonvoy"},
+    {id:"hilton",   label:"Hilton"},
+    {id:"alaska",   label:"Alaska / Hawaiian"},
+  ]},
+  {id:"fee",q:"How do you feel about annual fees?",multi:false,opts:[
+    {id:"none",label:"No fees — ever",             sub:"Keep it completely free"},
+    {id:"100", label:"Up to $100/year",            sub:"If the value is clear"},
+    {id:"250", label:"Up to $250/year",            sub:"Happy to invest for perks"},
+    {id:"any", label:"Worth it if the value's there",sub:"I'll do the math"},
+  ]},
+  {id:"exp",q:"How experienced are you with rewards?",multi:false,opts:[
+    {id:"new", label:"Brand new",        sub:"Keep it simple, please"},
+    {id:"some",label:"Some experience",  sub:"I've earned points before"},
+    {id:"adv", label:"Advanced",         sub:"I know about transfer partners"},
+  ]},
+];
+
+function parseEarnNum(v){const n=parseFloat(String(v||1).replace(/[^0-9.]/g,''));return isNaN(n)?1:n;}
+
+function calcQuizResults(ans){
+  const SPEND_FIELD={dining:'d',grocery:'g',travel:'t',gas:'gas',everything:'o'};
+  const SPEND_LABEL={dining:'dining',grocery:'groceries',travel:'travel',gas:'gas',everything:'everyday spending'};
+  const BRAND_WORD={united:'United',delta:'Delta',aa:'American',southwest:'Southwest',hyatt:'Hyatt',marriott:'Marriott',hilton:'Hilton',alaska:'Alaska'};
+  const FEE_MAX={none:0,'100':100,'250':250,any:99999};
+  const MONTHLY_AMT={'1k2k':1500,'2k4k':3000,'4k8k':6000,'8kplus':10000};
+
+  const sf=SPEND_FIELD[ans.spend]||'o';
+  const feeMax=FEE_MAX[ans.fee]??99999;
+  const brands=(ans.brand||['none']).filter(b=>b!=='none');
+  const brandWords=brands.map(b=>BRAND_WORD[b]).filter(Boolean);
+  const monthlyAmt=MONTHLY_AMT[ans.monthly]||2000;
+
+  return CARDS
+    .filter(c=>!c.isBiz&&c.fee<=feeMax)
+    .map(c=>{
+      let score=0;
+      const er=parseEarnNum(c.earn[sf]||c.earn.o);
+      score+=er*20;
+      if(ans.spend==='travel'&&c.partners)score+=c.partners.length*2;
+      brandWords.forEach(bw=>{
+        if(c.partners&&c.partners.some(p=>p.toLowerCase().includes(bw.toLowerCase())))score+=45;
+        if(c.name.toLowerCase().includes(bw.toLowerCase()))score+=20;
+      });
+      if(ans.exp==='new'){
+        if(c.fee===0)score+=30;
+        if(c.fee>200)score-=25;
+        if(c.cur==='Cash Back')score+=20;
+      }else if(ans.exp==='some'){
+        if(c.fee<=250)score+=10;
+        if(c.partners&&c.partners.length>3)score+=15;
+      }else{
+        if(c.partners&&c.partners.length>3)score+=30;
+        if(c.fee>=95)score+=10;
+      }
+      if(c.signup)score+=8;
+      const annualSpend=monthlyAmt*12;
+      const earnedBack=annualSpend*(er/100)*1.5;
+      if(earnedBack>c.fee*1.5)score+=12;
+      return {c,score,er,sf};
+    })
+    .sort((a,b)=>b.score-a.score)
+    .slice(0,3)
+    .map(entry=>{
+      const {c,sf:f}=entry;
+      const spendLabel=SPEND_LABEL[ans.spend];
+      const earnVal=c.earn[f]||c.earn.o||'1x';
+      const lines=[];
+      lines.push(`Earns ${earnVal} on ${spendLabel} — one of the best rates for your primary spend category.`);
+      const matched=brands.filter(b=>{const bw=BRAND_WORD[b];return bw&&c.partners&&c.partners.some(p=>p.toLowerCase().includes(bw.toLowerCase()));});
+      if(matched.length)lines.push(`Transfers directly to ${matched.map(b=>BRAND_WORD[b]).join(' & ')}, matching your loyalty preference.`);
+      else if(c.fee===0)lines.push('No annual fee — pure value with no commitment.');
+      else{const tc=(c.annual||[]).reduce((s,b)=>s+(b.v||0),0)+(c.monthly||[]).reduce((s,b)=>s+(b.v||0)*12,0);
+        if(tc>=c.fee)lines.push(`The $${c.fee} fee is largely offset by $${tc}+ in annual statement credits.`);
+        else lines.push(`$${c.fee}/year annual fee — the earn rate makes it worth it at your spend level.`);}
+      return {...entry,reason:lines.join(' ')};
+    });
+}
+
+function pickQuizStrat(ans){
+  const brands=(ans.brand||['none']).filter(b=>b!=='none');
+  if(brands.includes('alaska'))return 'atmos-strategy';
+  if(ans.exp==='adv'&&ans.spend==='dining')return 'amex-trifecta';
+  if(ans.exp==='adv')return 'chase-trifecta';
+  if(ans.exp==='some'&&(ans.spend==='travel'||ans.spend==='dining'))return 'chase-trifecta';
+  if(ans.spend==='everything'&&ans.exp!=='new')return 'citi-duo';
+  return 'c1-duo';
+}
+
+function QuizResults({answers,onRetake,myCards}){
+  const [openStrat,setOpenStrat]=useState(false);
+  const results=useMemo(()=>calcQuizResults(answers),[answers]);
+  const strat=useMemo(()=>STRATS[pickQuizStrat(answers)],[answers]);
+  return(
+    <div style={{padding:"16px 16px 0",maxWidth:560,margin:"0 auto"}}>
+      <div className="fu" style={{textAlign:"center",marginBottom:24}}>
+        <div style={{fontSize:32,marginBottom:8}}>🎯</div>
+        <div style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontStyle:"italic",fontSize:24,fontWeight:700,color:"var(--tx)",marginBottom:4}}>Your Top Cards</div>
+        <div style={{fontSize:12,color:"var(--tx3)"}}>Personalized picks based on your profile</div>
+        <div style={{fontSize:10,color:"var(--tx4)",marginTop:6,lineHeight:1.4}}>Recommended cards include affiliate links. We earn a commission if you apply and are approved.</div>
+      </div>
+
+      {results.map(({c,reason},i)=>{
+        const inWallet=myCards.includes(c.id);
+        return(
+          <div key={c.id} className="surf fu" style={{marginBottom:14,animationDelay:`${i*.07}s`}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:10}}>
+              <div style={{width:34,height:34,borderRadius:10,background:`linear-gradient(135deg,${c.c1},${c.c2})`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:900,color:"rgba(255,255,255,.9)"}}>{i+1}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:15,fontWeight:800,color:"var(--tx)",lineHeight:1.2}}>{c.name}</div>
+                <div style={{fontSize:11,color:"var(--tx3)",marginTop:2}}>{c.issuer} · {c.fee>0?`$${c.fee}/yr`:'No annual fee'} · {c.cur}</div>
+              </div>
+              {inWallet&&<span style={{fontSize:10,fontWeight:700,color:"var(--grn2)",background:"rgba(16,185,129,.1)",padding:"2px 8px",borderRadius:99,flexShrink:0,whiteSpace:"nowrap"}}>✓ In wallet</span>}
+            </div>
+            <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.65,marginBottom:inWallet?0:12}}>{reason}</div>
+            {!inWallet&&(
+              <>
+                <a href={APPLY_URLS[c.id]||'#apply-'+c.id} target="_blank"
+                   style={{display:"block",textAlign:"center",padding:"11px 16px",background:"var(--acc)",color:"#fff",borderRadius:10,fontSize:13,fontWeight:700,textDecoration:"none",transition:"opacity .15s"}}
+                   onMouseEnter={e=>e.currentTarget.style.opacity='.85'}
+                   onMouseLeave={e=>e.currentTarget.style.opacity='1'}>
+                  Apply Now →
+                </a>
+                <div className="apply-disclose" style={{textAlign:"center"}}>Affiliate link — we may earn a commission at no cost to you.</div>
+              </>
+            )}
+          </div>
+        );
+      })}
+
+      {strat&&(
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:10,fontWeight:800,color:"var(--tx3)",textTransform:"uppercase",letterSpacing:1.5,marginBottom:10}}>Recommended Strategy</div>
+          <div className="surf" style={{cursor:"pointer"}} onClick={()=>setOpenStrat(s=>!s)}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:22}}>{strat.emoji}</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>{strat.name}</div>
+                <div style={{fontSize:11,color:"var(--grn2)",fontWeight:600,marginTop:1}}>{strat.value}</div>
+              </div>
+              <span style={{color:"var(--tx3)",fontSize:14,transition:"transform .2s",transform:openStrat?"rotate(90deg)":"none"}}>▸</span>
+            </div>
+            {openStrat&&(
+              <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid var(--br)"}}>
+                <div style={{fontSize:13,color:"var(--tx2)",lineHeight:1.7}}>{strat.desc}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div style={{textAlign:"center",paddingBottom:24}}>
+        <button onClick={onRetake}
+          style={{background:"transparent",border:"1.5px solid var(--br2)",color:"var(--tx3)",borderRadius:10,padding:"10px 24px",fontSize:12,fontWeight:600,cursor:"pointer",transition:"color .15s,border-color .15s"}}
+          onMouseEnter={e=>{e.currentTarget.style.color="var(--tx)";e.currentTarget.style.borderColor="var(--br3)"}}
+          onMouseLeave={e=>{e.currentTarget.style.color="var(--tx3)";e.currentTarget.style.borderColor="var(--br2)"}}>
+          ↩ Retake Quiz
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function QuizTab({myCards}){
+  const [savedAnswers,setSavedAnswers]=useLS('cs_quiz',null);
+  const [step,setStep]=useState(0);
+  const [answers,setAnswers]=useState({});
+  const [multiSel,setMultiSel]=useState([]);
+  const [animKey,setAnimKey]=useState(0);
+
+  const retake=()=>{setSavedAnswers(null);setStep(0);setAnswers({});setMultiSel([]);setAnimKey(k=>k+1);};
+
+  if(savedAnswers)return <QuizResults answers={savedAnswers} onRetake={retake} myCards={myCards}/>;
+
+  const q=QUIZ_QS[step];
+  const isLast=step===QUIZ_QS.length-1;
+
+  const advance=(newAns)=>{
+    setAnimKey(k=>k+1);
+    if(!isLast){setStep(s=>s+1);setMultiSel([]);}
+    else setSavedAnswers(newAns);
+  };
+
+  const handleSingle=(optId)=>{
+    const newAns={...answers,[q.id]:optId};
+    setAnswers(newAns);
+    setTimeout(()=>advance(newAns),180);
+  };
+
+  const handleMultiToggle=(optId,excl)=>{
+    if(excl){setMultiSel([optId]);return;}
+    setMultiSel(sel=>{
+      const without=sel.filter(s=>s!=='none'&&s!==optId);
+      return sel.includes(optId)?without:[...without,optId];
+    });
+  };
+
+  const handleMultiNext=()=>{
+    const val=multiSel.length?multiSel:['none'];
+    const newAns={...answers,[q.id]:val};
+    setAnswers(newAns);
+    advance(newAns);
+  };
+
+  return(
+    <div style={{padding:"16px 16px 0",maxWidth:560,margin:"0 auto"}}>
+      {/* Progress */}
+      <div style={{marginBottom:28}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+          <span style={{fontSize:11,color:"var(--tx3)",fontWeight:700,letterSpacing:.5}}>QUESTION {step+1} OF {QUIZ_QS.length}</span>
+          <span style={{fontSize:11,color:"var(--tx4)"}}>Card Finder</span>
+        </div>
+        <div style={{height:3,background:"var(--s4)",borderRadius:99,overflow:"hidden"}}>
+          <div style={{height:"100%",width:`${((step+1)/QUIZ_QS.length)*100}%`,background:"linear-gradient(90deg,var(--acc),var(--acc2))",borderRadius:99,transition:"width .35s ease"}}/>
+        </div>
+      </div>
+
+      {/* Question + options */}
+      <div key={animKey} className="quiz-slide">
+        <div style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontStyle:"italic",fontSize:22,fontWeight:700,color:"var(--tx)",marginBottom:22,lineHeight:1.35}}>
+          {q.q}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:9}}>
+          {q.opts.map(opt=>{
+            const isSel=q.multi?multiSel.includes(opt.id):false;
+            return(
+              <button key={opt.id}
+                className="quiz-opt"
+                onClick={()=>q.multi?handleMultiToggle(opt.id,opt.excl):handleSingle(opt.id)}
+                style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",textAlign:"left",width:"100%",
+                  background:isSel?"rgba(55,48,163,.07)":"var(--s1)",
+                  border:`1.5px solid ${isSel?"var(--acc)":"var(--br2)"}`,
+                  borderRadius:13,cursor:"pointer",transition:"background .12s,border-color .12s"}}>
+                {opt.icon&&<span style={{fontSize:18,lineHeight:1,flexShrink:0}}>{opt.icon}</span>}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{opt.label}</div>
+                  {opt.sub&&<div style={{fontSize:11,color:"var(--tx3)",marginTop:1}}>{opt.sub}</div>}
+                </div>
+                {q.multi&&(
+                  <div style={{width:19,height:19,borderRadius:5,border:"1.5px solid",borderColor:isSel?"var(--acc)":"var(--br3)",background:isSel?"var(--acc)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .12s"}}>
+                    {isSel&&<span style={{color:"#fff",fontSize:10,fontWeight:900,lineHeight:1}}>✓</span>}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        {q.multi&&(
+          <button onClick={handleMultiNext}
+            style={{marginTop:18,width:"100%",padding:"13px",
+              background:multiSel.length?"var(--acc)":"var(--s4)",
+              color:multiSel.length?"#fff":"var(--tx4)",
+              border:"none",borderRadius:13,cursor:multiSel.length?"pointer":"default",
+              fontSize:13,fontWeight:700,transition:"background .15s,color .15s"}}>
+            {isLast?"See My Cards →":"Next →"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const NAV_TABS=[
+  {id:"home",   label:"Home",     sub:"Your Overview"},
+  {id:"benefits",label:"Benefits",sub:"Track & Redeem"},
+  {id:"tips",   label:"Tips",     sub:"Pro Strategies"},
+  {id:"usecard",label:"Use Card", sub:"Category Guide"},
+  {id:"offers", label:"Offers",   sub:"Explore Deals"},
+  {id:"quiz",   label:"Quiz",     sub:"Card Finder"},
+  {id:"wallet", label:"Wallet",   sub:"My Cards"},
+];
+
+function TopNav({tab,setTab,cardCount}){
+  return (
+    <div className="top-nav">
+      <div className="top-nav-brand">
+        <div>
+          <span className="grad-text" style={{fontSize:19,fontWeight:900,letterSpacing:-.5}}>CardSage</span>
+        </div>
+        <div style={{fontSize:11,color:"var(--tx3)",fontWeight:700}}>💳 {cardCount} card{cardCount!==1?"s":""}</div>
+      </div>
+      <div className="top-nav-tabs">
+        {NAV_TABS.map(t=>(
+          <button key={t.id} className={"nav-tab"+(tab===t.id?" active":"")} onClick={()=>setTab(t.id)}>
+            <span className="nav-tab-label">{t.label}</span>
+            <span className="nav-tab-sub">{t.sub}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ROOT ─────────────────────────────────────────────────────────────── */
+function App(){
+  const [myCards,setMyCards]=useLS("cs_cards",[]);
+  const [tab,setTab]=useState("home");
+  const [checkedArr,setCheckedArr]=useLS("cs_checked",[]);
+  const [stratModal,setStratModal]=useState(null);
+
+  const checkedSet=useMemo(()=>new Set(checkedArr),[checkedArr]);
+
+  function setCheckedBenefits(updateFn){
+    const newSet=updateFn(checkedSet);
+    setCheckedArr([...newSet]);
+  }
+
+  useEffect(()=>{window.scrollTo({top:0,behavior:"smooth"});},[tab]);
+
+  return (
+    <div style={{minHeight:"100vh",paddingBottom:48}}>
+      <TopNav tab={tab} setTab={setTab} cardCount={myCards.length}/>
+      <div className="tab-content-wrap" style={{paddingTop:8}}>
+        {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal}/>}
+        {tab==="benefits"&&<BenefitsTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits}/>}
+        {tab==="tips"&&    <TipsTab myCards={myCards}/>}
+        {tab==="usecard"&& <UsecardTab myCards={myCards}/>}
+        {tab==="offers"&&  <OffersTab myCards={myCards}/>}
+        {tab==="quiz"&&    <QuizTab myCards={myCards}/>}
+        {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={setMyCards}/>}
+      </div>
+      {stratModal&&<StratModal stratId={stratModal} myCards={myCards} onClose={()=>setStratModal(null)}/>}
+      <div style={{textAlign:"center",padding:"32px 16px 28px",borderTop:"1px solid var(--br)",marginTop:8}}>
+        <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:"6px 16px",marginBottom:10}}>
+          <a href={"mailto:cardsage.co@gmail.com?subject=CardSage%20Data%20Error%20Report&body=Card%20name%3A%20%0AWhat%27s%20wrong%3A%20%0AWhat%20it%20should%20say%3A%20"}
+             style={{fontSize:11,color:"var(--tx3)",textDecoration:"none"}}
+             onMouseEnter={e=>e.currentTarget.style.color="var(--acc)"}
+             onMouseLeave={e=>e.currentTarget.style.color="var(--tx3)"}>
+            See outdated info? Let us know →
+          </a>
+          <a href="./privacy-policy.html" target="_blank"
+             style={{fontSize:11,color:"var(--tx3)",textDecoration:"none"}}
+             onMouseEnter={e=>e.currentTarget.style.color="var(--acc)"}
+             onMouseLeave={e=>e.currentTarget.style.color="var(--tx3)"}>
+            Privacy Policy
+          </a>
+          <a href="./terms.html" target="_blank"
+             style={{fontSize:11,color:"var(--tx3)",textDecoration:"none"}}
+             onMouseEnter={e=>e.currentTarget.style.color="var(--acc)"}
+             onMouseLeave={e=>e.currentTarget.style.color="var(--tx3)"}>
+            Terms of Service
+          </a>
+          <a href="./affiliate-disclosure.html" target="_blank"
+             style={{fontSize:11,color:"var(--tx3)",textDecoration:"none"}}
+             onMouseEnter={e=>e.currentTarget.style.color="var(--acc)"}
+             onMouseLeave={e=>e.currentTarget.style.color="var(--tx3)"}>
+            Affiliate Disclosure
+          </a>
+        </div>
+        <div style={{fontSize:10,color:"var(--tx4)",lineHeight:1.5,maxWidth:420,margin:"0 auto"}}>
+          CardSage may earn a commission from card applications. This does not influence our recommendations.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js')
+      .catch(err=>console.warn('SW registration failed:',err));
+  });
+}
+</script>
+</body>
+</html>
