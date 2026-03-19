@@ -23,21 +23,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Barlow:wght@400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
 <script defer data-domain="YOUR_DOMAIN" src="https://plausible.io/js/script.js"></script>
 <script type="module">
-// ─── FIREBASE CONFIG — paste your project config here ────────────────────────
+// ─── FIREBASE CONFIG ─────────────────────────────────────────────────────────
 const firebaseConfig = {
-  // apiKey: "YOUR_API_KEY",
-  // authDomain: "YOUR_PROJECT.firebaseapp.com",
-  // projectId: "YOUR_PROJECT_ID",
-  // storageBucket: "YOUR_PROJECT.appspot.com",
-  // messagingSenderId: "YOUR_SENDER_ID",
-  // appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDbUxUYn3Pj6JdIIfwceTeQoNWX0VrqAVw",
+  authDomain: "cardsage-fc437.firebaseapp.com",
+  projectId: "cardsage-fc437",
+  storageBucket: "cardsage-fc437.firebasestorage.app",
+  messagingSenderId: "522775842118",
+  appId: "1:522775842118:web:3e1003379b008c09262947"
 };
 // ─────────────────────────────────────────────────────────────────────────────
 if (!firebaseConfig.apiKey) {
   console.info('CardSage: Firebase not configured — running in local-only mode.');
 } else {
   try {
-    const v = '10.12.0';
+    const v = '12.0.0';
     const [{ initializeApp }, { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged }, { getFirestore, doc, getDoc, setDoc }] = await Promise.all([
       import(`https://www.gstatic.com/firebasejs/${v}/firebase-app.js`),
       import(`https://www.gstatic.com/firebasejs/${v}/firebase-auth.js`),
@@ -2475,11 +2475,10 @@ function App(){
       try{
         const snap=await fb.getDoc(fb.doc(fb.db,'users',u.uid));
         if(snap.exists()){
+          // Firestore wins — cloud data takes precedence over localStorage
           const cloud=snap.data();
-          const merged=[...new Set([...cardsRef.current,...(cloud.cs_cards||[])])];
-          const mergedChecked=[...new Set([...checkedRef.current,...(cloud.cs_checked||[])])];
-          setMyCards(merged);
-          setCheckedArr(mergedChecked);
+          setMyCards(cloud.cs_cards||[]);
+          setCheckedArr(cloud.cs_checked||[]);
         } else {
           // New user — upload current localStorage data to cloud
           await fb.setDoc(fb.doc(fb.db,'users',u.uid),{
