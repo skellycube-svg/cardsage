@@ -2480,9 +2480,12 @@ function App(){
   const [fbReady,setFbReady]=useState(!!window.CS_FB);
   const [pwaPrompt,setPwaPrompt]=useState(window._pwaPrompt||null);
   const [iosBanner,setIosBanner]=useState(()=>{
-    const isIos=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    const ua=navigator.userAgent;
+    const isIos=/iphone|ipad|ipod/i.test(ua);
     const isStandalone=window.navigator.standalone===true;
-    return isIos&&!isStandalone&&!localStorage.getItem('cs_ios_dismissed');
+    if(!isIos||isStandalone||localStorage.getItem('cs_ios_dismissed')) return null;
+    // CriOS = Chrome on iOS; otherwise assume Safari
+    return /CriOS/i.test(ua)?'chrome':'safari';
   });
 
   // Refs so async callbacks always see latest values
@@ -2574,7 +2577,12 @@ function App(){
       <TopNav tab={tab} setTab={setTab} cardCount={myCards.length} user={user} onAuthClick={()=>setAuthModal(true)} fbReady={fbReady} pwaPrompt={pwaPrompt} onInstall={handleInstall}/>
       {iosBanner&&(
         <div className="ios-install-banner">
-          <span>Install CardSage: tap the Share icon ↑ then <strong>"Add to Home Screen"</strong></span>
+          <span>
+            {iosBanner==='chrome'
+              ? <>Tap the <svg style={{display:'inline-block',verticalAlign:'middle',margin:'0 2px 2px'}} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> icon at the top right, then <strong>"Add to Home Screen"</strong></>
+              : <>Tap the <svg style={{display:'inline-block',verticalAlign:'middle',margin:'0 2px 2px'}} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> icon at the bottom of your screen, then <strong>"Add to Home Screen"</strong></>
+            }
+          </span>
           <button onClick={()=>{setIosBanner(false);localStorage.setItem('cs_ios_dismissed','1');}} aria-label="Dismiss">✕</button>
         </div>
       )}
