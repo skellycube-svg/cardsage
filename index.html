@@ -830,8 +830,12 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
 }
 
 /* ── BENEFITS TAB ─────────────────────────────────────────────────────────── */
-function BenefitsTab({myCards,checkedSet,setCheckedBenefits}){
+function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckDates,resetBadges=new Set()}){
   const [filterCat,setFilterCat]=useState("all");
+  const [openBen,setOpenBen]=useState(null);
+
+  const RESET_LABELS={monthly:"Monthly",quarterly:"Quarterly","semi-annual":"Semi-annual",annual:"Annual"};
+
   const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
 
   const allBenefits=useMemo(()=>{
@@ -854,12 +858,25 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits}){
   const usedValue=allBenefits.filter(b=>checkedSet.has(b.key)&&b.v).reduce((s,b)=>s+(b.isMonthly?(b.v*12):b.v),0);
   const totalValue=allBenefits.filter(b=>b.v).reduce((s,b)=>s+(b.isMonthly?(b.v*12):b.v),0);
 
-  function toggle(key){
+  function toggle(key,e){
+    e.stopPropagation();
+    const willCheck=!checkedSet.has(key);
     setCheckedBenefits(prev=>{
       const n=new Set(prev);
       n.has(key)?n.delete(key):n.add(key);
       return n;
     });
+    if(setCheckDates){
+      if(willCheck){
+        setCheckDates(prev=>({...prev,[key]:new Date().toISOString()}));
+      }else{
+        setCheckDates(prev=>{const n={...prev};delete n[key];return n;});
+      }
+    }
+  }
+
+  function toggleExpand(key){
+    setOpenBen(prev=>prev===key?null:key);
   }
 
   if(!myCards.length){
@@ -917,21 +934,48 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits}){
               <div className="surf" style={{padding:"0 14px"}}>
                 {cardBens.map((b,i)=>{
                   const done=checkedSet.has(b.key);
+                  const isOpen=openBen===b.key;
                   const bc=BCAT[b.cat]||BCAT.statement;
+                  const rl=RESET_LABELS[b.reset];
+                  const wasReset=resetBadges.has(b.key);
                   return (
-                    <div key={b.key} className="ben-row" style={{borderBottom:i<cardBens.length-1?"1px solid var(--br)":"none"}}>
-                      <button className={"ben-check"+(done?" done":"")} onClick={()=>toggle(b.key)}>
-                        {done&&<span style={{color:"#fff",fontSize:13,lineHeight:1}}>✓</span>}
-                      </button>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:3}}>
-                          <span style={{fontSize:13,fontWeight:600,color:done?"var(--tx3)":"var(--tx)",textDecoration:done?"line-through":"none"}}>{b.n}</span>
-                          <span style={{padding:"1px 7px",borderRadius:99,fontSize:10,fontWeight:700,color:bc.color,background:bc.bg}}>{bc.icon} {bc.label}</span>
-                          {b.isMonthly&&<span style={{padding:"1px 6px",borderRadius:99,fontSize:10,background:"rgba(239,68,68,.12)",color:"#fb7185",fontWeight:700}}>Monthly</span>}
+                    <div key={b.key} onClick={()=>toggleExpand(b.key)}
+                      style={{borderBottom:i<cardBens.length-1?"1px solid var(--br)":"none",padding:"10px 0",cursor:"pointer"}}>
+                      {/* Collapsed row */}
+                      <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        <button className={"ben-check"+(done?" done":"")} onClick={e=>toggle(b.key,e)}>
+                          {done&&<span style={{color:"#fff",fontSize:13,lineHeight:1}}>✓</span>}
+                        </button>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:3}}>
+                            <span style={{fontSize:13,fontWeight:600,color:done?"var(--tx3)":"var(--tx)",textDecoration:done?"line-through":"none"}}>{b.n}</span>
+                            <span style={{padding:"1px 7px",borderRadius:99,fontSize:10,fontWeight:700,color:bc.color,background:bc.bg}}>{bc.icon} {bc.label}</span>
+                            {rl&&<span style={{padding:"1px 6px",borderRadius:99,fontSize:10,background:"rgba(148,163,184,.15)",color:"var(--tx3)",fontWeight:600}}>{rl}</span>}
+                            {wasReset&&<span style={{padding:"1px 7px",borderRadius:99,fontSize:10,background:"rgba(212,168,64,.18)",color:"var(--gld3)",fontWeight:700}}>↺ Refreshed</span>}
+                          </div>
+                          {b.v&&<div style={{fontSize:11,color:"var(--grn2)",fontWeight:700}}>Up to ${b.isMonthly?b.v+"/mo ("+b.v*12+"/yr)":b.v}</div>}
                         </div>
-                        {b.d&&<div style={{fontSize:11,color:"var(--tx3)",lineHeight:1.5}}>{b.d}</div>}
-                        {b.v&&<div style={{fontSize:11,color:"var(--grn2)",fontWeight:700,marginTop:2}}>Up to ${b.isMonthly?b.v+"/mo ("+b.v*12+"/yr)":b.v}</div>}
+                        <span style={{fontSize:12,color:"var(--tx3)",flexShrink:0,transition:"transform .15s",display:"inline-block",transform:isOpen?"rotate(90deg)":"rotate(0deg)"}}>▸</span>
                       </div>
+                      {/* Expanded section */}
+                      {isOpen&&(
+                        <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid var(--br)"}}>
+                          {b.d&&<p style={{fontSize:12,color:"var(--tx2)",margin:"0 0 8px",lineHeight:1.6}}>{b.d}</p>}
+                          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
+                            {b.v&&<span style={{fontSize:11,color:"var(--grn2)",fontWeight:700}}>Value: ${b.isMonthly?b.v+"/mo":b.v}</span>}
+                            {rl&&<span style={{fontSize:11,color:"var(--tx3)"}}>↺ Resets: {rl}</span>}
+                            {b.enroll&&<span style={{fontSize:11,color:"var(--gld3)",fontWeight:600}}>⚡ Activation required</span>}
+                          </div>
+                          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+                            {b.enrollUrl&&<a href={b.enrollUrl} target="_blank" rel="noopener noreferrer"
+                              onClick={e=>e.stopPropagation()}
+                              style={{fontSize:12,color:"var(--acc)",fontWeight:600,textDecoration:"none"}}>Activate →</a>}
+                            {b.useUrl&&<a href={b.useUrl} target="_blank" rel="noopener noreferrer"
+                              onClick={e=>e.stopPropagation()}
+                              style={{fontSize:12,color:"var(--acc)",fontWeight:600,textDecoration:"none"}}>Use benefit →</a>}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
