@@ -372,12 +372,20 @@ input,select,button{font-family:inherit}
   font-size:11px;font-weight:600;color:var(--acc);font-family:'Barlow',sans-serif;
   transition:background .15s,border-color .15s;white-space:nowrap}
 .install-btn:hover{background:rgba(55,48,163,.13);border-color:rgba(55,48,163,.5)}
-.ios-install-banner{display:flex;align-items:center;justify-content:space-between;
-  gap:12px;padding:10px 16px;background:rgba(55,48,163,.07);
-  border-bottom:1px solid rgba(55,48,163,.15);font-size:12px;color:var(--tx2);
-  position:sticky;top:var(--nav-h,112px);z-index:190}
-.ios-install-banner button{background:none;border:none;cursor:pointer;color:var(--tx3);
-  font-size:16px;line-height:1;padding:2px 4px;flex-shrink:0}
+.ios-install-banner{
+  position:fixed;bottom:0;left:0;right:0;z-index:500;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 18px;padding-bottom:calc(14px + env(safe-area-inset-bottom));
+  background:rgba(248,247,244,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-top:1px solid rgba(55,48,163,.18);
+  box-shadow:0 -4px 24px rgba(15,23,42,.10);
+  font-size:13px;color:var(--tx2);line-height:1.4;
+  pointer-events:none}
+.ios-install-banner span{pointer-events:none;user-select:none}
+.ios-install-banner button{
+  pointer-events:auto;background:none;border:none;cursor:pointer;
+  color:var(--tx3);font-size:18px;line-height:1;padding:4px 6px;flex-shrink:0;
+  -webkit-tap-highlight-color:transparent}
 </style>
 </head>
 <body>
@@ -2561,13 +2569,13 @@ function App(){
   useEffect(()=>{window.scrollTo({top:0,behavior:"smooth"});},[tab]);
 
   return (
-    <div style={{minHeight:"100vh",paddingBottom:48}}>
+    <div style={{minHeight:"100vh",paddingBottom:iosBanner?116:48}}>
       {authModal&&<AuthModal onClose={()=>setAuthModal(false)}/>}
       <TopNav tab={tab} setTab={setTab} cardCount={myCards.length} user={user} onAuthClick={()=>setAuthModal(true)} fbReady={fbReady} pwaPrompt={pwaPrompt} onInstall={handleInstall}/>
       {iosBanner&&(
         <div className="ios-install-banner">
-          <span>📲 Tap the <strong>Share</strong> button then <strong>Add to Home Screen</strong> to install CardSage</span>
-          <button onClick={()=>{setIosBanner(false);localStorage.setItem('cs_ios_dismissed','1');}}>✕</button>
+          <span>Install CardSage: tap the Share icon ↑ then <strong>"Add to Home Screen"</strong></span>
+          <button onClick={()=>{setIosBanner(false);localStorage.setItem('cs_ios_dismissed','1');}} aria-label="Dismiss">✕</button>
         </div>
       )}
       <div className="tab-content-wrap" style={{paddingTop:8}}>
