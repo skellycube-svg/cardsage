@@ -690,7 +690,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
     const list=[];
     cards.forEach(card=>{
       card.monthly.forEach(b=>{
-        const key=card.id+"-"+b.n;
+        const key=benKey(card.id,b,true);
         if(!checkedSet.has(key))list.push({card,b,key});
       });
     });
@@ -919,16 +919,17 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
         <div className="benefits-list">{cards.map(card=>{
           const cardBens=filtered.filter(b=>b.cardId===card.id);
           if(!cardBens.length)return null;
-          const usedHere=cardBens.filter(b=>checkedSet.has(b.key)).length;
+          const trackHere=cardBens.filter(b=>b.v!=null);
+          const usedHere=trackHere.filter(b=>checkedSet.has(b.key)).length;
           return (
             <div key={card.id} style={{marginBottom:18}}>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
                 <CardArt card={card}/>
                 <div>
                   <div style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>{card.short||card.name}</div>
-                  <div style={{fontSize:11,color:"var(--tx3)"}}>{usedHere}/{cardBens.length} benefits used</div>
+                  <div style={{fontSize:11,color:"var(--tx3)"}}>{usedHere}/{trackHere.length} credits used</div>
                   <div className="prog-track" style={{width:80,marginTop:4}}>
-                    <div className="prog-fill" style={{width:(cardBens.length?Math.round(usedHere/cardBens.length*100):0)+"%",background:"var(--grn)"}}/>
+                    <div className="prog-fill" style={{width:(trackHere.length?Math.round(usedHere/trackHere.length*100):0)+"%",background:"var(--grn)"}}/>
                   </div>
                 </div>
               </div>
