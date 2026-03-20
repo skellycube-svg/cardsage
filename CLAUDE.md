@@ -95,6 +95,8 @@ CardSage/
   title: "...",
   cards: ["csr","hyatt"],  // card IDs relevant to this tip
   body: "...",
+  beginnerTip: "...",   // plain-English explanation for beginners
+  startHere: true,      // (optional) marks tip as a "Start Here" foundational tip
   value: 3,             // 1–3 rating
   difficulty: "beginner" // beginner | intermediate | advanced
 }
@@ -139,7 +141,7 @@ Returns integer days until a given date string. Used for benefit reset countdown
 | `TopNav` | Sticky frosted-glass nav with centered CardSage wordmark and tab bar |
 | `HomeTab` | Dashboard with stats grid, strategy cards, rotating categories, email capture |
 | `BenefitsTab` | Filterable benefit tracker — check off redeemed benefits, monthly/annual split |
-| `TipsTab` | "Your Playbook" (tips you can use now) + "Unlock With One More Card" sections |
+| `TipsTab` | Tips browser with Beginner/Advanced mode toggle, Start Here section, category-grouped layout (Earning/Redeeming/Managing/Travel), and "Ready for you" badge per tip |
 | `UsecardTab` | Category guide — which card to use for each spending category |
 | `OffersTab` | Merchant offers browser — personalized to user's wallet with toggle |
 | `QuizTab` | 5-question card finder quiz with animated transitions and localStorage persistence |
