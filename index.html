@@ -954,22 +954,31 @@ const TIP_CAT_LIST=[
 ];
 
 function TipsTab({myCards}){
+  const [mode,setMode]=useLS('cs_tips_mode','beginner');
   const [filterCat,setFilterCat]=useState("all");
   const [openTip,setOpenTip]=useState(null);
+  const [showFullBody,setShowFullBody]=useState(new Set());
+
   const DIFF_COLOR={beginner:"var(--grn2)",intermediate:"var(--gld2)",advanced:"var(--red2)"};
+  const CAT_META={
+    earning: {icon:"⬆",label:"Earning"},
+    redeeming:{icon:"✈",label:"Redeeming"},
+    managing: {icon:"⚙",label:"Managing"},
+    travel:   {icon:"🌍",label:"Travel"},
+  };
+  const CAT_FULL={
+    earning:"Earning More Points",
+    redeeming:"Redeeming Smartly",
+    managing:"Managing Your Cards",
+    travel:"Travel Strategies",
+  };
 
-  const filtered=useMemo(()=>filterCat==="all"?TIPS_DB:TIPS_DB.filter(t=>t.cat===filterCat),[filterCat]);
-
-  const {playbook,unlock}=useMemo(()=>{
-    const pb=[],ul=[];
-    filtered.forEach(tip=>{
-      const ownedCount=tip.cards.filter(id=>myCards.includes(id)).length;
-      if(ownedCount>0) pb.push({...tip,allOwned:ownedCount===tip.cards.length});
-      else ul.push(tip);
-    });
-    pb.sort((a,b)=>(b.allOwned?1:0)-(a.allOwned?1:0));
-    return {playbook:pb,unlock:ul};
-  },[filtered,myCards]);
+  const getBadge=tip=>{
+    const owned=tip.cards.filter(id=>myCards.includes(id)).length;
+    if(owned===tip.cards.length) return 'ready';
+    if(owned>0&&tip.cards.length>1) return 'almost';
+    return null;
+  };
 
   const getPartners=tip=>{
     const s=new Set();
@@ -977,23 +986,48 @@ function TipsTab({myCards}){
     return [...s];
   };
 
-  const renderTip=(tip,dim)=>{
+  const handleModeToggle=m=>{
+    setMode(m);
+    if(m==='beginner') setShowFullBody(new Set());
+  };
+
+  const SectionHeader=({label,count})=>(
+    <div style={{display:"flex",alignItems:"center",gap:10,margin:"20px 0 10px"}}>
+      <div style={{flex:1,height:1,background:"var(--br)"}}/>
+      <div style={{fontSize:11,fontWeight:800,color:"var(--acc)",textTransform:"uppercase",letterSpacing:1.5,whiteSpace:"nowrap"}}>
+        {label}{count!==undefined?` (${count})`:''}
+      </div>
+      <div style={{flex:1,height:1,background:"var(--br)"}}/>
+    </div>
+  );
+
+  const renderTip=tip=>{
     const isOpen=openTip===tip.id;
     const tipCards=tip.cards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
     const partners=isOpen?getPartners(tip):[];
-    const unlockCard=dim?tipCards[0]:null;
-    const label=!dim?(tip.allOwned?"✓ Ready to Use":"⬆ Almost There"):null;
-    const labelColor=!dim?(tip.allOwned?"var(--grn2)":"var(--gld2)"):null;
-    const labelBg=!dim?(tip.allOwned?"rgba(16,185,129,.12)":"rgba(202,138,4,.12)"):null;
+    const badge=getBadge(tip);
+    const catMeta=CAT_META[tip.cat]||{};
+    const ownedCount=tip.cards.filter(id=>myCards.includes(id)).length;
+    const showUnlock=ownedCount===0;
+    const unlockCard=showUnlock?tipCards[0]:null;
+
     return (
       <div key={tip.id} className={"tip-card"+(isOpen?" open":"")}
-           style={dim?{opacity:.82,background:"var(--s3)"}:{}}
            onClick={()=>setOpenTip(isOpen?null:tip.id)}>
+        {/* Collapsed header */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5,flexWrap:"wrap"}}>
+            <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:5,flexWrap:"wrap"}}>
+              <span style={{fontSize:10,fontWeight:700,color:"var(--tx3)",background:"var(--s2)",border:"1px solid var(--br)",padding:"1px 7px",borderRadius:99}}>
+                {catMeta.icon} {catMeta.label}
+              </span>
+              {badge==='ready'&&(
+                <span style={{fontSize:10,fontWeight:700,color:"var(--grn2)",background:"rgba(16,185,129,.12)",padding:"1px 7px",borderRadius:99}}>✓ Ready for you</span>
+              )}
+              {badge==='almost'&&(
+                <span style={{fontSize:10,fontWeight:700,color:"var(--gld2)",background:"rgba(202,138,4,.12)",padding:"1px 7px",borderRadius:99}}>⬆ Almost There</span>
+              )}
               <span style={{fontSize:10,fontWeight:800,color:DIFF_COLOR[tip.difficulty]||"var(--tx3)",textTransform:"uppercase",letterSpacing:.5}}>{tip.difficulty}</span>
-              {label&&<span style={{fontSize:10,fontWeight:700,color:labelColor,background:labelBg,padding:"1px 7px",borderRadius:99}}>{label}</span>}
               <ValueMeter v={tip.value}/>
             </div>
             <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",lineHeight:1.4}}>{tip.title}</div>
@@ -1001,10 +1035,26 @@ function TipsTab({myCards}){
           <span style={{color:"var(--tx3)",fontSize:14,transition:"transform .2s",transform:isOpen?"rotate(90deg)":"none",flexShrink:0,marginTop:2}}>▸</span>
         </div>
 
+        {/* Expanded content */}
         {isOpen&&(
           <div style={{marginTop:12,borderTop:"1px solid var(--br)",paddingTop:12}}>
-            <div style={{fontSize:13,color:"var(--tx2)",lineHeight:1.75,marginBottom:12}}>{tip.body}</div>
-            <div style={{marginBottom:partners.length>0?12:dim?12:0}}>
+            {mode==='beginner'?(
+              <div style={{marginBottom:12}}>
+                <div style={{fontSize:13,color:"var(--tx2)",lineHeight:1.75,marginBottom:8}}>{tip.beginnerTip}</div>
+                {!showFullBody.has(tip.id)?(
+                  <button
+                    onClick={e=>{e.stopPropagation();setShowFullBody(prev=>new Set(prev).add(tip.id));}}
+                    style={{fontSize:12,color:"var(--acc)",background:"none",border:"none",cursor:"pointer",padding:0,fontWeight:600,textDecoration:"underline",display:"block"}}>
+                    Show full details →
+                  </button>
+                ):(
+                  <div style={{fontSize:13,color:"var(--tx2)",lineHeight:1.75,paddingTop:10,borderTop:"1px solid var(--br)"}}>{tip.body}</div>
+                )}
+              </div>
+            ):(
+              <div style={{fontSize:13,color:"var(--tx2)",lineHeight:1.75,marginBottom:12}}>{tip.body}</div>
+            )}
+            <div style={{marginBottom:partners.length>0?12:0}}>
               <div style={{fontSize:10,color:"var(--tx4)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>USE WITH</div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 {tipCards.map(c=>(
@@ -1017,7 +1067,7 @@ function TipsTab({myCards}){
               </div>
             </div>
             {partners.length>0&&(
-              <div style={{marginBottom:dim?12:0}}>
+              <div style={{marginBottom:unlockCard?12:0}}>
                 <div style={{fontSize:10,color:"var(--tx4)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>TRANSFER PARTNERS</div>
                 <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
                   {partners.map(p=>(
@@ -1026,7 +1076,7 @@ function TipsTab({myCards}){
                 </div>
               </div>
             )}
-            {dim&&unlockCard&&(
+            {unlockCard&&(
               <div style={{padding:"10px 12px",background:"rgba(55,48,163,.06)",borderRadius:10,border:"1px dashed rgba(55,48,163,.2)"}}>
                 <div style={{fontSize:11,color:"var(--tx2)",marginBottom:8}}>Add <strong style={{color:"var(--tx)"}}>{unlockCard.name}</strong> to unlock this play</div>
                 <a href={APPLY_URLS[unlockCard.id]||"#apply-"+unlockCard.id} target="_blank"
@@ -1043,11 +1093,57 @@ function TipsTab({myCards}){
     );
   };
 
-  const hasWallet=myCards.length>0;
+  const startHereTips=TIPS_DB.filter(t=>t.startHere);
+  const CAT_ORDER=['earning','redeeming','managing','travel'];
+
+  const renderAll=()=>(
+    <>
+      <SectionHeader label="Start Here"/>
+      <div className="tips-list">{startHereTips.map(t=>renderTip(t))}</div>
+      {CAT_ORDER.map(cat=>{
+        const tips=TIPS_DB.filter(t=>t.cat===cat);
+        return (
+          <div key={cat}>
+            <SectionHeader label={CAT_FULL[cat]} count={tips.length}/>
+            <div className="tips-list">{tips.map(t=>renderTip(t))}</div>
+          </div>
+        );
+      })}
+    </>
+  );
+
+  const renderFiltered=()=>{
+    const tips=TIPS_DB.filter(t=>t.cat===filterCat);
+    if(!tips.length) return(
+      <div style={{textAlign:"center",padding:"20px",color:"var(--tx3)",fontSize:13}}>
+        No tips in this category yet. Try "All".
+      </div>
+    );
+    return <div className="tips-list">{tips.map(t=>renderTip(t))}</div>;
+  };
 
   return (
     <div style={{padding:"16px 16px 0"}}>
-      {/* Category filter */}
+      {/* Beginner / Advanced toggle */}
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
+        <div style={{display:"flex",background:"var(--s2)",border:"1px solid var(--br)",borderRadius:99,padding:2,gap:2}}>
+          {['beginner','advanced'].map(m=>(
+            <button key={m}
+              onClick={()=>handleModeToggle(m)}
+              style={{
+                fontSize:11,fontWeight:700,padding:"4px 14px",borderRadius:99,
+                border:"none",cursor:"pointer",textTransform:"capitalize",
+                background:mode===m?"var(--acc)":"transparent",
+                color:mode===m?"#fff":"var(--tx3)",
+                transition:"background .15s,color .15s",
+              }}>
+              {m}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Category filter pills */}
       <div className="hscroll" style={{marginBottom:16,gap:6}}>
         {TIP_CAT_LIST.map(c=>(
           <button key={c.id} className={"pill "+(filterCat===c.id?"pill-a":"pill-i")} onClick={()=>setFilterCat(c.id)}>
@@ -1056,44 +1152,7 @@ function TipsTab({myCards}){
         ))}
       </div>
 
-      {/* Empty wallet prompt */}
-      {!hasWallet&&(
-        <div className="surf fu" style={{marginBottom:14,textAlign:"center",padding:"24px 16px"}}>
-          <div style={{fontSize:24,marginBottom:8}}>🗂️</div>
-          <div style={{fontSize:14,fontWeight:700,color:"var(--acc)",marginBottom:6}}>Add cards to see your playbook</div>
-          <div style={{fontSize:12,color:"var(--tx3)"}}>Go to the Wallet tab, add your cards, then come back for personalized strategy plays.</div>
-        </div>
-      )}
-
-      {/* YOUR PLAYBOOK */}
-      {hasWallet&&playbook.length>0&&(
-        <div style={{marginBottom:28}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-            <div style={{flex:1,height:1,background:"var(--br)"}}/>
-            <div style={{fontSize:11,fontWeight:800,color:"var(--acc)",textTransform:"uppercase",letterSpacing:1.5,whiteSpace:"nowrap"}}>Your Playbook</div>
-            <div style={{flex:1,height:1,background:"var(--br)"}}/>
-          </div>
-          <div style={{fontSize:11,color:"var(--tx3)",marginBottom:12,textAlign:"center"}}>Plays you can run right now with cards you own</div>
-          <div className="tips-list">{playbook.map(tip=>renderTip(tip,false))}</div>
-        </div>
-      )}
-
-      {hasWallet&&playbook.length===0&&(
-        <div style={{textAlign:"center",padding:"20px",color:"var(--tx3)",fontSize:13,marginBottom:20}}>No plays in this category match your wallet. Try "All".</div>
-      )}
-
-      {/* UNLOCK WITH ONE MORE CARD */}
-      {unlock.length>0&&(
-        <div style={{marginBottom:24}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-            <div style={{flex:1,height:1,background:"var(--br)"}}/>
-            <div style={{fontSize:11,fontWeight:800,color:"var(--tx3)",textTransform:"uppercase",letterSpacing:1.5,whiteSpace:"nowrap"}}>Unlock With One More Card</div>
-            <div style={{flex:1,height:1,background:"var(--br)"}}/>
-          </div>
-          <div style={{fontSize:11,color:"var(--tx3)",marginBottom:12,textAlign:"center"}}>Just out of reach — add one card to unlock these plays</div>
-          <div className="tips-list">{unlock.map(tip=>renderTip(tip,true))}</div>
-        </div>
-      )}
+      {filterCat==='all'?renderAll():renderFiltered()}
     </div>
   );
 }
