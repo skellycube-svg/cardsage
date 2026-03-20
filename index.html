@@ -840,8 +840,8 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
   const allBenefits=useMemo(()=>{
     const list=[];
     cards.forEach(card=>{
-      card.annual.forEach(b=>list.push({...b,cardId:card.id,card,key:card.id+"-"+b.n,isMonthly:false}));
-      card.monthly.forEach(b=>list.push({...b,cardId:card.id,card,key:card.id+"-m-"+b.n,isMonthly:true}));
+      card.annual.forEach(b=>list.push({...b,cardId:card.id,card,key:benKey(card.id,b,false),isMonthly:false}));
+      card.monthly.forEach(b=>list.push({...b,cardId:card.id,card,key:benKey(card.id,b,true),isMonthly:true}));
     });
     return list;
   },[cards]);
@@ -2575,6 +2575,7 @@ function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady,pwaPrompt,onInsta
 }
 
 /* ── BENEFIT RESET HELPER ─────────────────────────────────────────────────── */
+function benKey(cardId,b,isMonthly){return isMonthly?cardId+"-m-"+b.n:cardId+"-"+b.n;}
 function needsReset(reset,checkDate,now){
   const cy=now.getFullYear(),cm=now.getMonth();
   const ly=checkDate.getFullYear(),lm=checkDate.getMonth();
@@ -2637,8 +2638,8 @@ function App(){
     myCards.forEach(cardId=>{
       const card=CARDS.find(c=>c.id===cardId);
       if(!card) return;
-      card.annual.forEach(b=>{benefitMap[cardId+"-"+b.n]={...b,isMonthly:false};});
-      card.monthly.forEach(b=>{benefitMap[cardId+"-m-"+b.n]={...b,isMonthly:true};});
+      card.annual.forEach(b=>{benefitMap[benKey(cardId,b,false)]={...b,isMonthly:false};});
+      card.monthly.forEach(b=>{benefitMap[benKey(cardId,b,true)]={...b,isMonthly:true};});
     });
 
     checkedArr.forEach(key=>{
