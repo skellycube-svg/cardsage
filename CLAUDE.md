@@ -243,3 +243,4 @@ After completing any significant change to CardSage, always do the following aut
 3. **UPDATE MANIFEST**: If the app name, theme color, or branding changed, update manifest.json to match.
 4. **DEPLOY TO GITHUB**: `git add . && git commit -m "[description]" && git push`
 5. **CONFIRM**: After pushing, tell me "Deployed to GitHub — Netlify will update in ~30 seconds"
+6. **VERIFY BENEFITS**: When updating any card's data, always web search for "[card name] current benefits 2026" to verify all credits, perks, protections, and reset schedules are complete and accurate before committing. Never remove a benefit unless confirmed discontinued. Never add a benefit without a source.
