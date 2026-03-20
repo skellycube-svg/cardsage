@@ -2,23 +2,35 @@
   "name": "CardSage",
   "short_name": "CardSage",
   "description": "Credit card benefit tracking and points optimization",
-  "start_url": "./index.html",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#3730a3",
   "background_color": "#f8f7f4",
   "icons": [
     {
-      "src": "./icon-192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "./icon-512.png",
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

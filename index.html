@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="CardSage"/>
-<link rel="manifest" href="./manifest.json"/>
+<link rel="manifest" href="/manifest.json"/>
 <link rel="apple-touch-icon" href="./icon-192.png"/>
 <meta name="description" content="CardSage helps you track credit card benefits, maximize points, and never miss a monthly credit. Free tool for points &amp; miles enthusiasts."/>
 <meta name="robots" content="index, follow"/>
@@ -366,11 +366,36 @@ input,select,button{font-family:inherit}
   width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .auth-sync-badge{font-size:9px;color:var(--grn2);font-weight:700;
   background:rgba(22,163,74,.1);border-radius:99px;padding:2px 6px}
+/* ── PWA INSTALL ────────────────────────────────────────────────────────────── */
+.install-btn{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:99px;
+  border:1px solid rgba(55,48,163,.3);background:rgba(55,48,163,.07);cursor:pointer;
+  font-size:11px;font-weight:600;color:var(--acc);font-family:'Barlow',sans-serif;
+  transition:background .15s,border-color .15s;white-space:nowrap}
+.install-btn:hover{background:rgba(55,48,163,.13);border-color:rgba(55,48,163,.5)}
+.ios-install-banner{display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:10px 16px;background:rgba(55,48,163,.07);
+  border-bottom:1px solid rgba(55,48,163,.15);font-size:12px;color:var(--tx2);
+  position:sticky;top:var(--nav-h,112px);z-index:190}
+.ios-install-banner button{background:none;border:none;cursor:pointer;color:var(--tx3);
+  font-size:16px;line-height:1;padding:2px 4px;flex-shrink:0}
 </style>
 </head>
 <body>
 <canvas id="bg"></canvas>
 <div id="root"></div>
+<!-- Capture beforeinstallprompt before React mounts — it can fire very early -->
+<script>
+window._pwaPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();
+  window._pwaPrompt=e;
+  window.dispatchEvent(new CustomEvent('cs-pwa-ready'));
+});
+window.addEventListener('appinstalled',function(){
+  window._pwaPrompt=null;
+  window.dispatchEvent(new CustomEvent('cs-pwa-installed'));
+});
+</script>
 <script src="cards-data.js"></script>
 <script type="text/babel">
 const {useState,useEffect,useCallback,useMemo,useRef}=React;
@@ -2410,7 +2435,7 @@ const NAV_TABS=[
   {id:"wallet", label:"Wallet",   sub:"My Cards"},
 ];
 
-function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady}){
+function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady,pwaPrompt,onInstall}){
   return (
     <div className="top-nav">
       <div className="top-nav-brand">
@@ -2420,6 +2445,7 @@ function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady}){
         </div>
         <div className="top-nav-brand-right">
           <span style={{fontSize:11,color:"var(--tx3)",fontWeight:700,fontFamily:"'Source Code Pro',monospace"}}>💳 {cardCount} card{cardCount!==1?"s":""}</span>
+          {pwaPrompt&&<button className="install-btn" onClick={onInstall}>⊕ Install</button>}
           <AuthButton user={user} onSignIn={onAuthClick} fbReady={fbReady}/>
         </div>
       </div>
@@ -2444,6 +2470,12 @@ function App(){
   const [user,setUser]=useState(null);
   const [authModal,setAuthModal]=useState(false);
   const [fbReady,setFbReady]=useState(!!window.CS_FB);
+  const [pwaPrompt,setPwaPrompt]=useState(window._pwaPrompt||null);
+  const [iosBanner,setIosBanner]=useState(()=>{
+    const isIos=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isStandalone=window.navigator.standalone===true;
+    return isIos&&!isStandalone&&!localStorage.getItem('cs_ios_dismissed');
+  });
 
   // Refs so async callbacks always see latest values
   const cardsRef=useRef(myCards);   cardsRef.current=myCards;
@@ -2458,6 +2490,25 @@ function App(){
     const newSet=updateFn(checkedSet);
     setCheckedArr([...newSet]);
   }
+
+  // ── PWA install prompt ────────────────────────────────────────────────────
+  useEffect(()=>{
+    const onReady=()=>setPwaPrompt(window._pwaPrompt);
+    const onInstalled=()=>setPwaPrompt(null);
+    window.addEventListener('cs-pwa-ready',onReady);
+    window.addEventListener('cs-pwa-installed',onInstalled);
+    return()=>{
+      window.removeEventListener('cs-pwa-ready',onReady);
+      window.removeEventListener('cs-pwa-installed',onInstalled);
+    };
+  },[]);
+
+  const handleInstall=async()=>{
+    if(!pwaPrompt) return;
+    pwaPrompt.prompt();
+    await pwaPrompt.userChoice;
+    setPwaPrompt(null);
+  };
 
   // ── Wait for Firebase module to finish loading ─────────────────────────────
   useEffect(()=>{
@@ -2512,7 +2563,13 @@ function App(){
   return (
     <div style={{minHeight:"100vh",paddingBottom:48}}>
       {authModal&&<AuthModal onClose={()=>setAuthModal(false)}/>}
-      <TopNav tab={tab} setTab={setTab} cardCount={myCards.length} user={user} onAuthClick={()=>setAuthModal(true)} fbReady={fbReady}/>
+      <TopNav tab={tab} setTab={setTab} cardCount={myCards.length} user={user} onAuthClick={()=>setAuthModal(true)} fbReady={fbReady} pwaPrompt={pwaPrompt} onInstall={handleInstall}/>
+      {iosBanner&&(
+        <div className="ios-install-banner">
+          <span>📲 Tap the <strong>Share</strong> button then <strong>Add to Home Screen</strong> to install CardSage</span>
+          <button onClick={()=>{setIosBanner(false);localStorage.setItem('cs_ios_dismissed','1');}}>✕</button>
+        </div>
+      )}
       <div className="tab-content-wrap" style={{paddingTop:8}}>
         {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal}/>}
         {tab==="benefits"&&<BenefitsTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits}/>}
