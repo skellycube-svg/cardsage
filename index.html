@@ -830,11 +830,10 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
 }
 
 /* ── BENEFITS TAB ─────────────────────────────────────────────────────────── */
+const RESET_LABELS={monthly:"Monthly",quarterly:"Quarterly","semi-annual":"Semi-annual",annual:"Annual"};
 function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckDates,resetBadges=new Set()}){
   const [filterCat,setFilterCat]=useState("all");
   const [openBen,setOpenBen]=useState(null);
-
-  const RESET_LABELS={monthly:"Monthly",quarterly:"Quarterly","semi-annual":"Semi-annual",annual:"Annual"};
 
   const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
 
@@ -847,16 +846,18 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
     return list;
   },[cards]);
 
+  const trackable=useMemo(()=>allBenefits.filter(b=>b.v!=null),[allBenefits]);
+
   const filtered=useMemo(()=>{
     if(filterCat==="all")return allBenefits;
-    if(filterCat==="unused")return allBenefits.filter(b=>!checkedSet.has(b.key));
+    if(filterCat==="unused")return trackable.filter(b=>!checkedSet.has(b.key));
     return allBenefits.filter(b=>b.cat===filterCat);
-  },[allBenefits,filterCat,checkedSet]);
+  },[allBenefits,trackable,filterCat,checkedSet]);
 
-  const checkedCount=allBenefits.filter(b=>checkedSet.has(b.key)).length;
-  const pct=allBenefits.length?Math.round((checkedCount/allBenefits.length)*100):0;
-  const usedValue=allBenefits.filter(b=>checkedSet.has(b.key)&&b.v).reduce((s,b)=>s+(b.isMonthly?(b.v*12):b.v),0);
-  const totalValue=allBenefits.filter(b=>b.v).reduce((s,b)=>s+(b.isMonthly?(b.v*12):b.v),0);
+  const checkedCount=useMemo(()=>trackable.filter(b=>checkedSet.has(b.key)).length,[trackable,checkedSet]);
+  const pct=useMemo(()=>trackable.length?Math.round((checkedCount/trackable.length)*100):0,[checkedCount,trackable]);
+  const usedValue=useMemo(()=>trackable.filter(b=>checkedSet.has(b.key)).reduce((s,b)=>s+(b.isMonthly?(b.v*12):b.v),0),[trackable,checkedSet]);
+  const totalValue=useMemo(()=>trackable.reduce((s,b)=>s+(b.isMonthly?(b.v*12):b.v),0),[trackable]);
 
   function toggle(key,e){
     e.stopPropagation();
@@ -940,16 +941,19 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
                   const wasReset=resetBadges.has(b.key);
                   return (
                     <div key={b.key} onClick={()=>toggleExpand(b.key)}
+                      role="button" tabIndex={0}
+                      onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&toggleExpand(b.key)}
                       style={{borderBottom:i<cardBens.length-1?"1px solid var(--br)":"none",padding:"10px 0",cursor:"pointer"}}>
                       {/* Collapsed row */}
                       <div style={{display:"flex",alignItems:"center",gap:10}}>
                         <button className={"ben-check"+(done?" done":"")} onClick={e=>toggle(b.key,e)}>
-                          {done&&<span style={{color:"#fff",fontSize:13,lineHeight:1}}>✓</span>}
+                          {done&&<span style={{color:"var(--bg)",fontSize:13,lineHeight:1}}>✓</span>}
                         </button>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:3}}>
                             <span style={{fontSize:13,fontWeight:600,color:done?"var(--tx3)":"var(--tx)",textDecoration:done?"line-through":"none"}}>{b.n}</span>
                             <span style={{padding:"1px 7px",borderRadius:99,fontSize:10,fontWeight:700,color:bc.color,background:bc.bg}}>{bc.icon} {bc.label}</span>
+                            {/* one-time (protections) intentionally shows no reset pill */}
                             {rl&&<span style={{padding:"1px 6px",borderRadius:99,fontSize:10,background:"rgba(148,163,184,.15)",color:"var(--tx3)",fontWeight:600}}>{rl}</span>}
                             {wasReset&&<span style={{padding:"1px 7px",borderRadius:99,fontSize:10,background:"rgba(212,168,64,.18)",color:"var(--gld3)",fontWeight:700}}>↺ Refreshed</span>}
                           </div>
