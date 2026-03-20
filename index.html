@@ -2710,22 +2710,22 @@ function App(){
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 
 if('serviceWorker' in navigator){
+  // Reload whenever a new service worker takes control of this tab
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    window.location.reload();
+  });
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('./sw.js')
-      .then(reg=>{
-        reg.addEventListener('updatefound',()=>{
-          const newSW=reg.installing;
-          if(!newSW) return;
-          newSW.addEventListener('statechange',()=>{
-            // skipWaiting() in sw.js means the new SW activates immediately.
-            // Reload once when it takes control so users get fresh files.
-            if(newSW.state==='activated'&&navigator.serviceWorker.controller){
-              window.location.reload();
-            }
-          });
-        });
-      })
       .catch(err=>console.warn('SW registration failed:',err));
+    // Version check: if a new version deployed while tab was open, force reload
+    fetch('./version.json',{cache:'no-store'})
+      .then(r=>r.json())
+      .then(({version})=>{
+        const stored=localStorage.getItem('cs_app_version');
+        localStorage.setItem('cs_app_version',version);
+        if(stored&&stored!==version) window.location.reload();
+      })
+      .catch(()=>{});
   });
 }
 </script>

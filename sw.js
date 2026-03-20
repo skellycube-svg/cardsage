@@ -1,5 +1,5 @@
 // ── INCREMENT THIS when deploying updates to force cache refresh ──────────
-const CACHE_VERSION = 'v15';
+const CACHE_VERSION = 'v16';
 // ─────────────────────────────────────────────────────────────────────────
 
 const CACHE = 'cardsage-' + CACHE_VERSION;
@@ -8,6 +8,7 @@ const CACHE = 'cardsage-' + CACHE_VERSION;
 const LOCAL_ASSETS = [
   './index.html',
   './cards-data.js',
+  './version.json',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -32,7 +33,7 @@ self.addEventListener('install', e => {
   );
 });
 
-// ── Activate: remove old caches ───────────────────────────────────────────
+// ── Activate: delete ALL old caches, then claim open tabs immediately ──────
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
@@ -43,24 +44,47 @@ self.addEventListener('activate', e => {
   );
 });
 
-// ── Fetch: cache-first for local + CDN, network-only for everything else ──
+// ── Fetch ──────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   const isLocal = url.origin === self.location.origin;
   const isCDN = CDN_ORIGINS.some(o => e.request.url.startsWith(o));
 
-  if (isLocal || isCDN) {
+  if (!isLocal && !isCDN) return;
+
+  // Network-first for HTML, data, and version files — always fresh when online
+  const path = url.pathname;
+  const isNetworkFirst = isLocal && (
+    path === '/' ||
+    path.endsWith('.html') ||
+    path.endsWith('cards-data.js') ||
+    path.endsWith('version.json')
+  );
+
+  if (isNetworkFirst) {
     e.respondWith(
-      caches.match(e.request).then(cached => {
-        if (cached) return cached;
-        return fetch(e.request).then(res => {
-          // Only cache valid responses
+      fetch(e.request)
+        .then(res => {
           if (!res || res.status !== 200 || res.type === 'error') return res;
           const clone = res.clone();
           caches.open(CACHE).then(cache => cache.put(e.request, clone));
           return res;
-        }).catch(() => cached); // offline fallback: return stale if any
-      })
+        })
+        .catch(() => caches.match(e.request)) // offline fallback
     );
+    return;
   }
+
+  // Cache-first for everything else (icons, manifest, CDN assets)
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
+        if (!res || res.status !== 200 || res.type === 'error') return res;
+        const clone = res.clone();
+        caches.open(CACHE).then(cache => cache.put(e.request, clone));
+        return res;
+      }).catch(() => cached);
+    })
+  );
 });
