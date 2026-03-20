@@ -164,6 +164,7 @@ Returns integer days until a given date string. Used for benefit reset countdown
 | `cs_email` | `string` | User's email address (optional, from EmailCapture) |
 | `cs_quiz` | `object \| null` | Saved quiz answers object |
 | `cs_tips_mode` | `string` | Tips tab mode preference (`'beginner'` or `'advanced'`) |
+| `cs_benefit_check_dates` | `object` | Map of benefit key → ISO date string when it was last checked |
 
 All keys are managed via the `useLS(key, defaultValue)` hook, which wraps `useState` + `localStorage`.
 

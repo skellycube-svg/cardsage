@@ -2574,11 +2574,26 @@ function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady,pwaPrompt,onInsta
   );
 }
 
+/* ── BENEFIT RESET HELPER ─────────────────────────────────────────────────── */
+function needsReset(reset,checkDate,now){
+  const cy=now.getFullYear(),cm=now.getMonth();
+  const ly=checkDate.getFullYear(),lm=checkDate.getMonth();
+  switch(reset){
+    case'monthly':    return cy>ly||(cy===ly&&cm>lm);
+    case'quarterly':  {const q=m=>Math.floor(m/3);return cy>ly||(cy===ly&&q(cm)>q(lm));}
+    case'semi-annual':{const h=m=>m<6?0:1;return cy>ly||(cy===ly&&h(cm)>h(lm));}
+    case'annual':     return cy>ly;
+    default:          return false;
+  }
+}
+
 /* ── APP ROOT ─────────────────────────────────────────────────────────────── */
 function App(){
   const [myCards,setMyCards]=useLS("cs_cards",[]);
   const [tab,setTab]=useState("home");
   const [checkedArr,setCheckedArr]=useLS("cs_checked",[]);
+  const [checkDates,setCheckDates]=useLS("cs_benefit_check_dates",{});
+  const [resetBadges,setResetBadges]=useState(new Set());
   const [stratModal,setStratModal]=useState(null);
   const [user,setUser]=useState(null);
   const [authModal,setAuthModal]=useState(false);
@@ -2609,6 +2624,40 @@ function App(){
   const mountedRef=useRef(false);
 
   const checkedSet=useMemo(()=>new Set(checkedArr),[checkedArr]);
+
+  useEffect(()=>{
+    if(!checkedArr.length) return;
+    const now=new Date();
+    const newChecked=new Set(checkedArr);
+    const newDates={...checkDates};
+    const badgeKeys=new Set();
+
+    // Build flat benefit map for wallet cards
+    const benefitMap={};
+    myCards.forEach(cardId=>{
+      const card=CARDS.find(c=>c.id===cardId);
+      if(!card) return;
+      card.annual.forEach(b=>{benefitMap[cardId+"-"+b.n]={...b,isMonthly:false};});
+      card.monthly.forEach(b=>{benefitMap[cardId+"-m-"+b.n]={...b,isMonthly:true};});
+    });
+
+    checkedArr.forEach(key=>{
+      const b=benefitMap[key];
+      const dateStr=checkDates[key];
+      if(!b||!dateStr||!b.reset) return;
+      if(needsReset(b.reset,new Date(dateStr),now)){
+        newChecked.delete(key);
+        delete newDates[key];
+        badgeKeys.add(key);
+      }
+    });
+
+    if(badgeKeys.size>0){
+      setCheckedArr([...newChecked]);
+      setCheckDates(newDates);
+      setResetBadges(badgeKeys);
+    }
+  },[]); // intentionally run once on mount
 
   function setCheckedBenefits(updateFn){
     const newSet=updateFn(checkedSet);
@@ -2712,7 +2761,7 @@ function App(){
       )}
       <div className="tab-content-wrap" style={{paddingTop:8}}>
         {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal}/>}
-        {tab==="benefits"&&<BenefitsTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits}/>}
+        {tab==="benefits"&&<BenefitsTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges}/>}
         {tab==="tips"&&    <TipsTab myCards={myCards}/>}
         {tab==="usecard"&& <UsecardTab myCards={myCards}/>}
         {tab==="offers"&&  <OffersTab myCards={myCards}/>}
