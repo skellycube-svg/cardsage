@@ -238,6 +238,7 @@ Full disclosure page: `affiliate-disclosure.html`
 After completing any significant change to CardSage, always do the following automatically without being asked:
 
 1. **BUMP SERVICE WORKER**: If any of these changed — branding, colors, fonts, CSS, HTML structure, or new files added — increment the CACHE_VERSION number in sw.js
-2. **UPDATE MANIFEST**: If the app name, theme color, or branding changed, update manifest.json to match.
-3. **DEPLOY TO GITHUB**: `git add . && git commit -m "[description]" && git push`
-4. **CONFIRM**: After pushing, tell me "Deployed to GitHub — Netlify will update in ~30 seconds"
+2. **BUMP VERSION.JSON**: Set the `"version"` field in version.json to match the new CACHE_VERSION in sw.js (e.g. `{"version":"v17"}`). These two must always stay in sync.
+3. **UPDATE MANIFEST**: If the app name, theme color, or branding changed, update manifest.json to match.
+4. **DEPLOY TO GITHUB**: `git add . && git commit -m "[description]" && git push`
+5. **CONFIRM**: After pushing, tell me "Deployed to GitHub — Netlify will update in ~30 seconds"
