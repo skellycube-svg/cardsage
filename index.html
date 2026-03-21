@@ -445,6 +445,7 @@ input,select,button{font-family:inherit}
   pointer-events:none}
 .home-features-divider{width:100%;max-width:1000px;margin:0 auto;height:1px;background:var(--br2)}
 .home-features{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:32px 8px 48px;max-width:1000px;margin:0 auto}
+.cat-chip{display:inline-flex;align-items:center;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:600;border:1px solid;white-space:nowrap;letter-spacing:.2px;text-transform:capitalize}
 .home-feature-card{padding:32px 24px;text-align:center;border-left:3px solid var(--gold)}
 .home-feature-icon{width:56px;height:56px;border-radius:50%;background:var(--gold);
   color:#fff;display:flex;align-items:center;justify-content:center;
@@ -588,26 +589,29 @@ function Icon({name,size=18,color="currentColor",className=""}){
   return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>{paths}</svg>);
 }
 
-/* Emoji→Icon mapping for data-driven icons (BCAT, MERCHANT_OFFERS) */
-const EMOJI_ICON_MAP={
-  "✈️":"plane","🍽️":"utensils","🎬":"film","🌟":"star","💳":"credit-card",
-  "🎁":"gift","🛡️":"shield","👟":"shoe","🏃":"shoe","🍎":"apple",
-  "🛒":"shopping-cart","🎯":"target","🏪":"store","🛍️":"shopping-bag",
-  "🛋️":"couch","🖥️":"desktop","🛎️":"bell","⛽":"car","🏋️":"dumbbell",
-  "📊":"bar-chart","📋":"clipboard","⚡":"bolt","💰":"dollar","🔱":"trident",
-  "📅":"calendar","💡":"lightbulb","🔍":"search","🚀":"rocket","🌍":"globe",
-  "⚙":"settings","✦":"diamond","⬆":"arrow-up","✈":"plane","▸":"chevron-right",
-  "🔥":"bolt","⚠️":"warning",
-  "👟":"shoe","👗":"shirt","💄":"flower","🌸":"flower","🔨":"hammer","🪚":"wrench",
-  "👕":"shirt","📦":"package","💻":"laptop","📱":"smartphone","☕":"coffee",
-  "🌯":"utensils","🛵":"scooter","🍔":"utensils","🥡":"utensils","🥗":"utensils",
-  "🍟":"utensils","🏨":"building","🏩":"building","🌊":"wave","🦅":"diamond",
-  "🖋️":"diamond",
+/* ── ID-based icon maps (no emoji literals) ──────────────────────────────── */
+const STRAT_ICON_MAP={"chase-trifecta":"trident","amex-trifecta":"bolt","c1-duo":"diamond","citi-duo":"globe","ink-trio":"diamond","atmos-strategy":"wave"};
+const BCAT_ICON_MAP={travel:"plane",dining:"utensils",entertainment:"film",status:"star",statement:"credit-card",awards:"gift",protection:"shield"};
+const SPEND_CAT_ICON={d:"utensils",g:"shopping-cart",gas:"car",t:"plane",s:"tv",a:"package",tr:"car",p:"pill",o:"credit-card"};
+const SPECIAL_CAT_ICON={hyatt:"building",delta:"plane",sw:"plane",united:"plane",hilton:"building",marriott:"building",alaska:"wave",aa:"plane",amazon:"package",rent:"home",ihg:"building"};
+
+/* ── Category color system ────────────────────────────────────────────────── */
+const CATEGORY_COLORS={
+  dining:       {bg:"#fdf4ec",text:"#92400e",border:"#f59e0b"},
+  travel:       {bg:"#eff6ff",text:"#1e40af",border:"#3b82f6"},
+  shopping:     {bg:"#f5f3ff",text:"#5b21b6",border:"#8b5cf6"},
+  grocery:      {bg:"#f0fdf4",text:"#166534",border:"#22c55e"},
+  gas:          {bg:"#fff7ed",text:"#9a3412",border:"#f97316"},
+  streaming:    {bg:"#fdf2f8",text:"#86198f",border:"#d946ef"},
+  health:       {bg:"#f0f9ff",text:"#0c4a6e",border:"#0ea5e9"},
+  transit:      {bg:"#f8fafc",text:"#334155",border:"#64748b"},
+  other:        {bg:"#f9fafb",text:"#374151",border:"#9ca3af"},
+  entertainment:{bg:"#f0f9ff",text:"#0c4a6e",border:"#0ea5e9"},
 };
-function EIcon({emoji,size=14,color="currentColor"}){
-  const n=EMOJI_ICON_MAP[emoji];
-  if(n)return <Icon name={n} size={size} color={color}/>;
-  return <span>{emoji}</span>;
+const SPEND_CAT_COLOR={d:"dining",g:"grocery",gas:"gas",t:"travel",s:"streaming",a:"shopping",tr:"transit",p:"health",o:"other"};
+function CatChip({cat,label}){
+  const cc=CATEGORY_COLORS[cat]||CATEGORY_COLORS.other;
+  return <span className="cat-chip" style={{background:cc.bg,color:cc.text,borderColor:cc.border}}>{label||cat}</span>;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -725,7 +729,7 @@ function StratModal({stratId,myCards,onClose}){
           {/* Header */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"18px 0 14px"}}>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <span style={{display:"inline-flex"}}><EIcon emoji={s.emoji} size={28} color="var(--acc)"/></span>
+              <Icon name={STRAT_ICON_MAP[s.id]||"diamond"} size={28} color="var(--acc)"/>
               <div>
                 <div style={{fontSize:19,fontWeight:900,color:"var(--tx)",letterSpacing:-.3}}>{s.name}</div>
                 <div style={{fontSize:12,color:"var(--grn2)",fontWeight:700,marginTop:2}}>{s.value} estimated value</div>
@@ -1064,7 +1068,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
               <div key={sid} className="surf glow-card" style={{marginBottom:8,cursor:"pointer"}} onClick={()=>setStratModal(sid)}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <span style={{display:"inline-flex"}}><EIcon emoji={s.emoji} size={24} color="var(--acc)"/></span>
+                    <Icon name={STRAT_ICON_MAP[s.id]||"diamond"} size={24} color="var(--acc)"/>
                     <div>
                       <div style={{fontSize:14,fontWeight:800,color:"var(--tx)"}}>{s.name}</div>
                       <div style={{fontSize:11,color:"var(--grn2)",fontWeight:700,marginTop:1}}>{s.value}</div>
@@ -1091,7 +1095,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
               <div key={s.id} className="surf glow-card" style={{marginBottom:8,cursor:"pointer",borderColor:"rgba(245,158,11,.2)"}} onClick={()=>setStratModal(s.id)}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{display:"inline-flex"}}><EIcon emoji={s.emoji} size={20} color="var(--acc)"/></span>
+                    <Icon name={STRAT_ICON_MAP[s.id]||"diamond"} size={20} color="var(--acc)"/>
                     <div>
                       <div style={{fontSize:13,fontWeight:800,color:"var(--tx)"}}>{s.name}</div>
                       <div style={{fontSize:11,color:"var(--gld2)",fontWeight:700}}>{s.value} potential</div>
@@ -1206,11 +1210,11 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
 
       {/* Category filter */}
       <div className="hscroll" style={{marginBottom:14,gap:6}}>
-        {[{id:"all",label:"All",icon:"clipboard"},{id:"unused",label:"Unused",icon:"bolt"},
-          ...Object.entries(BCAT).map(([id,b])=>({id,label:b.label,emoji:b.icon}))
+        {[{id:"all",label:"All",iconName:"clipboard"},{id:"unused",label:"Unused",iconName:"bolt"},
+          ...Object.entries(BCAT).map(([id,b])=>({id,label:b.label,iconName:BCAT_ICON_MAP[id]||"credit-card"}))
         ].map(f=>(
           <button key={f.id} className={"pill "+(filterCat===f.id?"pill-a":"pill-i")} onClick={()=>setFilterCat(f.id)}>
-            {f.icon?<Icon name={f.icon} size={12}/>:<EIcon emoji={f.emoji} size={12}/>} {f.label}
+            <Icon name={f.iconName} size={12}/> {f.label}
           </button>
         ))}
       </div>
@@ -1257,7 +1261,7 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:3}}>
                             <span style={{fontSize:13,fontWeight:600,color:done?"var(--tx3)":"var(--tx)",textDecoration:done?"line-through":"none"}}>{b.n}</span>
-                            <span style={{padding:"1px 7px",borderRadius:99,fontSize:10,fontWeight:700,color:bc.color,background:bc.bg}}><EIcon emoji={bc.icon} size={10} color={bc.color}/> {bc.label}</span>
+                            <span style={{padding:"1px 7px",borderRadius:99,fontSize:10,fontWeight:700,color:bc.color,background:bc.bg}}><Icon name={BCAT_ICON_MAP[b.cat]||"credit-card"} size={10} color={bc.color}/> {bc.label}</span>
                             {/* one-time (protections) intentionally shows no reset pill */}
                             {rl&&<span style={{padding:"1px 6px",borderRadius:99,fontSize:10,background:"rgba(148,163,184,.15)",color:"var(--tx3)",fontWeight:600}}>{rl}</span>}
                             {wasReset&&<span style={{padding:"1px 7px",borderRadius:99,fontSize:10,background:"rgba(212,168,64,.18)",color:"var(--gld3)",fontWeight:700}}>↺ Refreshed</span>}
@@ -1594,7 +1598,7 @@ function UsecardTab({myCards}){
               <div key={cat.id} className={"cat-tile"+(selCat===cat.id?" sel":"")}
                 style={{borderColor:selCat===cat.id?cat.color:"var(--br)"}}
                 onClick={()=>setSelCat(selCat===cat.id?null:cat.id)}>
-                <span style={{fontSize:22}}>{cat.icon}</span>
+                <Icon name={SPEND_CAT_ICON[cat.id]||"credit-card"} size={22} color={cat.color}/>
                 <div style={{fontSize:11,fontWeight:700,color:"var(--tx)",textAlign:"center"}}>{cat.label}</div>
                 <div style={{fontSize:9,color:"var(--tx3)",textAlign:"center"}}>{cat.sub}</div>
               </div>
@@ -1605,8 +1609,9 @@ function UsecardTab({myCards}){
             const results=getBestForCat(selCat);
             return (
               <div className="surf fu" style={{borderColor:cat.color+"44"}}>
-                <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:12}}>
-                  Best card for <span style={{color:cat.color}}>{cat.label}</span>:
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                  <span style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>Best card for</span>
+                  <CatChip cat={SPEND_CAT_COLOR[selCat]||"other"} label={cat.label}/>
                 </div>
                 {!results.length?(
                   <div style={{color:"var(--tx3)",fontSize:13}}>No matching cards in wallet for this category.</div>
@@ -1615,10 +1620,15 @@ function UsecardTab({myCards}){
                     <div key={card.id} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 0",borderBottom:i<results.length-1?"1px solid var(--br)":"none"}}>
                       <div style={{width:30,height:30,borderRadius:9,background:`linear-gradient(135deg,${card.c1},${card.c2})`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"rgba(255,255,255,.8)"}}>#{i+1}</div>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{card.short}</div>
+                        <div style={{display:"flex",alignItems:"center",gap:6}}>
+                          <span style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{card.short}</span>
+                        </div>
                         <div style={{fontSize:11,color:"var(--tx3)"}}>{card.cur}</div>
                       </div>
-                      <div style={{fontSize:19,fontWeight:800,color:i===0?"var(--gld2)":"var(--tx2)"}}>{rate}</div>
+                      <div style={{display:"flex",alignItems:"center",gap:6}}>
+                        <span style={{fontSize:19,fontWeight:800,color:i===0?"var(--gld2)":"var(--tx2)"}}>{rate}</span>
+                        <CatChip cat={SPEND_CAT_COLOR[selCat]||"other"} label={cat.label}/>
+                      </div>
                     </div>
                   ))
                 )}
@@ -1644,7 +1654,7 @@ function UsecardTab({myCards}){
                 return (
                   <div key={sc.id} className="surf" style={{padding:12}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                      <span style={{fontSize:18}}>{sc.icon}</span>
+                      <Icon name={SPECIAL_CAT_ICON[sc.id]||"star"} size={18} color={sc.color}/>
                       <div>
                         <div style={{fontSize:12,fontWeight:700,color:"var(--tx)"}}>{sc.label}</div>
                         <div style={{fontSize:10,color:"var(--tx3)"}}>{sc.sub}</div>
@@ -1723,218 +1733,218 @@ function UsecardTab({myCards}){
 /* ── OFFERS TAB ───────────────────────────────────────────────────────────── */
 const MERCHANT_OFFERS=[
 // ── SHOPPING ──────────────────────────────────────────────────────────────
-{merchant:"Nike",slug:"nike",cat:"shopping",icon:"👟",programs:[
+{merchant:"Nike",slug:"nike",cat:"shopping",programs:[
   {prog:"Amex Offers",typical:"$10–$15 back on $50+",freq:"frequent",note:"Check Amex app under 'Amex Offers'. Activate before purchasing in-store or online."},
   {prog:"Chase Offers",typical:"10% back (up to $15)",freq:"seasonal",note:"Most common around back-to-school and the holidays. Find in the Chase app or chase.com/offers."},
 ]},
-{merchant:"Adidas",slug:"adidas",cat:"shopping",icon:"🏃",programs:[
+{merchant:"Adidas",slug:"adidas",cat:"shopping",programs:[
   {prog:"Amex Offers",typical:"$15–$20 back on $75+",freq:"seasonal",note:"Often runs in fall around new product launches. Activate in Amex app."},
   {prog:"Capital One Offers",typical:"5–8% back",freq:"occasional",note:"Check the Capital One app or shopping portal."},
 ]},
-{merchant:"Apple",slug:"apple",cat:"shopping",icon:"🍎",programs:[
+{merchant:"Apple",slug:"apple",cat:"shopping",programs:[
   {prog:"Amex Offers",typical:"$10–$20 back on $100+",freq:"seasonal",note:"Runs around September product launches and the holiday season."},
   {prog:"Chase Offers",typical:"5% back (up to $20)",freq:"occasional",note:"Check the Chase app. More likely in December."},
 ]},
-{merchant:"Best Buy",slug:"bestbuy",cat:"shopping",icon:"🛒",aliases:["best buy"],programs:[
+{merchant:"Best Buy",slug:"bestbuy",cat:"shopping",aliases:["best buy"],programs:[
   {prog:"Amex Offers",typical:"$15–$25 back on $100+",freq:"frequent",note:"One of the most consistent Amex Offers. Activate before any electronics purchase."},
   {prog:"Chase Offers",typical:"10% back (up to $30)",freq:"frequent",note:"Appears reliably in the Chase app. Always check before a Best Buy run."},
   {prog:"Citi Offers",typical:"8% back",freq:"seasonal",note:"Check your Citi app around Black Friday and tax-refund season."},
 ]},
-{merchant:"Target",slug:"target",cat:"shopping",icon:"🎯",programs:[
+{merchant:"Target",slug:"target",cat:"shopping",programs:[
   {prog:"Amex Offers",typical:"$10 back on $50+",freq:"frequent",note:"Appears frequently in the Amex app. Activate before every trip."},
   {prog:"BofA Deals",typical:"5% back (up to $20)",freq:"occasional",note:"Found in the BofA app under 'Deals'."},
 ]},
-{merchant:"Walmart",slug:"walmart",cat:"shopping",icon:"🏪",programs:[
+{merchant:"Walmart",slug:"walmart",cat:"shopping",programs:[
   {prog:"Chase Offers",typical:"5% back (up to $10)",freq:"seasonal",note:"Check the Chase app around the holiday season and back-to-school."},
   {prog:"BofA Deals",typical:"3% back",freq:"occasional",note:"Check your BofA app's deals section."},
 ]},
-{merchant:"Nordstrom",slug:"nordstrom",cat:"shopping",icon:"👗",programs:[
+{merchant:"Nordstrom",slug:"nordstrom",cat:"shopping",programs:[
   {prog:"Amex Offers",typical:"$25–$50 back on $100+",freq:"seasonal",note:"Often runs during the Nordstrom Anniversary Sale (July) and the holiday season."},
   {prog:"Chase Offers",typical:"10% back (up to $25)",freq:"seasonal",note:"Check the Chase app around major Nordstrom sale events."},
 ]},
-{merchant:"Macy's",slug:"macys",cat:"shopping",icon:"🛍️",aliases:["macys","macy"],programs:[
+{merchant:"Macy's",slug:"macys",cat:"shopping",aliases:["macys","macy"],programs:[
   {prog:"Amex Offers",typical:"$15 back on $75+",freq:"frequent",note:"Amex frequently offers Macy's deals. Activate in your Amex app."},
   {prog:"Citi Offers",typical:"10% back",freq:"seasonal",note:"Often appears around department store sale events."},
 ]},
-{merchant:"Sephora",slug:"sephora",cat:"shopping",icon:"💄",programs:[
+{merchant:"Sephora",slug:"sephora",cat:"shopping",programs:[
   {prog:"Amex Offers",typical:"$10–$15 back on $50+",freq:"frequent",note:"One of the most consistent Amex Offers merchants. Check before every order."},
   {prog:"Chase Offers",typical:"10% back (up to $15)",freq:"seasonal",note:"Check the Chase app during Sephora sale events."},
 ]},
-{merchant:"Ulta Beauty",slug:"ulta",cat:"shopping",icon:"🌸",aliases:["ulta"],programs:[
+{merchant:"Ulta Beauty",slug:"ulta",cat:"shopping",aliases:["ulta"],programs:[
   {prog:"Amex Offers",typical:"$10 back on $50+",freq:"frequent",note:"Activate in your Amex app before in-store or online purchases."},
   {prog:"Citi Offers",typical:"8% back",freq:"seasonal",note:"Check during Ulta's 21 Days of Beauty event."},
 ]},
-{merchant:"Home Depot",slug:"homedepot",cat:"shopping",icon:"🔨",aliases:["home depot"],programs:[
+{merchant:"Home Depot",slug:"homedepot",cat:"shopping",aliases:["home depot"],programs:[
   {prog:"Amex Offers",typical:"$20–$30 back on $100+",freq:"frequent",note:"Among the highest-value and most frequent Amex Offers. Check before any home improvement run."},
   {prog:"Chase Offers",typical:"5–10% back (up to $30)",freq:"seasonal",note:"Often runs in spring and around the holidays."},
 ]},
-{merchant:"Lowe's",slug:"lowes",cat:"shopping",icon:"🪚",aliases:["lowes"],programs:[
+{merchant:"Lowe's",slug:"lowes",cat:"shopping",aliases:["lowes"],programs:[
   {prog:"Amex Offers",typical:"$20 back on $100+",freq:"seasonal",note:"Check your Amex app in spring and fall."},
   {prog:"Wells Fargo Deals",typical:"5% back",freq:"occasional",note:"Look in the Wells Fargo app under 'My Deals'."},
 ]},
-{merchant:"Wayfair",slug:"wayfair",cat:"shopping",icon:"🛋️",programs:[
+{merchant:"Wayfair",slug:"wayfair",cat:"shopping",programs:[
   {prog:"Amex Offers",typical:"$20–$30 back on $100+",freq:"seasonal",note:"Runs during Way Day and Black Friday. Activate in your Amex app."},
   {prog:"Chase Offers",typical:"8% back (up to $20)",freq:"seasonal",note:"Check the Chase app around major Wayfair sale events."},
 ]},
-{merchant:"Gap / Old Navy",slug:"gap",cat:"shopping",icon:"👕",aliases:["gap","old navy","oldnavy","banana republic","athleta"],programs:[
+{merchant:"Gap / Old Navy",slug:"gap",cat:"shopping",aliases:["gap","old navy","oldnavy","banana republic","athleta"],programs:[
   {prog:"Amex Offers",typical:"$15–$20 back on $75+",freq:"seasonal",note:"Works at Gap, Old Navy, Banana Republic, and Athleta. Activate in Amex app."},
   {prog:"Citi Offers",typical:"10% back",freq:"seasonal",note:"Check your Citi app during seasonal sale events."},
 ]},
-{merchant:"Amazon",slug:"amazon",cat:"shopping",icon:"📦",programs:[
+{merchant:"Amazon",slug:"amazon",cat:"shopping",programs:[
   {prog:"Chase Offers",typical:"5% back on select items",freq:"occasional",note:"Prime Day often triggers Chase offers. Always check before a large order."},
   {prog:"Amex Offers",typical:"$10–$20 back on $50+",freq:"seasonal",note:"Less common but worth checking around Prime Day and the holidays."},
 ]},
-{merchant:"Microsoft",slug:"microsoft",cat:"shopping",icon:"💻",aliases:["microsoft store","xbox","surface"],programs:[
+{merchant:"Microsoft",slug:"microsoft",cat:"shopping",aliases:["microsoft store","xbox","surface"],programs:[
   {prog:"Amex Offers",typical:"$20–$30 back on $100+",freq:"seasonal",note:"Activate in your Amex app around back-to-school and the holiday season."},
   {prog:"Chase Offers",typical:"5–10% back",freq:"seasonal",note:"Check the Chase app."},
 ]},
-{merchant:"Dell",slug:"dell",cat:"shopping",icon:"🖥️",programs:[
+{merchant:"Dell",slug:"dell",cat:"shopping",programs:[
   {prog:"Amex Offers",typical:"$30–$50 back on $200+",freq:"seasonal",note:"High-value offer — check your Amex app around back-to-school."},
   {prog:"Citi Offers",typical:"10% back",freq:"seasonal",note:"Check your Citi app."},
 ]},
-{merchant:"Samsung",slug:"samsung",cat:"shopping",icon:"📱",programs:[
+{merchant:"Samsung",slug:"samsung",cat:"shopping",programs:[
   {prog:"Amex Offers",typical:"$25–$50 back on $200+",freq:"seasonal",note:"Often runs during Galaxy launches and the holiday season. Activate in Amex app."},
   {prog:"Chase Offers",typical:"8–10% back",freq:"seasonal",note:"Check the Chase app."},
 ]},
 // ── DINING ────────────────────────────────────────────────────────────────
-{merchant:"Starbucks",slug:"starbucks",cat:"dining",icon:"☕",programs:[
+{merchant:"Starbucks",slug:"starbucks",cat:"dining",programs:[
   {prog:"Amex Offers",typical:"$5–$10 back on $20+",freq:"frequent",note:"Among the most frequently activated Amex Offers. Check your app monthly."},
   {prog:"Chase Offers",typical:"10% back (up to $5)",freq:"frequent",note:"Chase consistently runs Starbucks offers. Find in the Chase app."},
   {prog:"Capital One Offers",typical:"5% back",freq:"frequent",note:"Check Capital One's offers in the app."},
 ]},
-{merchant:"Chipotle",slug:"chipotle",cat:"dining",icon:"🌯",programs:[
+{merchant:"Chipotle",slug:"chipotle",cat:"dining",programs:[
   {prog:"Amex Offers",typical:"$5 back on $25+",freq:"frequent",note:"Activate in your Amex app. Works in-store and online."},
   {prog:"Chase Offers",typical:"10% back (up to $5)",freq:"frequent",note:"Regularly in the Chase app. Check before every order."},
 ]},
-{merchant:"DoorDash",slug:"doordash",cat:"dining",icon:"🛵",aliases:["door dash"],programs:[
+{merchant:"DoorDash",slug:"doordash",cat:"dining",aliases:["door dash"],programs:[
   {prog:"Chase Offers",typical:"$5–$10 back on $30+",freq:"frequent",note:"CSR includes complimentary DashPass. Additional spend-back offers also appear regularly in the Chase app."},
   {prog:"Amex Offers",typical:"10% back on orders",freq:"frequent",note:"Activate in your Amex app. Check around major food delivery promotions."},
 ]},
-{merchant:"Uber Eats",slug:"ubereats",cat:"dining",icon:"🍔",aliases:["uber eats"],programs:[
+{merchant:"Uber Eats",slug:"ubereats",cat:"dining",aliases:["uber eats"],programs:[
   {prog:"Amex Offers",typical:"$10 back on $30+",freq:"frequent",note:"Amex Platinum includes monthly Uber Cash — Amex Offers are additional and can stack. Activate in app."},
   {prog:"Capital One Offers",typical:"5% back",freq:"seasonal",note:"Check Capital One's dining offers section."},
 ]},
-{merchant:"Grubhub",slug:"grubhub",cat:"dining",icon:"🥡",programs:[
+{merchant:"Grubhub",slug:"grubhub",cat:"dining",programs:[
   {prog:"Chase Offers",typical:"$10 back on $30+",freq:"frequent",note:"Freedom and Sapphire cards often feature Grubhub. Check the Chase app."},
 ]},
-{merchant:"Shake Shack",slug:"shakeshack",cat:"dining",icon:"🍔",aliases:["shake shack"],programs:[
+{merchant:"Shake Shack",slug:"shakeshack",cat:"dining",aliases:["shake shack"],programs:[
   {prog:"Amex Offers",typical:"$5 back on $25+",freq:"seasonal",note:"Activate in your Amex app before visiting."},
   {prog:"Chase Offers",typical:"15% back",freq:"seasonal",note:"Less frequent but a high-percentage return when it does appear."},
 ]},
-{merchant:"Sweetgreen",slug:"sweetgreen",cat:"dining",icon:"🥗",programs:[
+{merchant:"Sweetgreen",slug:"sweetgreen",cat:"dining",programs:[
   {prog:"Amex Offers",typical:"$5 back on $20+",freq:"seasonal",note:"Tends to appear in Q1 and Q3. Check your Amex app."},
 ]},
-{merchant:"McDonald's",slug:"mcdonalds",cat:"dining",icon:"🍟",aliases:["mcdonalds","mcdonald"],programs:[
+{merchant:"McDonald's",slug:"mcdonalds",cat:"dining",aliases:["mcdonalds","mcdonald"],programs:[
   {prog:"Amex Offers",typical:"$3–$5 back on $15+",freq:"occasional",note:"Lower value but occasionally appears — activate in your Amex app."},
   {prog:"Chase Offers",typical:"10% back",freq:"seasonal",note:"Check the Chase app during promotions."},
 ]},
 // ── TRAVEL ────────────────────────────────────────────────────────────────
-{merchant:"Marriott",slug:"marriott",cat:"travel",icon:"🏨",programs:[
+{merchant:"Marriott",slug:"marriott",cat:"travel",programs:[
   {prog:"Amex Offers",typical:"$50–$75 back on $250+ stay",freq:"frequent",note:"Amex Gold and Platinum are excellent for Marriott offers. Activate before booking."},
   {prog:"Chase Offers",typical:"10% back on stays (up to $50)",freq:"frequent",note:"Sapphire Reserve and Preferred regularly feature Marriott offers. May stack with Bonvoy card benefits."},
 ]},
-{merchant:"Hyatt",slug:"hyatt",cat:"travel",icon:"🛎️",programs:[
+{merchant:"Hyatt",slug:"hyatt",cat:"travel",programs:[
   {prog:"Chase Offers",typical:"$50–$100 back or 5,000 bonus pts",freq:"frequent",note:"Strong Hyatt–Chase partnership. Offers appear on Sapphire cards, the Hyatt Card, and Freedom cards."},
   {prog:"Amex Offers",typical:"$25 back on $150+ stay",freq:"occasional",note:"Worth checking in your Amex app before any Hyatt booking."},
 ]},
-{merchant:"Hilton",slug:"hilton",cat:"travel",icon:"🏩",programs:[
+{merchant:"Hilton",slug:"hilton",cat:"travel",programs:[
   {prog:"Amex Offers",typical:"$50–$100 back on stays",freq:"frequent",note:"Amex is Hilton's primary partner. Offers are most common on Hilton Amex cards and the Platinum."},
   {prog:"Capital One Offers",typical:"5–10% back on stays",freq:"seasonal",note:"Check Capital One's travel offers section."},
 ]},
-{merchant:"Delta",slug:"delta",cat:"travel",icon:"✈️",programs:[
+{merchant:"Delta",slug:"delta",cat:"travel",programs:[
   {prog:"Amex Offers",typical:"Bonus miles or $25–$50 back on flights",freq:"frequent",note:"Amex is Delta's exclusive co-brand partner. Offers appear often on all Delta Amex cards and the Platinum."},
   {prog:"Chase Offers",typical:"5% back on Delta purchases",freq:"occasional",note:"Less common but does appear — check your Chase app."},
 ]},
-{merchant:"United Airlines",slug:"united",cat:"travel",icon:"✈️",aliases:["united airlines","mileageplus"],programs:[
+{merchant:"United Airlines",slug:"united",cat:"travel",aliases:["united airlines","mileageplus"],programs:[
   {prog:"Chase Offers",typical:"$50–$75 back or 5,000 bonus miles",freq:"frequent",note:"Chase is United's primary partner. Offers appear on United Explorer, Club, and Sapphire cards."},
   {prog:"Amex Offers",typical:"5% back on United flights",freq:"occasional",note:"Occasional — check your Amex app."},
 ]},
-{merchant:"Southwest Airlines",slug:"southwest",cat:"travel",icon:"✈️",aliases:["southwest airlines","rapid rewards"],programs:[
+{merchant:"Southwest Airlines",slug:"southwest",cat:"travel",aliases:["southwest airlines","rapid rewards"],programs:[
   {prog:"Chase Offers",typical:"$25–$50 back on $100+",freq:"frequent",note:"Southwest co-brands with Chase. Offers appear on Southwest Priority, Plus, and Sapphire cards."},
 ]},
-{merchant:"American Airlines",slug:"aa",cat:"travel",icon:"✈️",aliases:["american airlines","aadvantage"],programs:[
+{merchant:"American Airlines",slug:"aa",cat:"travel",aliases:["american airlines","aadvantage"],programs:[
   {prog:"Citi Offers",typical:"Bonus miles or 5% back",freq:"frequent",note:"Citi co-brands with AA. Offers appear on AAdvantage cards and occasionally on the Double Cash and Premier."},
   {prog:"Amex Offers",typical:"5% back on AA flights",freq:"occasional",note:"Check your Amex app."},
 ]},
-{merchant:"Airbnb",slug:"airbnb",cat:"travel",icon:"🏠",programs:[
+{merchant:"Airbnb",slug:"airbnb",cat:"travel",programs:[
   {prog:"Amex Offers",typical:"$25–$50 back on $200+",freq:"seasonal",note:"Runs around major travel seasons. Activate in your Amex app before booking."},
   {prog:"Chase Offers",typical:"10% back (up to $30)",freq:"seasonal",note:"Check the Chase app, especially before summer and holiday travel."},
 ]},
-{merchant:"Hertz",slug:"hertz",cat:"travel",icon:"🚗",programs:[
+{merchant:"Hertz",slug:"hertz",cat:"travel",programs:[
   {prog:"Amex Offers",typical:"$20–$30 back on car rentals",freq:"frequent",note:"One of the most consistent Amex Offers. Platinum cardholders get Gold Plus Rewards — offers can stack."},
   {prog:"Chase Offers",typical:"10–15% back (up to $30)",freq:"frequent",note:"Regularly in the Chase app. CSR provides primary rental insurance — a natural pairing."},
 ]},
-{merchant:"Avis",slug:"avis",cat:"travel",icon:"🚙",programs:[
+{merchant:"Avis",slug:"avis",cat:"travel",programs:[
   {prog:"Amex Offers",typical:"$20–$30 back on rentals",freq:"frequent",note:"Activate in your Amex app before renting. Preferred membership benefits may stack."},
   {prog:"Citi Offers",typical:"10% back",freq:"occasional",note:"Check your Citi app."},
 ]},
-{merchant:"IHG Hotels",slug:"ihg",cat:"travel",icon:"🏨",aliases:["ihg","holiday inn","intercontinental","crowne plaza"],programs:[
+{merchant:"IHG Hotels",slug:"ihg",cat:"travel",aliases:["ihg","holiday inn","intercontinental","crowne plaza"],programs:[
   {prog:"Chase Offers",typical:"$25–$50 back on stays",freq:"frequent",note:"Chase IHG Premier cardholders see the best offers. Also appears on Sapphire cards."},
   {prog:"Amex Offers",typical:"$20 back on $100+ stay",freq:"occasional",note:"Check your Amex app before booking."},
 ]},
 // ── STREAMING ─────────────────────────────────────────────────────────────
-{merchant:"Spotify",slug:"spotify",cat:"streaming",icon:"🎵",programs:[
+{merchant:"Spotify",slug:"spotify",cat:"streaming",programs:[
   {prog:"Amex Offers",typical:"$5–$10 back on subscription",freq:"seasonal",note:"Often runs at the start of the year or Q4. Activate in your Amex app."},
   {prog:"Chase Offers",typical:"10–20% back",freq:"seasonal",note:"Check the Chase app. Usually runs once or twice a year."},
 ]},
-{merchant:"Netflix",slug:"netflix",cat:"streaming",icon:"🎬",programs:[
+{merchant:"Netflix",slug:"netflix",cat:"streaming",programs:[
   {prog:"Amex Offers",typical:"$5–$10 back on subscription",freq:"seasonal",note:"Check your Amex app. Usually runs once or twice per year."},
   {prog:"Chase Offers",typical:"5–10% back",freq:"occasional",note:"Occasional — worth checking before your renewal date."},
 ]},
-{merchant:"Disney+",slug:"disneyplus",cat:"streaming",icon:"🏰",aliases:["disney plus","disney+"],programs:[
+{merchant:"Disney+",slug:"disneyplus",cat:"streaming",aliases:["disney plus","disney+"],programs:[
   {prog:"Amex Offers",typical:"$10–$15 back on annual plan",freq:"seasonal",note:"Commonly runs around Disney's annual subscription renewal periods."},
   {prog:"Capital One Offers",typical:"5% back",freq:"seasonal",note:"Check your Capital One app."},
 ]},
-{merchant:"Hulu",slug:"hulu",cat:"streaming",icon:"📺",programs:[
+{merchant:"Hulu",slug:"hulu",cat:"streaming",programs:[
   {prog:"Chase Offers",typical:"10–20% back on subscription",freq:"seasonal",note:"Check the Chase app. Usually runs in Q4 or early Q1."},
   {prog:"Amex Offers",typical:"$5 back",freq:"occasional",note:"Check your Amex app."},
 ]},
-{merchant:"Apple TV+",slug:"appletv",cat:"streaming",icon:"📱",aliases:["apple tv","apple tv+","appletv+"],programs:[
+{merchant:"Apple TV+",slug:"appletv",cat:"streaming",aliases:["apple tv","apple tv+","appletv+"],programs:[
   {prog:"Amex Offers",typical:"$5–$10 back on annual subscription",freq:"seasonal",note:"Often runs around Apple's September product launch season."},
 ]},
 // ── GAS ───────────────────────────────────────────────────────────────────
-{merchant:"Shell",slug:"shell",cat:"gas",icon:"⛽",programs:[
+{merchant:"Shell",slug:"shell",cat:"gas",programs:[
   {prog:"Amex Offers",typical:"$10 back on $50+",freq:"frequent",note:"Shell offers appear often in the Amex app. Activate before filling up."},
   {prog:"Chase Offers",typical:"10% back (up to $10)",freq:"seasonal",note:"Check the Chase app, especially in summer driving season."},
 ]},
-{merchant:"BP",slug:"bp",cat:"gas",icon:"⛽",programs:[
+{merchant:"BP",slug:"bp",cat:"gas",programs:[
   {prog:"Amex Offers",typical:"$5–$10 back on $30+",freq:"frequent",note:"BP offers appear regularly in the Amex app. Activate before you pump."},
   {prog:"Citi Offers",typical:"5% back",freq:"seasonal",note:"Check your Citi card app."},
 ]},
-{merchant:"ExxonMobil",slug:"exxon",cat:"gas",icon:"⛽",aliases:["exxon","mobil","exxonmobil"],programs:[
+{merchant:"ExxonMobil",slug:"exxon",cat:"gas",aliases:["exxon","mobil","exxonmobil"],programs:[
   {prog:"Amex Offers",typical:"$10–$15 back on $50+",freq:"frequent",note:"One of the most reliable gas-station Amex Offers. Check before filling up."},
   {prog:"Capital One Offers",typical:"5% back",freq:"occasional",note:"Check the Capital One app."},
 ]},
-{merchant:"Chevron",slug:"chevron",cat:"gas",icon:"⛽",aliases:["texaco"],programs:[
+{merchant:"Chevron",slug:"chevron",cat:"gas",aliases:["texaco"],programs:[
   {prog:"Amex Offers",typical:"$10 back on $50+",freq:"seasonal",note:"Activate in your Amex app."},
   {prog:"Wells Fargo Deals",typical:"5% back",freq:"occasional",note:"Look in the Wells Fargo app under 'My Deals'."},
 ]},
 // ── HEALTH ────────────────────────────────────────────────────────────────
-{merchant:"Walgreens",slug:"walgreens",cat:"health",icon:"💊",programs:[
+{merchant:"Walgreens",slug:"walgreens",cat:"health",programs:[
   {prog:"Chase Offers",typical:"10% back (up to $10)",freq:"frequent",note:"Freedom cards often feature Walgreens. Check around flu season and Q4."},
   {prog:"Amex Offers",typical:"$5–$10 back on $25+",freq:"frequent",note:"Activate in your Amex app."},
 ]},
-{merchant:"CVS",slug:"cvs",cat:"health",icon:"🏥",programs:[
+{merchant:"CVS",slug:"cvs",cat:"health",programs:[
   {prog:"Amex Offers",typical:"$5–$10 back on $25+",freq:"frequent",note:"Activate in your Amex app before shopping."},
   {prog:"Chase Offers",typical:"10% back (up to $10)",freq:"frequent",note:"Freedom Unlimited gives 3x on pharmacy — combine with a Chase Offer for max value."},
 ]},
-{merchant:"Peloton",slug:"peloton",cat:"health",icon:"🚴",programs:[
+{merchant:"Peloton",slug:"peloton",cat:"health",programs:[
   {prog:"Amex Offers",typical:"$50–$100 back on $500+",freq:"seasonal",note:"High-value offer. Typically runs around New Year and Black Friday."},
   {prog:"Capital One Offers",typical:"5% back",freq:"seasonal",note:"Check the Capital One app."},
 ]},
-{merchant:"Orangetheory",slug:"orangetheory",cat:"health",icon:"🏋️",aliases:["orange theory"],programs:[
+{merchant:"Orangetheory",slug:"orangetheory",cat:"health",aliases:["orange theory"],programs:[
   {prog:"Amex Offers",typical:"$30–$50 back on monthly membership",freq:"seasonal",note:"Runs around New Year's fitness season. Activate in your Amex app."},
 ]},
 // ── GROCERY ───────────────────────────────────────────────────────────────
-{merchant:"Whole Foods",slug:"wholefoods",cat:"grocery",icon:"🥦",aliases:["whole foods","amazon fresh"],programs:[
+{merchant:"Whole Foods",slug:"wholefoods",cat:"grocery",aliases:["whole foods","amazon fresh"],programs:[
   {prog:"Amex Offers",typical:"$10–$15 back on $50+",freq:"frequent",note:"Activate in your Amex app. Amex Gold gives 4x on grocery stores — combine for maximum value."},
   {prog:"Chase Offers",typical:"5% back (up to $10)",freq:"seasonal",note:"Check the Chase app."},
 ]},
-{merchant:"Kroger",slug:"kroger",cat:"grocery",icon:"🛒",aliases:["fred meyer","ralphs","king soopers","harris teeter","fry's"],programs:[
+{merchant:"Kroger",slug:"kroger",cat:"grocery",aliases:["fred meyer","ralphs","king soopers","harris teeter","fry's"],programs:[
   {prog:"Amex Offers",typical:"$10 back on $50+",freq:"seasonal",note:"Activate in Amex app. Works at Kroger-family stores (Fred Meyer, Ralphs, King Soopers, Harris Teeter)."},
   {prog:"Wells Fargo Deals",typical:"5% back",freq:"occasional",note:"Check your Wells Fargo app."},
 ]},
-{merchant:"Instacart",slug:"instacart",cat:"grocery",icon:"🛍️",programs:[
+{merchant:"Instacart",slug:"instacart",cat:"grocery",programs:[
   {prog:"Amex Offers",typical:"$15–$20 back on $75+",freq:"frequent",note:"Amex Platinum includes complimentary Instacart+ — spend-back offers can stack. Activate in Amex app."},
   {prog:"Chase Offers",typical:"10% back (up to $15)",freq:"seasonal",note:"Check the Chase app."},
 ]},
@@ -2005,10 +2015,9 @@ function MerchantOfferCard({m, myPrograms, showOnlyMine}){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,cursor:"pointer"}}
         onClick={()=>setOpen(o=>!o)}>
         <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0}}>
-          <span style={{flexShrink:0,lineHeight:1}}><EIcon emoji={m.icon} size={22} color="var(--tx2)"/></span>
           <div style={{minWidth:0}}>
             <div style={{fontWeight:700,fontSize:14,color:"var(--tx)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{m.merchant}</div>
-            <div style={{fontSize:10,color:"var(--tx3)",textTransform:"capitalize",marginTop:1}}>{m.cat}</div>
+            <div style={{marginTop:4}}><CatChip cat={m.cat}/></div>
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
@@ -2308,7 +2317,7 @@ function WalletTab({myCards,setMyCards}){
                         <div style={{flex:1}}>
                           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:3}}>
                             <span style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{b.n}</span>
-                            <span style={{padding:"1px 7px",borderRadius:99,fontSize:10,color:bc.color,background:bc.bg,fontWeight:700}}><EIcon emoji={bc.icon} size={10} color={bc.color}/> {bc.label}</span>
+                            <span style={{padding:"1px 7px",borderRadius:99,fontSize:10,color:bc.color,background:bc.bg,fontWeight:700}}><Icon name={BCAT_ICON_MAP[b.cat]||"credit-card"} size={10} color={bc.color}/> {bc.label}</span>
                             <span style={{padding:"1px 6px",borderRadius:99,fontSize:10,background:"rgba(255,255,255,.07)",color:"var(--tx3)",fontWeight:600}}>{b.type}</span>
                           </div>
                           {b.d&&<div style={{fontSize:11,color:"var(--tx3)",lineHeight:1.5}}>{b.d}</div>}
@@ -2605,7 +2614,7 @@ function QuizResults({answers,onRetake,myCards}){
           <div style={{fontSize:10,fontWeight:800,color:"var(--tx3)",textTransform:"uppercase",letterSpacing:1.5,marginBottom:10}}>Recommended Strategy</div>
           <div className="surf" style={{cursor:"pointer"}} onClick={()=>setOpenStrat(s=>!s)}>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <span style={{display:"inline-flex"}}><EIcon emoji={strat.emoji} size={20} color="var(--acc)"/></span>
+              <Icon name={STRAT_ICON_MAP[strat.id]||"diamond"} size={20} color="var(--acc)"/>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>{strat.name}</div>
                 <div style={{fontSize:11,color:"var(--grn2)",fontWeight:600,marginTop:1}}>{strat.value}</div>
