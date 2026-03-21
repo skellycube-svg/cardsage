@@ -20,7 +20,7 @@
 <meta property="og:type" content="website"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500;1,6..72,600;1,6..72,700&family=Inter:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&family=Inter:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
 <script defer data-domain="YOUR_DOMAIN" src="https://plausible.io/js/script.js"></script>
 <script type="module">
 // ─── FIREBASE CONFIG ─────────────────────────────────────────────────────────
@@ -104,44 +104,43 @@ input,select,button{font-family:inherit}
 .hscroll::-webkit-scrollbar{display:none}
 /* ── TYPOGRAPHY ── */
 .grad-text{
-  font-family:'Newsreader',Georgia,serif;font-style:italic;
+  font-family:'Playfair Display',Georgia,serif;font-style:italic;
   background:linear-gradient(110deg,#755b06 0%,#e6c369 40%,#785d09 65%,#755b06 100%);
   background-size:220% 100%;
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
   animation:shimmer 5s ease infinite}
+.logo-text{
+  font-family:'Playfair Display',Georgia,serif;font-style:italic;
+  font-size:24px;font-weight:500;color:var(--tx);letter-spacing:-0.5px}
 .gold-text{background:linear-gradient(135deg,#755b06,#e6c369);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .grn-text{background:linear-gradient(135deg,#166534,#16a34a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 /* Precise mono for financial values */
 .stat-val,.mono{font-family:'Source Code Pro',monospace;font-weight:600}
 /* ── TOP NAV ── */
 .top-nav{position:sticky;top:0;z-index:200;
-  background:rgba(247,249,252,.97);
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-  box-shadow:none}
+  background:#ffffff;box-shadow:none}
 .top-nav::after{display:none}
-/* Brand masthead — 3-col grid: [spacer] [title] [right-controls] */
 .top-nav-brand{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
-  padding:14px 16px;border-bottom:none}
+  padding:16px 24px;max-width:1200px;margin:0 auto}
+.top-nav-brand-left{display:flex;align-items:center}
 .top-nav-brand-title{display:flex;flex-direction:column;align-items:center;gap:2px}
-.top-nav-brand .grad-text{font-size:32px!important;letter-spacing:-0.5px!important}
 .top-nav-brand-right{display:flex;align-items:center;justify-content:flex-end;gap:8px}
 /* Tab strip — centered, scrollable on mobile */
-.top-nav-tabs{display:flex;justify-content:center;overflow-x:auto;scrollbar-width:none;padding:0 8px;gap:0;
-  background:var(--s3);border-bottom:1px solid rgba(199,197,206,.15)}
+.top-nav-tabs{display:flex;justify-content:center;overflow-x:auto;scrollbar-width:none;
+  padding:0 8px;gap:0;background:var(--s3);border-bottom:1px solid rgba(199,197,206,.15)}
 .top-nav-tabs::-webkit-scrollbar{display:none}
-.nav-tab{display:flex;flex-direction:column;align-items:center;padding:11px 16px 12px;cursor:pointer;
+.nav-tab{display:flex;flex-direction:row;align-items:center;gap:6px;padding:14px 20px;cursor:pointer;
   background:transparent;border:none;border-bottom:2px solid transparent;
-  transition:all .25s;flex-shrink:0;gap:3px;position:relative}
-.nav-tab:hover{background:rgba(224,227,230,.5)}
+  transition:all .25s;flex-shrink:0;position:relative}
+.nav-tab:hover{background:rgba(224,227,230,.4)}
 .nav-tab.active{border-bottom-color:var(--acc)}
 .nav-tab.active:hover{background:transparent}
-.nav-tab-label{font-size:13px;font-weight:500;font-family:'Newsreader',Georgia,serif;
-  color:var(--tx2);transition:color .25s;white-space:nowrap;letter-spacing:.8px;text-transform:uppercase}
+.nav-tab-icon{font-size:14px;color:var(--tx3);transition:color .25s}
+.nav-tab.active .nav-tab-icon{color:var(--acc)}
+.nav-tab-label{font-size:13px;font-weight:500;font-family:'Inter',sans-serif;
+  color:var(--tx2);transition:color .25s;white-space:nowrap;letter-spacing:1.2px;text-transform:uppercase}
 .nav-tab.active .nav-tab-label{color:var(--acc);font-weight:700}
-.nav-tab-sub{font-size:9px;color:var(--tx4);transition:color .18s;white-space:nowrap;
-  font-weight:400;letter-spacing:.2px;font-family:'Source Code Pro',monospace}
-.nav-tab.active .nav-tab-sub{color:var(--acc)}
+.nav-tab-sub{display:none}
 /* ── SURFACES ── */
 .surf{background:var(--s2);border:1px solid rgba(199,197,206,.10);border-radius:8px;padding:16px;
   box-shadow:0 24px 48px -12px rgba(25,28,30,.06)}
@@ -156,8 +155,8 @@ input,select,button{font-family:inherit}
 .inp::placeholder{color:var(--tx4)}
 .btn{
   background:linear-gradient(135deg,#03071d,#1a1f36);
-  color:#ffffff;border:none;border-radius:8px;padding:12px 22px;
-  font-size:13px;font-weight:600;cursor:pointer;
+  color:#ffffff;border:none;border-radius:8px;padding:14px 28px;
+  font-size:14px;font-weight:600;cursor:pointer;
   transition:opacity .18s,transform .12s,box-shadow .18s;
   font-family:'Inter',sans-serif;letter-spacing:.4px;
   box-shadow:0 4px 16px rgba(3,7,29,.18)}
@@ -268,7 +267,7 @@ input,select,button{font-family:inherit}
 @media(min-width:1024px){
   /* Nav: centered masthead layout on desktop */
   .top-nav-brand{padding:20px 32px 16px}
-  .top-nav-brand .grad-text{font-size:44px!important}
+  .top-nav-brand .logo-text{font-size:28px!important}
   .top-nav-tabs{overflow-x:visible;padding:0 64px}
   .nav-tab{padding:13px 22px 14px}
   /* Content area: centered, padded */
@@ -305,11 +304,11 @@ input,select,button{font-family:inherit}
   .tips-list{grid-template-columns:repeat(3,1fr)}
 }
 /* ── AUTH ──────────────────────────────────────────────────────────────────── */
-.auth-btn{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:99px;
-  border:1px solid var(--br2);background:var(--s1);cursor:pointer;
-  font-size:11px;font-weight:600;color:var(--tx2);font-family:'Inter',sans-serif;
-  transition:border-color .15s,box-shadow .15s;white-space:nowrap}
-.auth-btn:hover{border-color:var(--br3);box-shadow:0 4px 12px rgba(25,28,30,.06)}
+.auth-btn{display:flex;align-items:center;gap:5px;padding:8px 20px;border-radius:8px;
+  border:1px solid var(--tx);background:var(--tx);cursor:pointer;
+  font-size:13px;font-weight:500;color:#ffffff;font-family:'Inter',sans-serif;
+  transition:opacity .15s;white-space:nowrap}
+.auth-btn:hover{opacity:.85;box-shadow:none}
 .auth-avatar{width:20px;height:20px;border-radius:50%;object-fit:cover}
 .auth-initial{width:20px;height:20px;border-radius:50%;background:var(--acc);
   color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -330,7 +329,7 @@ input,select,button{font-family:inherit}
 .auth-modal{background:var(--s1);border:1px solid rgba(199,197,206,.15);border-radius:12px;
   padding:28px 24px;width:100%;max-width:360px;position:relative;
   box-shadow:0 24px 64px rgba(3,7,29,.15);animation:popIn .2s cubic-bezier(.34,1.56,.64,1) both}
-.auth-modal h2{font-family:'Newsreader',Georgia,serif;font-style:italic;
+.auth-modal h2{font-family:'Playfair Display',Georgia,serif;font-style:italic;
   font-size:24px;font-weight:700;color:var(--tx);margin-bottom:4px}
 .auth-modal-sub{font-size:13px;color:var(--tx3);margin-bottom:22px}
 .auth-google-btn{width:100%;padding:11px;border:1px solid var(--br2);border-radius:10px;
@@ -380,6 +379,36 @@ input,select,button{font-family:inherit}
   pointer-events:auto;background:none;border:none;cursor:pointer;
   color:var(--tx3);font-size:18px;line-height:1;padding:4px 6px;flex-shrink:0;
   -webkit-tap-highlight-color:transparent}
+/* ── HOME HERO ── */
+.home-hero{display:flex;align-items:center;gap:48px;padding:56px 8px 48px;max-width:1000px;margin:0 auto}
+.home-hero-content{flex:1;min-width:0}
+.home-hero-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  color:var(--acc);margin-bottom:16px;font-family:'Inter',sans-serif}
+.home-hero-title{font-family:'Playfair Display',Georgia,serif;font-size:52px;font-weight:700;
+  color:var(--tx);line-height:1.1;margin-bottom:20px;letter-spacing:-1px}
+.home-hero-subtitle{font-size:16px;color:var(--tx2);line-height:1.7;margin-bottom:28px;max-width:400px}
+.home-hero-card{flex-shrink:0;width:260px;display:flex;align-items:center;justify-content:center}
+.hero-card-mockup{width:240px;height:152px;transform:rotate(-8deg);perspective:800px}
+.hero-card-inner{width:100%;height:100%;border-radius:12px;padding:16px 18px;
+  background:linear-gradient(135deg,#03071d 0%,#1a1f36 60%,#2d3133 100%);
+  color:#ffffff;display:flex;flex-direction:column;
+  box-shadow:0 20px 60px rgba(3,7,29,.35)}
+.home-features{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:24px 8px 48px;max-width:1000px;margin:0 auto}
+.home-feature-card{padding:32px 24px;text-align:center}
+.home-feature-icon{width:48px;height:48px;border-radius:50%;background:rgba(117,91,6,.08);
+  color:var(--acc);display:flex;align-items:center;justify-content:center;
+  margin:0 auto 16px;font-size:18px}
+.home-feature-title{font-family:'Playfair Display',Georgia,serif;font-style:italic;
+  font-size:18px;font-weight:600;color:var(--tx);margin-bottom:10px}
+.home-feature-desc{font-size:13px;color:var(--tx2);line-height:1.6}
+@media(max-width:767px){
+  .home-hero{flex-direction:column;padding:32px 8px 24px;gap:32px;text-align:center}
+  .home-hero-title{font-size:36px}
+  .home-hero-subtitle{margin-left:auto;margin-right:auto}
+  .home-hero-card{width:200px}
+  .hero-card-mockup{width:180px;height:114px}
+  .home-features{grid-template-columns:1fr;gap:16px}
+}
 </style>
 </head>
 <body>
@@ -693,13 +722,47 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
 
   if(!myCards.length){
     return (
-      <div style={{padding:"52px 24px",textAlign:"center"}}>
-        <div style={{fontSize:52,marginBottom:16}}>💳</div>
-        <div className="grad-text" style={{fontSize:24,fontWeight:900,marginBottom:8}}>Welcome to CardSage</div>
-        <div style={{fontSize:14,color:"var(--tx3)",lineHeight:1.7,maxWidth:300,margin:"0 auto 28px"}}>
-          Add your credit cards to track benefits, discover strategies, and maximize every dollar you spend.
+      <div style={{padding:"0 16px"}}>
+        {/* Hero Section */}
+        <div className="home-hero">
+          <div className="home-hero-content">
+            <div className="home-hero-eyebrow">ELITE FINANCIAL MANAGEMENT</div>
+            <h1 className="home-hero-title">Welcome to<br/>CardSage</h1>
+            <p className="home-hero-subtitle">The definitive editorial ledger for your premium credit portfolio. Track, optimize, and ascend.</p>
+            <button className="btn" onClick={()=>setTab("wallet")}>Add Your Cards →</button>
+          </div>
+          <div className="home-hero-card">
+            <div className="hero-card-mockup">
+              <div className="hero-card-inner">
+                <div style={{fontSize:9,letterSpacing:2,textTransform:'uppercase',opacity:.7}}>CardSage</div>
+                <div style={{flex:1}}/>
+                <div style={{fontSize:16,fontFamily:"'Playfair Display',serif",fontStyle:'italic'}}>Sage Platinum</div>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginTop:6}}>
+                  <div style={{width:28,height:20,borderRadius:3,background:'linear-gradient(135deg,#e6c369,#755b06)',opacity:.9}}/>
+                  <div style={{fontSize:8,letterSpacing:1,opacity:.5}}>VISA</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <button className="btn" onClick={()=>setTab("wallet")}>Add Your Cards →</button>
+        {/* Feature Cards Section */}
+        <div className="home-features">
+          <div className="home-feature-card">
+            <div className="home-feature-icon">◆</div>
+            <h3 className="home-feature-title">Track Every Benefit</h3>
+            <p className="home-feature-desc">Monitor your credits, perks, and statement credits. Never let a monthly benefit expire unused.</p>
+          </div>
+          <div className="home-feature-card">
+            <div className="home-feature-icon">▸</div>
+            <h3 className="home-feature-title">Optimize Every Spend</h3>
+            <p className="home-feature-desc">Our Use Card guide tells you exactly which card to pull at every register for maximum rewards.</p>
+          </div>
+          <div className="home-feature-card">
+            <div className="home-feature-icon">✦</div>
+            <h3 className="home-feature-title">Master the Rewards Game</h3>
+            <p className="home-feature-desc">Expert strategies and pro tips to stack points, find sweet spots, and build the perfect wallet.</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -2240,7 +2303,7 @@ function QuizResults({answers,onRetake,myCards}){
     <div style={{padding:"16px 16px 0",maxWidth:560,margin:"0 auto"}}>
       <div className="fu" style={{textAlign:"center",marginBottom:24}}>
         <div style={{fontSize:32,marginBottom:8}}>🎯</div>
-        <div style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontSize:24,fontWeight:700,color:"var(--tx)",marginBottom:4}}>Your Top Cards</div>
+        <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontStyle:"italic",fontSize:24,fontWeight:700,color:"var(--tx)",marginBottom:4}}>Your Top Cards</div>
         <div style={{fontSize:12,color:"var(--tx3)"}}>Personalized picks based on your profile</div>
         <div style={{fontSize:10,color:"var(--tx4)",marginTop:6,lineHeight:1.4}}>Recommended cards include affiliate links. We earn a commission if you apply and are approved.</div>
       </div>
@@ -2362,7 +2425,7 @@ function QuizTab({myCards}){
 
       {/* Question + options */}
       <div key={animKey} className="quiz-slide">
-        <div style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontSize:22,fontWeight:700,color:"var(--tx)",marginBottom:22,lineHeight:1.35}}>
+        <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontStyle:"italic",fontSize:22,fontWeight:700,color:"var(--tx)",marginBottom:22,lineHeight:1.35}}>
           {q.q}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
@@ -2543,16 +2606,19 @@ const NAV_TABS=[
   {id:"wallet", label:"Wallet",   sub:"My Cards"},
 ];
 
+const NAV_ICONS={home:"\u2302",benefits:"\u25C6",tips:"\u2726",usecard:"\u25B8",offers:"\u25C8",quiz:"\u25C7",wallet:"\u25EB"};
+
 function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady,pwaPrompt,onInstall}){
   return (
     <div className="top-nav">
       <div className="top-nav-brand">
-        <div/>{/* left spacer — keeps title centered in grid */}
+        <div className="top-nav-brand-left">
+          <span style={{fontSize:22,cursor:'pointer',color:'var(--tx)'}}>☰</span>
+        </div>
         <div className="top-nav-brand-title">
-          <span className="grad-text" style={{fontSize:19,fontWeight:900,letterSpacing:-.5}}>CardSage</span>
+          <span className="logo-text">CardSage</span>
         </div>
         <div className="top-nav-brand-right">
-          <span style={{fontSize:11,color:"var(--tx3)",fontWeight:700,fontFamily:"'Source Code Pro',monospace"}}>💳 {cardCount} card{cardCount!==1?"s":""}</span>
           {pwaPrompt&&<button className="install-btn" onClick={onInstall}>⊕ Install</button>}
           <AuthButton user={user} onSignIn={onAuthClick} fbReady={fbReady}/>
         </div>
@@ -2560,8 +2626,8 @@ function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady,pwaPrompt,onInsta
       <div className="top-nav-tabs">
         {NAV_TABS.map(t=>(
           <button key={t.id} className={"nav-tab"+(tab===t.id?" active":"")} onClick={()=>setTab(t.id)}>
+            <span className="nav-tab-icon">{NAV_ICONS[t.id]||""}</span>
             <span className="nav-tab-label">{t.label}</span>
-            <span className="nav-tab-sub">{t.sub}</span>
           </button>
         ))}
       </div>
@@ -2765,8 +2831,8 @@ function App(){
         {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={setMyCards}/>}
       </div>
       {stratModal&&<StratModal stratId={stratModal} myCards={myCards} onClose={()=>setStratModal(null)}/>}
-      <div style={{textAlign:"center",padding:"32px 16px 28px",borderTop:"1px solid var(--br)",marginTop:8}}>
-        <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:"6px 16px",marginBottom:10}}>
+      <div style={{padding:"32px 24px 28px",background:"var(--s3)",marginTop:24}}>
+        <div style={{display:"flex",flexWrap:"wrap",justifyContent:"space-between",gap:"6px 16px",marginBottom:10,maxWidth:1000,margin:"0 auto 10px"}}>
           <a href={"mailto:cardsage.co@gmail.com?subject=CardSage%20Data%20Error%20Report&body=Card%20name%3A%20%0AWhat%27s%20wrong%3A%20%0AWhat%20it%20should%20say%3A%20"}
              style={{fontSize:11,color:"var(--tx3)",textDecoration:"none"}}
              onMouseEnter={e=>e.currentTarget.style.color="var(--acc)"}
@@ -2792,7 +2858,7 @@ function App(){
             Affiliate Disclosure
           </a>
         </div>
-        <div style={{fontSize:10,color:"var(--tx4)",lineHeight:1.5,maxWidth:420,margin:"0 auto"}}>
+        <div style={{fontSize:11,color:"var(--tx3)",lineHeight:1.5,maxWidth:1000,margin:"0 auto"}}>
           CardSage may earn a commission from card applications. This does not influence our recommendations.
         </div>
       </div>
