@@ -1,5 +1,6 @@
-// ── INCREMENT THIS when deploying updates to force cache refresh ──────────
-const CACHE_VERSION = 'v32';
+// ── CACHE_VERSION from config.js (single source of truth) ──────────────────
+importScripts('./config.js');
+const CACHE_VERSION = CS_CONFIG.CACHE_VERSION;
 // ─────────────────────────────────────────────────────────────────────────
 
 const CACHE = 'cardsage-' + CACHE_VERSION;
@@ -7,6 +8,7 @@ const CACHE = 'cardsage-' + CACHE_VERSION;
 // Local app files — always pre-cached on install
 const LOCAL_ASSETS = [
   './index.html',
+  './config.js',
   './cards-data.js',
   './version.json',
   './manifest.json',
@@ -52,12 +54,13 @@ self.addEventListener('fetch', e => {
 
   if (!isLocal && !isCDN) return;
 
-  // Network-first for HTML, data, and version files — always fresh when online
+  // Network-first for HTML, data, config, and version files — always fresh when online
   const path = url.pathname;
   const isNetworkFirst = isLocal && (
     path === '/' ||
     path.endsWith('.html') ||
     path.endsWith('cards-data.js') ||
+    path.endsWith('config.js') ||
     path.endsWith('version.json')
   );
 

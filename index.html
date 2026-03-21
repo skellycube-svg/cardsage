@@ -22,21 +22,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&family=Inter:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
 <script defer data-domain="YOUR_DOMAIN" src="https://plausible.io/js/script.js"></script>
+<script src="config.js"></script>
 <script type="module">
-// ─── FIREBASE CONFIG ─────────────────────────────────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyDbUxUYn3Pj6JdIIfwceTeQoNWX0VrqAVw",
-  authDomain: "cardsage-fc437.firebaseapp.com",
-  projectId: "cardsage-fc437",
-  storageBucket: "cardsage-fc437.firebasestorage.app",
-  messagingSenderId: "522775842118",
-  appId: "1:522775842118:web:3e1003379b008c09262947"
-};
-// ─────────────────────────────────────────────────────────────────────────────
-// Use Promise.then (not top-level await) so DOMContentLoaded isn't delayed
-// and React can listen for the 'cs-firebase-ready' event after it mounts
+// ─── FIREBASE INIT (config from config.js → CS_CONFIG.FIREBASE) ─────────────
+const firebaseConfig = CS_CONFIG.FIREBASE;
 if (firebaseConfig.apiKey) {
-  const v = '12.0.0';
+  const v = CS_CONFIG.FIREBASE_SDK_VERSION;
   Promise.all([
     import(`https://www.gstatic.com/firebasejs/${v}/firebase-app.js`),
     import(`https://www.gstatic.com/firebasejs/${v}/firebase-auth.js`),
@@ -58,17 +49,7 @@ if (firebaseConfig.apiKey) {
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#ffffff;--s1:#ffffff;--s2:#ffffff;--s3:#f8f8f6;--s4:#f0f0ee;
-  --br:rgba(0,0,0,.06);--br2:#e5e7eb;--br3:#d1d5db;
-  --tx:#1a1a2e;--tx2:#6b7280;--tx3:#9ca3af;--tx4:#d1d5db;
-  --acc:#b8860b;--acc2:#a07608;--pur:#0f172a;--pur2:#1e293b;
-  --gold:#b8860b;--gld2:#d4a840;--gld3:#fef9ec;
-  --grn:#166534;--grn2:#16a34a;--grn3:#22c55e;
-  --red:#991b1b;--red2:#dc2626;
-  --sky:#004c97;--pnk:#db2777;--teal:#0d9488;
-  --chase:#112e51;--amex:#006fcf;--citi:#004c97;--capone:#003a70;
-}
+/* :root CSS vars are injected by config.js → CS_CONFIG.CSS_VARS */
 body{background:var(--bg);font-family:'Inter',-apple-system,sans-serif;color:var(--tx);overscroll-behavior:none;min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 canvas#bg{display:none}
 #root{position:relative;z-index:1}
@@ -2618,7 +2599,7 @@ function QuizResults({answers,onRetake,myCards}){
 }
 
 function QuizTab({myCards}){
-  const [savedAnswers,setSavedAnswers]=useLS('cs_quiz',null);
+  const [savedAnswers,setSavedAnswers]=useLS(CS_CONFIG.LS_KEYS.quiz,null);
   const [step,setStep]=useState(0);
   const [answers,setAnswers]=useState({});
   const [multiSel,setMultiSel]=useState([]);
@@ -2936,10 +2917,10 @@ function needsReset(reset,checkDate,now){
 
 /* ── APP ROOT ─────────────────────────────────────────────────────────────── */
 function App(){
-  const [myCards,setMyCards]=useLS("cs_cards",[]);
+  const [myCards,setMyCards]=useLS(CS_CONFIG.LS_KEYS.cards,[]);
   const [tab,setTab]=useState("home");
-  const [checkedArr,setCheckedArr]=useLS("cs_checked",[]);
-  const [checkDates,setCheckDates]=useLS("cs_benefit_check_dates",{});
+  const [checkedArr,setCheckedArr]=useLS(CS_CONFIG.LS_KEYS.checked,[]);
+  const [checkDates,setCheckDates]=useLS(CS_CONFIG.LS_KEYS.checkDates,{});
   const [resetBadges,setResetBadges]=useState(new Set());
   const [stratModal,setStratModal]=useState(null);
   const [user,setUser]=useState(null);
@@ -2951,7 +2932,7 @@ function App(){
     const isIos=/iphone|ipad|ipod/i.test(ua);
     const isAndroid=/android/i.test(ua);
     const isStandalone=window.navigator.standalone===true;
-    if(localStorage.getItem('cs_ios_dismissed')) return null;
+    if(localStorage.getItem(CS_CONFIG.LS_KEYS.iosDismissed)) return null;
     if(isIos&&!isStandalone){
       // CriOS = Chrome on iOS
       return /CriOS/i.test(ua)?'chrome-ios':'safari';
@@ -3101,8 +3082,8 @@ function App(){
             ? <>
                 <span>Install CardSage for quick access</span>
                 <div style={{display:'flex',gap:8,alignItems:'center',pointerEvents:'auto'}}>
-                  <button className="install-btn" style={{pointerEvents:'auto'}} onClick={()=>{handleInstall();setIosBanner(null);localStorage.setItem('cs_ios_dismissed','1');}}>Install</button>
-                  <button onClick={()=>{setIosBanner(null);localStorage.setItem('cs_ios_dismissed','1');}} aria-label="Dismiss" style={{pointerEvents:'auto',background:'none',border:'none',cursor:'pointer',color:'var(--tx3)',padding:'4px 6px',flexShrink:0,WebkitTapHighlightColor:'transparent',display:'flex',alignItems:'center'}}><Icon name="x" size={16} color="var(--tx3)"/></button>
+                  <button className="install-btn" style={{pointerEvents:'auto'}} onClick={()=>{handleInstall();setIosBanner(null);localStorage.setItem(CS_CONFIG.LS_KEYS.iosDismissed,'1');}}>Install</button>
+                  <button onClick={()=>{setIosBanner(null);localStorage.setItem(CS_CONFIG.LS_KEYS.iosDismissed,'1');}} aria-label="Dismiss" style={{pointerEvents:'auto',background:'none',border:'none',cursor:'pointer',color:'var(--tx3)',padding:'4px 6px',flexShrink:0,WebkitTapHighlightColor:'transparent',display:'flex',alignItems:'center'}}><Icon name="x" size={16} color="var(--tx3)"/></button>
                 </div>
               </>
             : <>
@@ -3112,7 +3093,7 @@ function App(){
                     : <>Tap the <svg style={{display:'inline-block',verticalAlign:'middle',margin:'0 2px 2px'}} width="18" height="18" viewBox="0 0 50 50" fill="none" stroke="#555" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="20" width="34" height="24" rx="4"/><polyline points="25,2 25,30"/><polyline points="15,12 25,2 35,12"/></svg> icon at the <strong>bottom of your screen</strong>, then <strong>"Add to Home Screen"</strong></>
                   }
                 </span>
-                <button onClick={()=>{setIosBanner(null);localStorage.setItem('cs_ios_dismissed','1');}} aria-label="Dismiss"><Icon name="x" size={16}/></button>
+                <button onClick={()=>{setIosBanner(null);localStorage.setItem(CS_CONFIG.LS_KEYS.iosDismissed,'1');}} aria-label="Dismiss"><Icon name="x" size={16}/></button>
               </>
           }
         </div>
@@ -3130,7 +3111,7 @@ function App(){
       <NewsletterSubscribe/>
       <div style={{padding:"32px 24px 28px",background:"var(--s3)",marginTop:24}}>
         <div style={{display:"flex",flexWrap:"wrap",justifyContent:"space-between",gap:"6px 16px",marginBottom:10,maxWidth:1000,margin:"0 auto 10px"}}>
-          <a href={"mailto:cardsage.co@gmail.com?subject=CardSage%20Data%20Error%20Report&body=Card%20name%3A%20%0AWhat%27s%20wrong%3A%20%0AWhat%20it%20should%20say%3A%20"}
+          <a href={"mailto:"+CS_CONFIG.CONTACT_EMAIL+"?subject=CardSage%20Data%20Error%20Report&body=Card%20name%3A%20%0AWhat%27s%20wrong%3A%20%0AWhat%20it%20should%20say%3A%20"}
              style={{fontSize:11,color:"var(--tx3)",textDecoration:"none"}}
              onMouseEnter={e=>e.currentTarget.style.color="var(--acc)"}
              onMouseLeave={e=>e.currentTarget.style.color="var(--tx3)"}>
@@ -3177,8 +3158,8 @@ if('serviceWorker' in navigator){
     fetch('./version.json',{cache:'no-store'})
       .then(r=>r.json())
       .then(({version})=>{
-        const stored=localStorage.getItem('cs_app_version');
-        localStorage.setItem('cs_app_version',version);
+        const stored=localStorage.getItem(CS_CONFIG.LS_KEYS.appVersion);
+        localStorage.setItem(CS_CONFIG.LS_KEYS.appVersion,version);
         if(stored&&stored!==version) window.location.reload();
       })
       .catch(()=>{});
