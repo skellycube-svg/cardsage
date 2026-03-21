@@ -1169,7 +1169,7 @@ function TipsTab({myCards}){
            onClick={()=>setOpenTip(isOpen?null:tip.id)}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:16,fontWeight:600,color:"#0f172a",lineHeight:1.4}}>{tip.title}{tip.confidence==="estimated"&&<span style={{fontFamily:"'Inter',sans-serif",fontSize:10,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
+            <div className="tip-title">{tip.title}{tip.confidence==="estimated"&&<span style={{fontSize:10,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4,fontFamily:"'Inter',sans-serif"}}>(unverified)</span>}</div>
           </div>
           <span style={{transition:"transform .2s",transform:isOpen?"rotate(90deg)":"none",flexShrink:0,marginTop:3,display:"inline-flex"}}>
             <Icon name="chevron-right" size={14} color="var(--tx3)"/>
@@ -1178,7 +1178,7 @@ function TipsTab({myCards}){
 
         {isOpen&&(
           <div style={{marginTop:12,borderTop:"1px solid var(--br)",paddingTop:12}}>
-            <div style={{fontFamily:"'Inter',sans-serif",fontSize:14,fontWeight:400,color:"#4b5563",lineHeight:1.6,marginBottom:tipCards.length>0?14:0}} dangerouslySetInnerHTML={{__html:tip.body}}/>
+            <div className="tip-body" style={{marginBottom:tipCards.length>0?14:0}} dangerouslySetInnerHTML={{__html:tip.body}}/>
 
             {tipCards.length>0&&(
               <div style={{marginBottom:partners.length>0?12:0}}>
