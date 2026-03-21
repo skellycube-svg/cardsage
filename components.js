@@ -1289,6 +1289,7 @@ const TRAVEL_CLASSES=["Economy","Business","First"];
 
 function PlanTab({myCards}){
   const [savedTrips,setSavedTrips]=useLS(CS_CONFIG.LS_KEYS.savedTrips,[]);
+  const [origin,setOrigin]=useState("");
   const [destination,setDestination]=useState("");
   const [tripType,setTripType]=useState("both");
   const [travelClass,setTravelClass]=useState("Business");
@@ -1359,8 +1360,9 @@ function PlanTab({myCards}){
   function buildStratDescription(card,partners,region,cls){
     const partnerStr=partners.slice(0,3).join(", ");
     const classLabel=cls==="First"?"first class":cls==="Business"?"business class":"economy";
+    const fromStr=origin?` from ${origin}`:"";
     if(tripType==="flights"||tripType==="both"){
-      return `Transfer ${card.cur} to ${partnerStr} for ${classLabel} flights to ${region.name}. ${region.notes.split(".")[0]}.`;
+      return `Transfer ${card.cur} to ${partnerStr} for ${classLabel} flights${fromStr} to ${region.name}. ${region.notes.split(".")[0]}.`;
     }
     return `Use ${card.cur} with ${partnerStr} for hotels in ${region.name}.`;
   }
@@ -1419,7 +1421,7 @@ function PlanTab({myCards}){
     setResults({region,strategies,recommendations,tips,estimates:region.estimates,fallback:false});
 
     // Save trip (max 3)
-    const trip={destination,tripType,travelClass,hotelBrand,travelers};
+    const trip={origin,destination,tripType,travelClass,hotelBrand,travelers};
     const key=JSON.stringify(trip);
     setSavedTrips(prev=>{
       const filtered=prev.filter(t=>JSON.stringify(t)!==key);
@@ -1428,6 +1430,7 @@ function PlanTab({myCards}){
   }
 
   function loadTrip(trip){
+    setOrigin(trip.origin||"");
     setDestination(trip.destination);
     setTripType(trip.tripType);
     setTravelClass(trip.travelClass);
@@ -1451,7 +1454,7 @@ function PlanTab({myCards}){
         strategies.push({
           cardId:card.id,cardName:card.short||card.name,issuer:card.issuer,
           currency:card.cur,partners:relevantPartners,bestPartner:partnerMatch||relevantPartners[0],
-          estimate:est,description:`Transfer ${card.cur} to ${relevantPartners.slice(0,3).join(", ")} for ${trip.travelClass.toLowerCase()} flights to ${region.name}.`
+          estimate:est,description:`Transfer ${card.cur} to ${relevantPartners.slice(0,3).join(", ")} for ${trip.travelClass.toLowerCase()} flights${trip.origin?` from ${trip.origin}`:""} to ${region.name}.`
         });
       });
       const byCurrency={};
@@ -1501,8 +1504,8 @@ function PlanTab({myCards}){
                   background:"var(--gld3)",border:"1px solid rgba(184,134,11,.2)",cursor:"pointer",
                   fontFamily:"'Inter',sans-serif",fontSize:12,fontWeight:600,color:"var(--tx)"}}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 6-9 12-9 12S3 16 3 10a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                {trip.destination}
-                <span style={{color:"var(--tx3)",fontWeight:400}}>{trip.travelClass}</span>
+                {trip.origin?`${trip.origin} → ${trip.destination}`:trip.destination}
+                <span style={{color:"var(--tx3)",fontWeight:400}}>· {trip.travelClass} · {trip.tripType==="flights"?"Flights":trip.tripType==="hotels"?"Hotels":"Both"}</span>
                 <span onClick={e=>removeTrip(i,e)} style={{marginLeft:2,color:"var(--tx3)",cursor:"pointer",lineHeight:1}} title="Remove">&times;</span>
               </button>
             ))}
@@ -1513,6 +1516,19 @@ function PlanTab({myCards}){
       {/* ── FORM ── */}
       <form onSubmit={handleSubmit}>
         <div className="surf fu" style={{padding:20,marginBottom:16}}>
+          {/* Origin */}
+          <div style={{marginBottom:16}}>
+            <label style={{fontFamily:"'Inter',sans-serif",fontSize:12,fontWeight:600,color:"var(--tx)",display:"block",marginBottom:6}}>Origin</label>
+            <input type="text" value={origin} onChange={e=>setOrigin(e.target.value)}
+              placeholder="Flying from... (e.g. New York, Chicago, Los Angeles)"
+              required
+              style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--br2)",
+                fontFamily:"'Inter',sans-serif",fontSize:14,color:"var(--tx)",background:"var(--bg)",
+                outline:"none",boxSizing:"border-box",transition:"border-color .2s"}}
+              onFocus={e=>e.target.style.borderColor="var(--acc)"}
+              onBlur={e=>e.target.style.borderColor="var(--br2)"}/>
+          </div>
+
           {/* Destination */}
           <div style={{marginBottom:16}}>
             <label style={{fontFamily:"'Inter',sans-serif",fontSize:12,fontWeight:600,color:"var(--tx)",display:"block",marginBottom:6}}>Destination</label>
