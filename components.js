@@ -689,6 +689,75 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
           </div>
         );
 
+        /* Section 1.5 — YOUR NEXT BEST CARD (most prominent CTA) */
+        {
+          // Rank one-away strategies by parsing the high end of the value range
+          const parseHighValue=v=>{const m=v.match(/[\d,]+/g);return m?parseInt(m[m.length>1?1:0].replace(/,/g,"")):0;};
+          // Prefer one-away strategies; fall back to highest-value strategy with any missing card
+          let candidates=oneAway.length>0?oneAway:[...moreNeeded];
+          candidates.sort((a,b)=>parseHighValue(b.value)-parseHighValue(a.value));
+          const best=candidates[0];
+          if(best){
+            const missingId=best.missingCards[0];
+            const mc=CARDS.find(c=>c.id===missingId);
+            const applyUrl=mc&&APPLY_URLS[mc.id]&&!APPLY_URLS[mc.id].startsWith("#")?APPLY_URLS[mc.id]:null;
+            const palette=mc?getIssuerPalette(mc.issuer):null;
+            sections.push(
+              <div key="next-best-card">
+                <div style={{marginBottom:4}}>
+                  <div className="section-title" style={{marginBottom:2}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    {" "}YOUR NEXT BEST CARD
+                  </div>
+                  <div style={{fontSize:12,color:"#6b7280",fontFamily:"'Inter',sans-serif",marginBottom:10}}>The single card that unlocks the most value</div>
+                </div>
+                <div style={{borderRadius:14,overflow:"hidden",border:"1.5px solid rgba(184,134,11,.25)",borderLeft:"4px solid var(--acc)",
+                  background:"linear-gradient(135deg,rgba(254,249,236,.7),rgba(255,255,255,.9))",
+                  boxShadow:"0 4px 20px rgba(184,134,11,.1)",marginBottom:8}}>
+                  <div style={{padding:"18px 18px 0"}}>
+                    {mc&&palette&&(
+                      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+                        <div style={{width:44,height:28,borderRadius:6,background:`linear-gradient(135deg,${mc.c1},${mc.c2})`,flexShrink:0,
+                          boxShadow:"0 2px 8px rgba(0,0,0,.15)"}}/>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:16,fontWeight:800,color:"var(--tx)",lineHeight:1.2}}>{mc.short||mc.name}</div>
+                          <div style={{fontSize:11,color:"var(--tx3)",marginTop:1}}>{mc.issuer} · {mc.fee===0?"No annual fee":"$"+mc.fee+"/yr"}</div>
+                        </div>
+                      </div>
+                    )}
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                      <Icon name={STRAT_ICON_MAP[best.id]||"diamond"} size={16} color="var(--acc)"/>
+                      <span style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>Unlocks: {best.name}</span>
+                    </div>
+                    <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 12px",borderRadius:8,
+                      background:"rgba(184,134,11,.08)",marginBottom:12}}>
+                      <span style={{fontSize:12,fontWeight:700,color:"var(--acc)"}}>Est. value: {best.value}</span>
+                    </div>
+                    <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.5,marginBottom:16}}>{best.desc.slice(0,140)}…</div>
+                  </div>
+                  {applyUrl&&(
+                    <div style={{padding:"0 18px 16px"}}>
+                      <a href={applyUrl} target="_blank" rel="noopener noreferrer"
+                        style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",
+                          padding:"13px 24px",borderRadius:12,border:"none",textDecoration:"none",
+                          background:"linear-gradient(135deg,var(--acc),var(--gld2))",color:"#fff",
+                          fontFamily:"'Inter',sans-serif",fontSize:15,fontWeight:700,cursor:"pointer",
+                          letterSpacing:.3,boxShadow:"0 3px 12px rgba(184,134,11,.3)",transition:"all .2s"}}
+                        onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 5px 20px rgba(184,134,11,.4)";e.currentTarget.style.transform="translateY(-1px)";}}
+                        onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 3px 12px rgba(184,134,11,.3)";e.currentTarget.style.transform="none";}}>
+                        Apply Now &rarr;
+                      </a>
+                      <div style={{fontSize:10,color:"var(--tx3)",textAlign:"center",marginTop:8,lineHeight:1.4}}>
+                        Affiliate link — we may earn a commission at no cost to you.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }
+        }
+
         /* Section 2 — One Card Away */
         if(oneAway.length>0) sections.push(
           <div key="strat-one-away">
