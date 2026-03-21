@@ -2581,7 +2581,7 @@ function AuthButton({user,onSignIn,fbReady}){
             <Icon name="check" size={11} color="var(--grn2)"/> Wallet synced to cloud
           </div>
           <button className="auth-dropdown-btn"
-            onClick={async()=>{await fb.signOut(fb.auth);setOpen(false);}}>
+            onClick={async()=>{const fb=window.CS_FB;if(fb)await fb.signOut(fb.auth);setOpen(false);}}>
             Sign out
           </button>
         </div>
