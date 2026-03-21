@@ -467,4 +467,10 @@ input,select,button{font-family:inherit}
   .page-action{padding:12px 20px;font-size:13px}
   .benefit-name{font-size:15px}
   .wallet-card-art{padding:16px}
+  /* Portal rows: stack rate below label on small screens */
+  .portal-row{flex-wrap:wrap}
+  .portal-row>span:last-child{width:100%;font-size:13px!important;margin-top:2px}
+  .portal-note{font-size:10px}
+  /* Category note: slightly smaller on mobile */
+  .cat-note{font-size:11px;padding:8px 12px}
 }
