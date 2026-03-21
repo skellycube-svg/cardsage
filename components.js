@@ -1222,9 +1222,15 @@ function TipsTab({myCards}){
 
         {isLocked&&!isOpen&&missing.length>0&&(
           <div style={{marginTop:8,display:"flex",gap:6,flexWrap:"wrap"}}>
-            {missing.map(c=>(
-              <span key={c.id} className="tip-requires-chip">Requires: {c.short}</span>
-            ))}
+            {missing.map(c=>{
+              const applyUrl=APPLY_URLS[c.id];
+              return applyUrl&&!applyUrl.startsWith("#")?(
+                <a key={c.id} href={applyUrl} target="_blank" rel="noopener noreferrer" className="tip-requires-chip"
+                  onClick={e=>e.stopPropagation()} style={{textDecoration:"none",cursor:"pointer"}}>Requires: {c.short}</a>
+              ):(
+                <span key={c.id} className="tip-requires-chip">Requires: {c.short}</span>
+              );
+            })}
           </div>
         )}
       </div>
@@ -2838,7 +2844,16 @@ function WalletTab({myCards,setMyCards}){
                 <div style={{fontSize:11,fontWeight:700,color:"var(--tx)",marginBottom:2,lineHeight:1.3}}>{card.name}{card.confidence==="estimated"&&<span style={{fontSize:9,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
                 <div style={{fontSize:10,color:"var(--tx3)",marginBottom:6}}>{card.issuer}</div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{fontSize:11,color:card.fee===0?"var(--grn2)":"var(--tx3)",fontWeight:700}}>{card.fee===0?"No fee":"$"+card.fee+"/yr"}</span>
+                  <div>
+                    <span style={{fontSize:11,color:card.fee===0?"var(--grn2)":"var(--tx3)",fontWeight:700,display:"block"}}>{card.fee===0?"No fee":"$"+card.fee+"/yr"}</span>
+                    {APPLY_URLS[card.id]&&!APPLY_URLS[card.id].startsWith("#")&&(
+                      <a href={APPLY_URLS[card.id]} target="_blank" rel="noopener noreferrer"
+                        onClick={e=>e.stopPropagation()}
+                        style={{fontSize:10,fontWeight:600,color:"var(--acc)",textDecoration:"none",display:"inline-block",marginTop:2}}
+                        onMouseEnter={e=>e.currentTarget.style.textDecoration="underline"}
+                        onMouseLeave={e=>e.currentTarget.style.textDecoration="none"}>Apply &rarr;</a>
+                    )}
+                  </div>
                   <div style={{width:20,height:20,borderRadius:"50%",background:inWallet?"var(--grn)":"rgba(255,255,255,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#fff",transition:"all .18s",flexShrink:0}}>
                     {inWallet?<Icon name="check" size={12} color="#fff"/>:<Icon name="plus" size={12} color="#fff"/>}
                   </div>
