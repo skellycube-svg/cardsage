@@ -1,5 +1,5 @@
 // ── INCREMENT THIS when deploying updates to force cache refresh ──────────
-const CACHE_VERSION = 'v29';
+const CACHE_VERSION = 'v30';
 // ─────────────────────────────────────────────────────────────────────────
 
 const CACHE = 'cardsage-' + CACHE_VERSION;
