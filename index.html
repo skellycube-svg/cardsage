@@ -132,7 +132,8 @@ input,select,button{font-family:inherit}
 .nav-tab:hover{opacity:.7}
 .nav-tab.active{border-bottom-color:var(--acc)}
 .nav-tab.active:hover{opacity:1}
-.nav-tab-icon{font-size:15px;color:var(--tx3);transition:color .2s}
+.nav-tab-icon{display:flex;align-items:center;color:var(--tx3);transition:color .2s}
+.nav-tab-icon svg{width:18px;height:18px}
 .nav-tab.active .nav-tab-icon{color:var(--acc)}
 .nav-tab-label{font-size:12px;font-weight:600;font-family:'Inter',sans-serif;
   color:var(--tx2);transition:color .2s;white-space:nowrap;letter-spacing:1.5px;text-transform:uppercase}
@@ -385,11 +386,15 @@ input,select,button{font-family:inherit}
   color:var(--tx);line-height:1.05;margin-bottom:20px;letter-spacing:-1.5px}
 .home-hero-subtitle{font-size:18px;color:var(--tx2);line-height:1.7;margin-bottom:28px;max-width:440px}
 .home-hero-card{flex-shrink:0;width:400px;display:flex;align-items:center;justify-content:center}
-.hero-card-mockup{width:380px;height:240px;transform:rotate(15deg);perspective:800px}
+.hero-card-mockup{width:380px;height:240px;transform:rotate(12deg);perspective:800px}
 .hero-card-inner{width:100%;height:100%;border-radius:14px;padding:20px 24px;
-  background:linear-gradient(135deg,#0f172a 0%,#1e293b 60%,#334155 100%);
-  color:#ffffff;display:flex;flex-direction:column;
-  box-shadow:0 20px 60px rgba(15,23,42,.35)}
+  background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);
+  color:#ffffff;display:flex;flex-direction:column;position:relative;overflow:hidden;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 25px 60px rgba(0,0,0,.3)}
+.hero-card-inner::before{content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(135deg,transparent,transparent 2px,rgba(255,255,255,.015) 2px,rgba(255,255,255,.015) 4px);
+  pointer-events:none}
 .home-features-divider{width:100%;max-width:1000px;margin:0 auto;height:1px;background:var(--br2)}
 .home-features{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:32px 8px 48px;max-width:1000px;margin:0 auto}
 .home-feature-card{padding:32px 24px;text-align:center}
@@ -733,12 +738,29 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
           <div className="home-hero-card">
             <div className="hero-card-mockup">
               <div className="hero-card-inner">
-                <div style={{fontSize:9,letterSpacing:2,textTransform:'uppercase',opacity:.7}}>CardSage</div>
-                <div style={{flex:1}}/>
-                <div style={{fontSize:16,fontFamily:"'Playfair Display',serif",fontStyle:'italic'}}>Sage Platinum</div>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginTop:6}}>
-                  <div style={{width:28,height:20,borderRadius:3,background:'linear-gradient(135deg,#d4a840,#b8860b)',opacity:.9}}/>
-                  <div style={{fontSize:8,letterSpacing:1,opacity:.5}}>VISA</div>
+                {/* Top row: logo + brand */}
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                  <svg width="16" height="18" viewBox="0 0 16 18" fill="none"><path d="M8 0L15.5 4.5V13.5L8 18L0.5 13.5V4.5L8 0Z" stroke="rgba(255,255,255,.8)" strokeWidth="1.2"/></svg>
+                  <span style={{fontSize:10,letterSpacing:2.5,textTransform:'uppercase',fontWeight:700,opacity:.85}}>CARDSAGE</span>
+                </div>
+                {/* Card name */}
+                <div style={{flex:1,display:'flex',alignItems:'center'}}>
+                  <div style={{fontSize:20,fontFamily:"'Playfair Display',serif",fontStyle:'italic',fontWeight:500}}>Sage Platinum</div>
+                </div>
+                {/* Card number dots */}
+                <div style={{fontSize:12,letterSpacing:3,marginBottom:10,opacity:.7,fontFamily:'monospace'}}>•••• &nbsp;•••• &nbsp;•••• &nbsp;8842</div>
+                {/* Cardholder + chip + visa */}
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end'}}>
+                  <div>
+                    <div style={{fontSize:7,letterSpacing:1.5,textTransform:'uppercase',opacity:.45,marginBottom:3}}>CARD HOLDER</div>
+                    <div style={{fontSize:11,letterSpacing:1,fontWeight:600}}>ALEXANDER SAGE</div>
+                  </div>
+                  <div style={{display:'flex',alignItems:'flex-end',gap:16}}>
+                    <div style={{width:40,height:30,borderRadius:4,background:'linear-gradient(135deg,#d4a840,#b8860b)',position:'relative',overflow:'hidden'}}>
+                      <div style={{position:'absolute',inset:0,background:'repeating-linear-gradient(0deg,transparent,transparent 5px,rgba(255,255,255,.15) 5px,rgba(255,255,255,.15) 6px),repeating-linear-gradient(90deg,transparent,transparent 7px,rgba(255,255,255,.15) 7px,rgba(255,255,255,.15) 8px)'}}/>
+                    </div>
+                    <div style={{fontSize:18,fontStyle:'italic',fontWeight:700,opacity:.8,letterSpacing:1}}>VISA</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2605,14 +2627,23 @@ const NAV_TABS=[
   {id:"wallet", label:"Wallet",   sub:"My Cards"},
 ];
 
-const NAV_ICONS={home:"⌂",benefits:"✦",tips:"✦",usecard:"▶",offers:"◇",wallet:"▣"};
+function NavIcon({name,size=18}){
+  const icons={
+    home:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>,
+    benefits:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8V21M3 12h18M7.5 8C7.5 8 7.5 3 12 3s4.5 5 4.5 5"/><path d="M16.5 8C16.5 8 16.5 3 12 3"/></svg>,
+    tips:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 2a7 7 0 015 11.9V16a1 1 0 01-1 1H8a1 1 0 01-1-1v-2.1A7 7 0 0112 2z"/></svg>,
+    usecard:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>,
+    offers:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.5"/></svg>,
+    wallet:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 6V4a2 2 0 012-2h16a2 2 0 012 2v2"/><circle cx="17" cy="13" r="1.5"/></svg>
+  };
+  return icons[name]||null;
+}
 
 function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady,pwaPrompt,onInstall}){
   return (
     <div className="top-nav">
       <div className="top-nav-brand">
         <div className="top-nav-brand-left">
-          <span style={{fontSize:22,cursor:'pointer',color:'var(--tx)'}}>☰</span>
         </div>
         <div className="top-nav-brand-title">
           <span className="logo-text">CardSage</span>
@@ -2625,7 +2656,7 @@ function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady,pwaPrompt,onInsta
       <div className="top-nav-tabs">
         {NAV_TABS.map(t=>(
           <button key={t.id} className={"nav-tab"+(tab===t.id?" active":"")} onClick={()=>setTab(t.id)}>
-            <span className="nav-tab-icon">{NAV_ICONS[t.id]||""}</span>
+            <span className="nav-tab-icon"><NavIcon name={t.id}/></span>
             <span className="nav-tab-label">{t.label}</span>
           </button>
         ))}
