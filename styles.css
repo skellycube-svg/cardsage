@@ -1,4 +1,4 @@
-/* styles.css — CardSage global stylesheet
+/* styles.css — FeeWorth global stylesheet
  * Contains all CSS: reset, variables (injected by config.js), typography,
  * component styles, layout, responsive breakpoints, and animations.
  * Loaded via <link rel="stylesheet" href="styles.css"> in index.html.
@@ -51,7 +51,7 @@ input,select,button{font-family:inherit}
 .grn-text{color:var(--grn2)}
 /* Precise mono for financial values */
 .stat-val,.mono{font-family:'Source Code Pro',monospace;font-weight:600}
-/* Top navigation bar — the sticky header with the CardSage logo and tab buttons */
+/* Top navigation bar — the sticky header with the FeeWorth logo and tab buttons */
 .top-nav{position:sticky;top:0;z-index:200;
   background:#ffffff;box-shadow:none}
 .top-nav::after{display:none}
@@ -506,7 +506,7 @@ a.tip-requires-chip:hover{background:#fdf0d5;border-color:#d97706;color:#78350f}
   .share-actions{flex-direction:column}
   .share-action-btn{min-width:unset}
 }
-/* PWA install banner — the prompt encouraging users to add CardSage to their home screen */
+/* PWA install banner — the prompt encouraging users to add FeeWorth to their home screen */
 .install-btn{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:99px;
   border:1px solid var(--br2);background:#ffffff;cursor:pointer;
   font-size:11px;font-weight:600;color:var(--tx2);font-family:'Inter',sans-serif;

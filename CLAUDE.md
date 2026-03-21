@@ -1,12 +1,12 @@
-# CLAUDE.md — CardSage
+# CLAUDE.md — FeeWorth
 
 ## Project Overview
 
-**CardSage** is a credit card benefit tracking and points optimization Progressive Web App (PWA).
+**FeeWorth** is an annual fee renewal decision engine for individuals and couples, built as a Progressive Web App (PWA).
 
-- **URL**: https://cardsage.co
-- **Tagline**: Track your card benefits, maximize points, never miss a monthly credit.
-- **Audience**: Points & miles enthusiasts and everyday credit card users.
+- **URL**: https://cardsage.co (domain pending migration to feeworth.co)
+- **Tagline**: Is the fee worth it?
+- **Audience**: Credit card holders wondering whether to keep, cancel, or downgrade cards at renewal time. Individuals and couples.
 - **Contact**: cardsage.co@gmail.com
 - **Revenue model**: Affiliate commissions via Apply Now links (CJ Affiliate / FlexOffers). FTC disclosure required — see Affiliate Links section below.
 
@@ -19,7 +19,7 @@
 | UI framework | React 18 (via CDN, `react.development.js`) |
 | JSX transpilation | Babel Standalone (via CDN, `@babel/standalone`) |
 | Build system | **None** — single-file HTML app, no npm, no bundler |
-| Fonts | Google Fonts: Playfair Display (serif display), Inter (body), Source Code Pro (mono) |
+| Fonts | Google Fonts: Playfair Display (serif display / wordmark), Inter (body), Source Code Pro (mono) |
 | Analytics | Plausible (`data-domain="YOUR_DOMAIN"` — replace with `cardsage.co`) |
 | Hosting | Netlify (auto-deploy from GitHub) |
 | PWA | manifest.json + sw.js service worker |
@@ -31,7 +31,7 @@
 ## File Structure
 
 ```
-CardSage/
+FeeWorth/
 ├── index.html             # Slim HTML shell (~60 lines) — loads all other files
 ├── config.js              # Central configuration (single source of truth)
 ├── styles.css             # All CSS styles
@@ -152,7 +152,7 @@ Returns integer days until a given date string. Used for benefit reset countdown
 | Component | Description |
 |-----------|-------------|
 | `App` | Root component — owns `myCards`, `checkedArr` state; renders TopNav + active tab |
-| `TopNav` | Sticky frosted-glass nav with centered CardSage wordmark and tab bar |
+| `TopNav` | Sticky frosted-glass nav with centered FeeWorth wordmark and tab bar |
 | `HomeTab` | Dashboard with stats grid, strategy cards, rotating categories, email capture |
 | `BenefitsTab` | Filterable benefit tracker — check off redeemed benefits, monthly/annual split |
 | `TipsTab` | Tips browser with Beginner/Advanced mode toggle, Start Here section, category-grouped layout (Earning/Redeeming/Managing/Travel), and "Ready for you" badge per tip |
@@ -193,7 +193,7 @@ All keys are managed via the `useLS(key, defaultValue)` hook, which wraps `useSt
 **FTC disclosure is required in 3 locations** (already implemented):
 1. Below every "Apply Now" button — `.apply-disclose` class: `"Affiliate link — we may earn a commission at no cost to you."`
 2. Above Quiz results card list — inline notice
-3. App footer — `"CardSage may earn a commission from card applications. This does not influence our recommendations."`
+3. App footer — `"FeeWorth may earn a commission from card applications. This does not influence our recommendations."`
 
 Full disclosure page: `affiliate-disclosure.html`
 
@@ -204,8 +204,8 @@ Full disclosure page: `affiliate-disclosure.html`
 **manifest.json**
 ```json
 {
-  "name": "CardSage",
-  "short_name": "CardSage",
+  "name": "FeeWorth",
+  "short_name": "FeeWorth",
   "start_url": "./index.html",
   "display": "standalone",
   "theme_color": "#03071d",
@@ -254,7 +254,7 @@ Full disclosure page: `affiliate-disclosure.html`
 
 ## Deployment Rules (follow these after every significant change)
 
-After completing any significant change to CardSage, always do the following automatically without being asked:
+After completing any significant change to FeeWorth, always do the following automatically without being asked:
 
 1. **BUMP SERVICE WORKER**: If any of these changed — branding, colors, fonts, CSS, HTML structure, or new files added — increment the CACHE_VERSION number in sw.js
 2. **BUMP VERSION.JSON**: Set the `"version"` field in version.json to match the new CACHE_VERSION in sw.js (e.g. `{"version":"v17"}`). These two must always stay in sync.
@@ -288,7 +288,7 @@ If context usage reaches 70%, pause current work and:
 
 | # | Date | What Was Built / Changed |
 |---|------|------------------------|
-| 1 | Pre-March 2026 | Initial CardSage build: React SPA, cards data, tips, Firebase auth, PWA setup |
+| 1 | Pre-March 2026 | Initial FeeWorth build: React SPA, cards data, tips, Firebase auth, PWA setup |
 | 2 | March 2026 | Stitch design overhaul: Playfair Display fonts, gold color scheme, decorative credit card, SVG nav icons |
 | 3 | March 2026 | Newsletter signup, Bilt 2.0 cards, tips restructure (flights/hotels/stacking/other), emoji elimination |
 | 4 | March 21, 2026 | Modular refactor: config.js, split index.html into separate files, plain English comments |

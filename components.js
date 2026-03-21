@@ -1,6 +1,6 @@
-// components.js — All React components for CardSage
+// components.js — All React components for FeeWorth
 //
-// This file contains every React component, hook, and helper used by CardSage.
+// This file contains every React component, hook, and helper used by FeeWorth.
 // It is loaded via <script type="text/babel" src="components.js"> so that
 // Babel Standalone can transpile the JSX at runtime (no build step required).
 //
@@ -446,7 +446,7 @@ function StratModal({stratId,myCards,onClose}){
 // NewsletterSubscribe renders an email signup form for monthly benefit reminders.
 // It saves the email to Firestore (the cloud database) and shows success/error messages.
 // Checks for duplicate emails before subscribing. Shown at the bottom of the app.
-// A form that lets users enter their email to subscribe to the CardSage newsletter. Saves to Firebase and prevents duplicate signups.
+// A form that lets users enter their email to subscribe to the FeeWorth newsletter. Saves to Firebase and prevents duplicate signups.
 function NewsletterSubscribe(){
   const [email,setEmail]=useState('');
   const [status,setStatus]=useState('');// 'success'|'exists'|'error'|''
@@ -633,7 +633,7 @@ function SharePortfolioModal({netValue,totalFees,totalCredits,numCards,activeStr
   const shareToX=()=>{
     const val=netValue>=0?'+$'+netValue:'−$'+Math.abs(netValue);
     const text=encodeURIComponent(
-      "I'm getting "+val+"/year in value from my credit cards — check yours at cardsage.co"
+      "I'm getting "+val+"/year in value from my credit cards — check yours at feeworth.co"
     );
     window.open('https://x.com/intent/tweet?text='+text,'_blank','noopener');
   };
@@ -648,7 +648,7 @@ function SharePortfolioModal({netValue,totalFees,totalCredits,numCards,activeStr
         <div style={{position:'absolute',left:'-9999px',top:0}}>
           <div ref={cardRef} className="share-card-render">
             <div className="share-card-inner">
-              <div className="share-card-logo">CardSage</div>
+              <div className="share-card-logo">FeeWorth</div>
               <div className="share-card-headline">My Card Portfolio</div>
               <div className="share-card-divider"/>
               <div className="share-card-stats">
@@ -670,7 +670,7 @@ function SharePortfolioModal({netValue,totalFees,totalCredits,numCards,activeStr
                 <span>·</span>
                 <span>${totalFees} in fees</span>
               </div>
-              <div className="share-card-footer">Built with cardsage.co</div>
+              <div className="share-card-footer">Built with feeworth.co</div>
             </div>
           </div>
         </div>
@@ -771,10 +771,10 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
         {/* Hero Section */}
         <div className="home-hero">
           <div className="home-hero-content">
-            <div className="home-hero-eyebrow">ELITE FINANCIAL MANAGEMENT</div>
-            <h1 className="home-hero-title">Welcome to<br/>CardSage</h1>
-            <p className="home-hero-subtitle">The definitive editorial ledger for your premium credit portfolio. Track, optimize, and ascend.</p>
-            <button className="btn" onClick={()=>setTab("wallet")}>Add Your Cards →</button>
+            <div className="home-hero-eyebrow">ANNUAL FEE RENEWAL ENGINE</div>
+            <h1 className="home-hero-title">Is the fee<br/>worth it?</h1>
+            <p className="home-hero-subtitle">Know exactly which cards to keep, cancel, or downgrade — before renewal day.</p>
+            <button className="btn" onClick={()=>setTab("wallet")}>Get Started Free →</button>
           </div>
           <div className="home-hero-card">
             <div className="hero-card-mockup">
@@ -782,7 +782,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
                 {/* Top row: logo + brand */}
                 <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
                   <svg width="16" height="18" viewBox="0 0 16 18" fill="none"><path d="M8 0L15.5 4.5V13.5L8 18L0.5 13.5V4.5L8 0Z" stroke="rgba(255,255,255,.8)" strokeWidth="1.2"/></svg>
-                  <span style={{fontSize:10,letterSpacing:2.5,textTransform:'uppercase',fontWeight:700,opacity:.85}}>CARDSAGE</span>
+                  <span style={{fontSize:10,letterSpacing:2.5,textTransform:'uppercase',fontWeight:700,opacity:.85}}>FEEWORTH</span>
                 </div>
                 {/* Card name */}
                 <div style={{flex:1,display:'flex',alignItems:'center'}}>
@@ -811,19 +811,19 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
         <div className="home-features-divider"/>
         <div className="home-features">
           <div className="home-feature-card">
-            <div className="home-feature-icon"><Icon name="shield-check" size={24} color="#fff"/></div>
-            <h3 className="home-feature-title">Track Every Benefit</h3>
-            <p className="home-feature-desc">Monitor your credits, perks, and statement credits. Never let a monthly benefit expire unused.</p>
+            <div className="home-feature-icon"><Icon name="calendar" size={24} color="#fff"/></div>
+            <h3 className="home-feature-title">Renewal Countdown</h3>
+            <p className="home-feature-desc">See exactly when each annual fee hits. Never be surprised by a renewal charge again.</p>
           </div>
           <div className="home-feature-card">
-            <div className="home-feature-icon"><Icon name="zap" size={24} color="#fff"/></div>
-            <h3 className="home-feature-title">Optimize Every Spend</h3>
-            <p className="home-feature-desc">Our Use Card guide tells you exactly which card to pull at every register for maximum rewards.</p>
+            <div className="home-feature-icon"><Icon name="target" size={24} color="#fff"/></div>
+            <h3 className="home-feature-title">Keep vs Cancel Verdict</h3>
+            <p className="home-feature-desc">Get a clear keep, cancel, or downgrade recommendation backed by the actual math on your usage.</p>
           </div>
           <div className="home-feature-card">
-            <div className="home-feature-icon"><Icon name="trophy" size={24} color="#fff"/></div>
-            <h3 className="home-feature-title">Master the Rewards Game</h3>
-            <p className="home-feature-desc">Expert strategies and pro tips to stack points, find sweet spots, and build the perfect wallet.</p>
+            <div className="home-feature-icon"><Icon name="heart" size={24} color="#fff"/></div>
+            <h3 className="home-feature-title">Household Optimization</h3>
+            <p className="home-feature-desc">Optimize cards across partners and family members. See whose name each card should be under.</p>
           </div>
         </div>
       </div>
@@ -3668,7 +3668,7 @@ function QuizTab({myCards}){
 }
 
 /* ── AUTH MODAL ──────────────────────────────────────────────────────────── */
-// AuthModal is a popup for signing in or creating a CardSage account.
+// AuthModal is a popup for signing in or creating a FeeWorth account.
 // Supports Google sign-in and email/password authentication.
 // On sign-up, optionally subscribes the user to the newsletter.
 // Shows error messages for common auth issues (wrong password, duplicate email, etc.).
@@ -3738,7 +3738,7 @@ function AuthModal({onClose}){
     <div className="auth-modal-overlay" onClick={onClose}>
       <div className="auth-modal" onClick={e=>e.stopPropagation()}>
         <button className="auth-modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={18}/></button>
-        <h2>Sign in to CardSage</h2>
+        <h2>Sign in to FeeWorth</h2>
         <p className="auth-modal-sub">Sync your wallet &amp; benefits across devices</p>
         <button className="auth-google-btn" onClick={signInGoogle} disabled={loading}>
           <svg width="16" height="16" viewBox="0 0 48 48" style={{flexShrink:0}}>
@@ -3838,13 +3838,15 @@ function AuthButton({user,onSignIn,fbReady}){
 // NAV_TABS defines the main navigation tabs shown at the top of the app.
 // Each entry has an id (used for routing), a short label, and a subtitle.
 const NAV_TABS=[
-  {id:"home",   label:"Home",     sub:"Your Overview"},
-  {id:"benefits",label:"Benefits",sub:"Track & Redeem"},
-  {id:"tips",   label:"Tips",     sub:"Pro Strategies"},
-  {id:"plan",   label:"Plan",     sub:"Trip Planner"},
-  {id:"usecard",label:"Use Card", sub:"Category Guide"},
-  {id:"offers", label:"Offers",   sub:"Explore Deals"},
-  {id:"wallet", label:"Wallet",   sub:"My Cards"},
+  {id:"home",     label:"Dashboard",       sub:"Your Overview"},
+  {id:"benefits", label:"Renewal Advisor",  sub:"Keep or Cancel"},
+  {id:"household",label:"Household",        sub:"Couples Optimizer"},
+  {id:"wallet",   label:"Wallet",           sub:"My Cards"},
+  // REMOVED IN FEEWORTH PIVOT — preserved for reference
+  // {id:"tips",   label:"Tips",     sub:"Pro Strategies"},
+  // {id:"plan",   label:"Plan",     sub:"Trip Planner"},
+  // {id:"usecard",label:"Use Card", sub:"Category Guide"},
+  // {id:"offers", label:"Offers",   sub:"Explore Deals"},
 ];
 
 // NavIcon renders a navigation-specific SVG icon for each tab in the top nav bar.
@@ -3857,13 +3859,14 @@ function NavIcon({name,size=18}){
     plan:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 6-9 12-9 12S3 16 3 10a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>,
     usecard:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>,
     offers:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.5"/></svg>,
+    household:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
     wallet:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 6V4a2 2 0 012-2h16a2 2 0 012 2v2"/><circle cx="17" cy="13" r="1.5"/></svg>
   };
   return icons[name]||null;
 }
 
 // TopNav is the sticky navigation bar at the top of every screen.
-// It contains: the CardSage logo/wordmark, an optional PWA install button,
+// It contains: the FeeWorth logo/wordmark, an optional PWA install button,
 // the auth/login button, and a horizontal row of tab buttons for navigation.
 // Props: tab, setTab, cardCount, user, onAuthClick, fbReady, pwaPrompt, onInstall.
 function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady,pwaPrompt,onInstall}){
@@ -3873,7 +3876,7 @@ function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady,pwaPrompt,onInsta
         <div className="top-nav-brand-left">
         </div>
         <div className="top-nav-brand-title">
-          <span className="logo-text">CardSage</span>
+          <span className="logo-text">FeeWorth</span>
         </div>
         <div className="top-nav-brand-right">
           {pwaPrompt&&<button className="install-btn" onClick={onInstall}>⊕ Install</button>}
@@ -4134,7 +4137,7 @@ function App(){
         <div className="ios-install-banner">
           {iosBanner==='android'
             ? <>
-                <span>Install CardSage for quick access</span>
+                <span>Install FeeWorth for quick access</span>
                 <div style={{display:'flex',gap:8,alignItems:'center',pointerEvents:'auto'}}>
                   <button className="install-btn" style={{pointerEvents:'auto'}} onClick={()=>{handleInstall();setIosBanner(null);localStorage.setItem(CS_CONFIG.LS_KEYS.iosDismissed,'1');}}>Install</button>
                   <button onClick={()=>{setIosBanner(null);localStorage.setItem(CS_CONFIG.LS_KEYS.iosDismissed,'1');}} aria-label="Dismiss" style={{pointerEvents:'auto',background:'none',border:'none',cursor:'pointer',color:'var(--tx3)',padding:'4px 6px',flexShrink:0,WebkitTapHighlightColor:'transparent',display:'flex',alignItems:'center'}}><Icon name="x" size={16} color="var(--tx3)"/></button>
@@ -4155,10 +4158,11 @@ function App(){
       <div className="tab-content-wrap" style={{paddingTop:8}}>
         {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal}/>}
         {tab==="benefits"&&<BenefitsTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits}/>}
-        {tab==="tips"&&    <TipsTab myCards={myCards}/>}
-        {tab==="plan"&&    <PlanTab myCards={myCards}/>}
-        {tab==="usecard"&& <UsecardTab myCards={myCards}/>}
-        {tab==="offers"&&  <OffersTab myCards={myCards}/>}
+        {/* REMOVED IN FEEWORTH PIVOT — preserved for reference */}
+        {/* {tab==="tips"&&    <TipsTab myCards={myCards}/>} */}
+        {/* {tab==="plan"&&    <PlanTab myCards={myCards}/>} */}
+        {/* {tab==="usecard"&& <UsecardTab myCards={myCards}/>} */}
+        {/* {tab==="offers"&&  <OffersTab myCards={myCards}/>} */}
         {tab==="quiz"&&    <QuizTab myCards={myCards}/>}
         {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={setMyCards}/>}
       </div>
@@ -4167,7 +4171,7 @@ function App(){
       <NewsletterSubscribe/>
       <div style={{padding:"32px 24px 28px",background:"var(--s3)",marginTop:24}}>
         <div style={{display:"flex",flexWrap:"wrap",justifyContent:"space-between",gap:"6px 16px",marginBottom:10,maxWidth:1000,margin:"0 auto 10px"}}>
-          <a href={"mailto:"+CS_CONFIG.CONTACT_EMAIL+"?subject=CardSage%20Data%20Error%20Report&body=Card%20name%3A%20%0AWhat%27s%20wrong%3A%20%0AWhat%20it%20should%20say%3A%20"}
+          <a href={"mailto:"+CS_CONFIG.CONTACT_EMAIL+"?subject=FeeWorth%20Data%20Error%20Report&body=Card%20name%3A%20%0AWhat%27s%20wrong%3A%20%0AWhat%20it%20should%20say%3A%20"}
              style={{fontSize:11,color:"var(--tx3)",textDecoration:"none"}}
              onMouseEnter={e=>e.currentTarget.style.color="var(--acc)"}
              onMouseLeave={e=>e.currentTarget.style.color="var(--tx3)"}>
@@ -4193,12 +4197,12 @@ function App(){
           </a>
         </div>
         <div style={{fontSize:11,color:"var(--tx3)",lineHeight:1.5,maxWidth:1000,margin:"0 auto"}}>
-          CardSage may earn a commission from card applications. This does not influence our recommendations.
+          FeeWorth may earn a commission from card applications. This does not influence our recommendations.
         </div>
       </div>
       <div style={{textAlign:"center",padding:"16px 0 24px",borderTop:"1px solid #e5e7eb"}}>
         <div style={{fontFamily:"'Inter',sans-serif",fontSize:11,color:"#9ca3af"}}>
-          &copy; 2025&ndash;2026 CardSage. All rights reserved.
+          &copy; 2025&ndash;2026 FeeWorth. All rights reserved.
         </div>
       </div>
     </div>

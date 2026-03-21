@@ -1,6 +1,6 @@
-// config.js — CardSage central configuration
+// config.js — FeeWorth central configuration
 //
-// This is the single source of truth for every setting in CardSage.
+// This is the single source of truth for every setting in FeeWorth.
 // Change any value here and it automatically flows to every file that needs it.
 // Never hardcode these values in other files — always read them from CS_CONFIG.
 //
@@ -12,16 +12,16 @@ const CS_CONFIG = {
   // ── Versioning ──────────────────────────────────────────────────────────────
   // The current app version. Incrementing this forces all users' browsers to
   // download fresh files instead of using old cached copies.
-  CACHE_VERSION: 'v61',
+  CACHE_VERSION: 'v48',
 
   // ── Site Metadata ───────────────────────────────────────────────────────────
   // Basic info about the site — name, URL, contact email, and descriptions
   // used in the browser tab, search engine results, and social media previews.
-  SITE_NAME: 'CardSage',
+  SITE_NAME: 'FeeWorth',
   SITE_URL: 'https://cardsage.co',
   CONTACT_EMAIL: 'cardsage.co@gmail.com',
-  SITE_TAGLINE: 'Track your card benefits, maximize points, never miss a monthly credit.',
-  SITE_DESCRIPTION: 'CardSage helps you track credit card benefits, maximize points, and never miss a monthly credit. Free tool for points & miles enthusiasts.',
+  SITE_TAGLINE: 'Is the fee worth it?',
+  SITE_DESCRIPTION: 'FeeWorth tells you which credit cards are worth keeping and which to cancel. Renewal countdowns, ROI tracking, and household optimization for couples.',
 
   // ── Firebase ────────────────────────────────────────────────────────────────
   // Connection details for Google Firebase, which handles user login and
@@ -92,7 +92,7 @@ const CS_CONFIG = {
   },
 
   // ── localStorage Keys ───────────────────────────────────────────────────────
-  // Names for the browser storage slots where CardSage saves your data locally.
+  // Names for the browser storage slots where FeeWorth saves your data locally.
   // Your card wallet, checked-off benefits, quiz answers, and preferences
   // are all stored under these keys so they persist between visits.
   LS_KEYS: {

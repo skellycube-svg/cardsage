@@ -1,4 +1,4 @@
-// sw.js — Service Worker for CardSage
+// sw.js — Service Worker for FeeWorth
 //
 // A service worker is a background script that runs separately from the web page.
 // It intercepts every network request the app makes and can serve files from a

@@ -13,7 +13,7 @@ const BCAT={
 };
 
 /* CARDS */
-// This is the master list of every credit card tracked in CardSage.
+// This is the master list of every credit card tracked in FeeWorth.
 // Each card object contains: id (unique short code), name (full official name), short (display name),
 // issuer (the bank), isBiz (true if it is a business card), fee (annual fee in dollars),
 // network (Visa/Mastercard/Amex/Discover), cur (the points currency it earns),
