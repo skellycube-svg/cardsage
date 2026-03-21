@@ -649,18 +649,18 @@ function SharePortfolioModal({netValue,totalFees,totalCredits,numCards,activeStr
           <div ref={cardRef} className="share-card-render">
             <div className="share-card-inner">
               <div className="share-card-logo">FeeWorth</div>
-              <div className="share-card-headline">My Card Portfolio</div>
+              <div className="share-card-headline">Annual Fee ROI</div>
               <div className="share-card-divider"/>
               <div className="share-card-stats">
                 <div className="share-card-stat">
-                  <div className="share-card-stat-val" style={{color:'#16a34a'}}>
-                    {netValue>=0?'+':''}{netValue<0?'−':''}${Math.abs(netValue)}
+                  <div className="share-card-stat-val" style={{color:netValue>=0?'#16a34a':'#dc2626'}}>
+                    {netValue>=0?'+':'−'}${Math.abs(netValue)}
                   </div>
-                  <div className="share-card-stat-lbl">Net Value / Year</div>
+                  <div className="share-card-stat-lbl">Net ROI / Year</div>
                 </div>
                 <div className="share-card-stat">
-                  <div className="share-card-stat-val" style={{color:'#b8860b'}}>{activeStrats}</div>
-                  <div className="share-card-stat-lbl">Active {activeStrats===1?'Strategy':'Strategies'}</div>
+                  <div className="share-card-stat-val" style={{color:'#16a34a'}}>{activeStrats}</div>
+                  <div className="share-card-stat-lbl">{activeStrats===1?'Card':'Cards'} Worth It</div>
                 </div>
               </div>
               <div className="share-card-details">
@@ -707,16 +707,15 @@ function SharePortfolioModal({netValue,totalFees,totalCredits,numCards,activeStr
   );
 }
 
-/* ── HOME TAB ─────────────────────────────────────────────────────────────── */
-// HomeTab is the main dashboard screen users see when they open the app.
-// If the user has no cards, it shows a welcome hero section with feature highlights.
-// If they have cards, it shows: stats (fees, credits, net value), monthly credit alerts,
-// active strategies, strategies they are one card away from unlocking, and a wallet strip.
+/* ── HOME TAB (FeeWorth Dashboard) ────────────────────────────────────────── */
+// The FeeWorth dashboard — focused on annual fee ROI and renewal decisions.
+// Shows: top stats (total fees, credits used, net ROI), a card renewal timeline
+// sorted by nearest renewal date with ROI progress bars and verdict badges,
+// and a collapsed section for no-annual-fee cards.
 // Props: myCards, setMyCards, checkedSet, setTab, setStratModal.
-// The main dashboard screen. Shows your wallet stats (total fees, benefit value, points earned),
-// strategy recommendations, rotating quarterly categories, and a newsletter signup.
 function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
   const [showShare,setShowShare]=useState(false);
+  const [showFreeCards,setShowFreeCards]=useState(false);
   const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
 
   const totalFees=useMemo(()=>cards.reduce((s,c)=>s+c.fee,0),[cards]);
@@ -730,40 +729,46 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
     const mon=c.monthly.reduce((a,b)=>a+((b.v||0)*12),0);
     return s+ann+mon;
   },0),[cards]);
-  const netValue=totalCredits-totalFees;
+  const netROI=totalCredits-totalFees;
 
-  // Categorize ALL strategies into three buckets based on how many required cards the user has
-  const stratBuckets=useMemo(()=>{
-    const active=[];  // all required cards owned
-    const oneAway=[]; // exactly 1 card missing
-    const moreNeeded=[]; // 2+ cards missing
-    Object.values(STRATS).forEach(s=>{
-      // Find the best combo (req or any alt) — pick the one with fewest missing cards
-      const combos=[s.req,...(s.alt||[])];
-      let bestMissing=null;
-      combos.forEach(combo=>{
-        const missing=combo.filter(id=>!myCards.includes(id));
-        if(!bestMissing||missing.length<bestMissing.length) bestMissing=missing;
-      });
-      if(!bestMissing) bestMissing=s.req.filter(id=>!myCards.includes(id));
-      const entry={...s,missingCards:bestMissing};
-      if(bestMissing.length===0) active.push(entry);
-      else if(bestMissing.length===1) oneAway.push(entry);
-      else moreNeeded.push(entry);
-    });
-    return {active,oneAway,moreNeeded};
-  },[myCards]);
+  // Calculate per-card credit values (how much of their fee they've "earned back")
+  const cardStats=useMemo(()=>cards.map(card=>{
+    const annVal=card.annual.reduce((a,b)=>{
+      if(!b.v)return a;
+      if(b.reset==="quarterly")return a+b.v*4;
+      if(b.reset==="semi-annual")return a+b.v*2;
+      return a+b.v;
+    },0);
+    const monVal=card.monthly.reduce((a,b)=>a+((b.v||0)*12),0);
+    const totalVal=annVal+monVal;
+    // Calculate renewal days — use renewalDate if present, else distribute across the year
+    const now=new Date();
+    let renewDays=null;
+    if(card.renewalDate){
+      const rd=new Date(card.renewalDate);
+      // Move to this year or next
+      rd.setFullYear(now.getFullYear());
+      if(rd<now) rd.setFullYear(now.getFullYear()+1);
+      renewDays=Math.ceil((rd-now)/(1000*60*60*24));
+    }else if(card.fee>0){
+      // Placeholder: distribute by card index position across the year
+      const idx=CARDS.findIndex(c=>c.id===card.id);
+      const dayOfYear=((idx*37)%365);
+      const jan1=new Date(now.getFullYear(),0,1);
+      const target=new Date(jan1.getTime()+dayOfYear*86400000);
+      if(target<now) target.setFullYear(now.getFullYear()+1);
+      renewDays=Math.ceil((target-now)/(1000*60*60*24));
+    }
+    const roiPct=card.fee>0?Math.round((totalVal/card.fee)*100):null;
+    const verdict=card.fee===0?null:roiPct>=100?"worth-it":roiPct>=50?"on-track":"at-risk";
+    return {card,totalVal,renewDays,roiPct,verdict};
+  }),[cards]);
 
-  const monthlyAlerts=useMemo(()=>{
-    const list=[];
-    cards.forEach(card=>{
-      card.monthly.forEach(b=>{
-        const key=benKey(card.id,b,true);
-        if(!checkedSet.has(key))list.push({card,b,key});
-      });
-    });
-    return list.slice(0,4);
-  },[cards,checkedSet]);
+  // Split into fee cards (sorted by nearest renewal) and free cards
+  const feeCards=useMemo(()=>
+    cardStats.filter(cs=>cs.card.fee>0).sort((a,b)=>(a.renewDays||999)-(b.renewDays||999))
+  ,[cardStats]);
+  const freeCards=useMemo(()=>cardStats.filter(cs=>cs.card.fee===0),[cardStats]);
 
   if(!myCards.length){
     return (
@@ -834,24 +839,25 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
     <div style={{padding:"16px 16px 0"}}>
       {/* Dashboard header */}
       <div style={{marginBottom:20}}>
-        <h2 className="page-title" style={{fontSize:36}}>Your Dashboard</h2>
-        <p className="page-subtitle">{cards.length} card{cards.length!==1?'s':''} in your portfolio</p>
+        <h2 className="page-title" style={{fontSize:36}}>Fee Dashboard</h2>
+        <p className="page-subtitle">{cards.length} card{cards.length!==1?'s':''} · {feeCards.length} with annual fees</p>
       </div>
-      {/* Stats grid */}
+
+      {/* Top stats row */}
       <div className="stats-grid fu">
         <div className="stat-box">
           <div className="stat-val" style={{color:"var(--red2)"}}>${totalFees}</div>
-          <div className="stat-lbl">Annual Fees</div>
+          <div className="stat-lbl">Total Annual Fees</div>
         </div>
         <div className="stat-box">
           <div className="stat-val grn-text">${totalCredits}</div>
-          <div className="stat-lbl">Total Credits</div>
+          <div className="stat-lbl">Credits Used</div>
         </div>
         <div className="stat-box">
-          <div className="stat-val" style={{color:netValue>=0?"var(--grn2)":"var(--red2)"}}>
-            {netValue>=0?"+":""}{netValue}
+          <div className="stat-val" style={{color:netROI>=0?"var(--grn2)":"var(--red2)"}}>
+            {netROI>=0?"+":""}${Math.abs(netROI)}
           </div>
-          <div className="stat-lbl">Net Value</div>
+          <div className="stat-lbl">Net ROI</div>
         </div>
       </div>
 
@@ -864,212 +870,85 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
       </div>
 
       {showShare&&<SharePortfolioModal
-        netValue={netValue} totalFees={totalFees} totalCredits={totalCredits}
-        numCards={cards.length} activeStrats={stratBuckets.active.length}
+        netValue={netROI} totalFees={totalFees} totalCredits={totalCredits}
+        numCards={cards.length} activeStrats={feeCards.filter(c=>c.verdict==="worth-it").length}
         onClose={()=>setShowShare(false)}/>}
 
-      {/* Monthly credits alert */}
-      {monthlyAlerts.length>0&&(
+      {/* Card Renewal Timeline */}
+      {feeCards.length>0&&(
         <div style={{marginBottom:16}}>
-          <div className="section-hdr">
-            <div className="section-title"><Icon name="bolt" size={14} color="var(--acc)"/> MONTHLY CREDITS TO USE</div>
-            <button className="btn-ghost btn-sm" onClick={()=>setTab("benefits")}>See All</button>
+          <div className="section-hdr" style={{marginBottom:12}}>
+            <div className="section-title"><Icon name="calendar" size={14} color="var(--acc)"/> RENEWAL TIMELINE</div>
           </div>
-          {monthlyAlerts.map(({card,b,key})=>(
-            <div key={key} className="surf" style={{marginBottom:8,display:"flex",alignItems:"center",gap:12}}>
-              <CreditCardDisplay card={card} size="sm"/>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:2}}>{b.n}</div>
-                <div style={{fontSize:11,color:"var(--tx3)",marginBottom:5}}>{card.short}</div>
-                <div style={{display:"inline-flex",alignItems:"center",gap:4,padding:"2px 9px",background:"rgba(16,185,129,.12)",borderRadius:99,fontSize:11,color:"var(--grn2)",fontWeight:700}}>
-                  <Icon name="dollar" size={12} color="var(--grn2)"/> ${b.v}/mo — expires soon!
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Strategy sections: Active / One Card Away / More Cards Needed ────── */}
-      {(()=>{
-        const {active,oneAway,moreNeeded}=stratBuckets;
-        const sections=[];
-
-        /* Section 1 — Active Strategies */
-        if(active.length>0) sections.push(
-          <div key="strat-active">
-            <div style={{marginBottom:4}}>
-              <div className="section-title" style={{marginBottom:2}}><Icon name="trident" size={14} color="var(--acc)"/> ACTIVE STRATEGIES</div>
-              <div style={{fontSize:12,color:"#6b7280",fontFamily:"'Inter',sans-serif",marginBottom:10}}>Strategies you can use right now</div>
-            </div>
-            {active.map(s=>(
-              <div key={s.id} className="surf glow-card" style={{marginBottom:8,cursor:"pointer"}} onClick={()=>setStratModal(s.id)}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <Icon name={STRAT_ICON_MAP[s.id]||"diamond"} size={24} color="var(--acc)"/>
-                    <div>
-                      <div style={{fontSize:14,fontWeight:800,color:"var(--tx)"}}>{s.name}</div>
-                      <div style={{fontSize:11,color:"var(--grn2)",fontWeight:700,marginTop:1}}>{s.value}</div>
-                    </div>
+          {feeCards.map(({card,totalVal,renewDays,roiPct,verdict})=>{
+            const palette=getIssuerPalette(card.issuer);
+            const verdictLabel=verdict==="worth-it"?"Worth It":verdict==="on-track"?"On Track":"At Risk";
+            const verdictColor=verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--gold)":"var(--red2)";
+            const verdictBg=verdict==="worth-it"?"rgba(22,163,74,.1)":verdict==="on-track"?"rgba(184,134,11,.1)":"rgba(220,38,38,.1)";
+            const barPct=Math.min(roiPct||0,100);
+            const barColor=verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--gold)":"var(--red2)";
+            return(
+              <div key={card.id} className="surf fu" style={{marginBottom:8,cursor:"pointer",borderLeft:`4px solid ${palette.grad[0]}`,padding:"14px 16px"}}
+                onClick={()=>setTab("benefits")}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:14,fontWeight:700,color:"var(--tx)",lineHeight:1.2}}>{card.short||card.name}</div>
+                    <div style={{fontSize:11,color:"var(--tx3)",marginTop:2}}>{card.issuer} · ${card.fee}/yr</div>
                   </div>
-                  <span style={{color:"var(--tx3)",fontSize:14}}>→</span>
-                </div>
-                <div style={{fontSize:12,color:"var(--tx3)",marginTop:8,lineHeight:1.5}}>{s.desc.slice(0,110)}…</div>
-              </div>
-            ))}
-          </div>
-        );
-
-        /* Section 1.5 — YOUR NEXT BEST CARD (most prominent CTA) */
-        {
-          // Rank one-away strategies by parsing the high end of the value range
-          const parseHighValue=v=>{const m=v.match(/[\d,]+/g);return m?parseInt(m[m.length>1?1:0].replace(/,/g,"")):0;};
-          // Prefer one-away strategies; fall back to highest-value strategy with any missing card
-          let candidates=oneAway.length>0?oneAway:[...moreNeeded];
-          candidates.sort((a,b)=>parseHighValue(b.value)-parseHighValue(a.value));
-          const best=candidates[0];
-          if(best){
-            const missingId=best.missingCards[0];
-            const mc=CARDS.find(c=>c.id===missingId);
-            const applyUrl=mc&&APPLY_URLS[mc.id]&&!APPLY_URLS[mc.id].startsWith("#")?APPLY_URLS[mc.id]:null;
-            const palette=mc?getIssuerPalette(mc.issuer):null;
-            sections.push(
-              <div key="next-best-card">
-                <div style={{marginBottom:4}}>
-                  <div className="section-title" style={{marginBottom:2}}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                    {" "}YOUR NEXT BEST CARD
-                  </div>
-                  <div style={{fontSize:12,color:"#6b7280",fontFamily:"'Inter',sans-serif",marginBottom:10}}>The single card that unlocks the most value</div>
-                </div>
-                <div style={{borderRadius:14,overflow:"hidden",border:"1.5px solid rgba(184,134,11,.25)",borderLeft:"4px solid var(--acc)",
-                  background:"linear-gradient(135deg,rgba(254,249,236,.7),rgba(255,255,255,.9))",
-                  boxShadow:"0 4px 20px rgba(184,134,11,.1)",marginBottom:8}}>
-                  <div style={{padding:"18px 18px 0"}}>
-                    {mc&&palette&&(
-                      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-                        <div style={{width:44,height:28,borderRadius:6,background:`linear-gradient(135deg,${mc.c1},${mc.c2})`,flexShrink:0,
-                          boxShadow:"0 2px 8px rgba(0,0,0,.15)"}}/>
-                        <div style={{flex:1}}>
-                          <div style={{fontSize:16,fontWeight:800,color:"var(--tx)",lineHeight:1.2}}>{mc.short||mc.name}</div>
-                          <div style={{fontSize:11,color:"var(--tx3)",marginTop:1}}>{mc.issuer} · {mc.fee===0?"No annual fee":"$"+mc.fee+"/yr"}</div>
-                        </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                    {renewDays!=null&&(
+                      <div style={{fontSize:11,color:renewDays<=60?"var(--red2)":renewDays<=120?"var(--gold)":"var(--tx3)",fontWeight:600,whiteSpace:"nowrap"}}>
+                        {renewDays<=0?"Renews today":renewDays+" days"}
                       </div>
                     )}
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                      <Icon name={STRAT_ICON_MAP[best.id]||"diamond"} size={16} color="var(--acc)"/>
-                      <span style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>Unlocks: {best.name}</span>
-                    </div>
-                    <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 12px",borderRadius:8,
-                      background:"rgba(184,134,11,.08)",marginBottom:12}}>
-                      <span style={{fontSize:12,fontWeight:700,color:"var(--acc)"}}>Est. value: {best.value}</span>
-                    </div>
-                    <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.5,marginBottom:16}}>{best.desc.slice(0,140)}…</div>
+                    <span style={{display:"inline-flex",alignItems:"center",padding:"3px 10px",borderRadius:99,
+                      fontSize:10,fontWeight:700,letterSpacing:.3,color:verdictColor,background:verdictBg,whiteSpace:"nowrap"}}>
+                      {verdictLabel}
+                    </span>
                   </div>
-                  {applyUrl&&(
-                    <div style={{padding:"0 18px 16px"}}>
-                      <a href={applyUrl} target="_blank" rel="noopener noreferrer"
-                        style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",
-                          padding:"13px 24px",borderRadius:12,border:"none",textDecoration:"none",
-                          background:"linear-gradient(135deg,var(--acc),var(--gld2))",color:"#fff",
-                          fontFamily:"'Inter',sans-serif",fontSize:15,fontWeight:700,cursor:"pointer",
-                          letterSpacing:.3,boxShadow:"0 3px 12px rgba(184,134,11,.3)",transition:"all .2s"}}
-                        onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 5px 20px rgba(184,134,11,.4)";e.currentTarget.style.transform="translateY(-1px)";}}
-                        onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 3px 12px rgba(184,134,11,.3)";e.currentTarget.style.transform="none";}}>
-                        Apply Now &rarr;
-                      </a>
-                      <div style={{fontSize:10,color:"var(--tx3)",textAlign:"center",marginTop:8,lineHeight:1.4}}>
-                        Affiliate link — we may earn a commission at no cost to you.
-                      </div>
-                    </div>
-                  )}
+                </div>
+                {/* ROI progress bar */}
+                <div style={{marginBottom:6}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+                    <span style={{fontSize:11,fontWeight:600,color:"var(--tx2)"}}>${totalVal} of ${card.fee} used</span>
+                    <span style={{fontSize:11,fontWeight:700,color:verdictColor}}>{roiPct}%</span>
+                  </div>
+                  <div className="prog-track" style={{height:6,borderRadius:99}}>
+                    <div className="prog-fill" style={{width:barPct+"%",background:barColor,borderRadius:99}}/>
+                  </div>
                 </div>
               </div>
             );
-          }
-        }
-
-        /* Section 2 — One Card Away */
-        if(oneAway.length>0) sections.push(
-          <div key="strat-one-away">
-            <div style={{marginBottom:4}}>
-              <div className="section-title" style={{marginBottom:2}}><Icon name="target" size={14} color="var(--acc)"/> ONE CARD AWAY</div>
-              <div style={{fontSize:12,color:"#6b7280",fontFamily:"'Inter',sans-serif",marginBottom:10}}>Add one card to unlock these</div>
-            </div>
-            {oneAway.map(s=>{
-              const mc=CARDS.find(c=>c.id===s.missingCards[0]);
-              return (
-                <div key={s.id} className="surf glow-card" style={{marginBottom:8,cursor:"pointer",borderLeft:"3px solid rgba(184,134,11,.5)"}} onClick={()=>setStratModal(s.id)}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <Icon name={STRAT_ICON_MAP[s.id]||"diamond"} size={24} color="var(--acc)"/>
-                      <div>
-                        <div style={{fontSize:14,fontWeight:800,color:"var(--tx)"}}>{s.name}</div>
-                        <div style={{fontSize:11,color:"var(--gld2)",fontWeight:700,marginTop:1}}>{s.value}</div>
-                      </div>
-                    </div>
-                    <span style={{color:"var(--tx3)",fontSize:14}}>→</span>
-                  </div>
-                  <div style={{fontSize:12,color:"var(--tx3)",marginTop:8,lineHeight:1.5}}>{s.desc.slice(0,110)}…</div>
-                  {mc&&<div style={{marginTop:8}}><span style={{display:"inline-block",background:"#fef9ec",color:"#92400e",border:"1px solid #f59e0b",borderRadius:999,padding:"2px 10px",fontSize:11}}>Needs: {mc.short||mc.name}</span></div>}
-                </div>
-              );
-            })}
-          </div>
-        );
-
-        /* Section 3 — More Cards Needed */
-        if(moreNeeded.length>0) sections.push(
-          <div key="strat-more-needed">
-            <div style={{marginBottom:4}}>
-              <div className="section-title" style={{marginBottom:2}}><Icon name="diamond" size={14} color="var(--acc)"/> MORE CARDS NEEDED</div>
-              <div style={{fontSize:12,color:"#6b7280",fontFamily:"'Inter',sans-serif",marginBottom:10}}>Strategies for building your portfolio</div>
-            </div>
-            {moreNeeded.map(s=>(
-              <div key={s.id} className="surf" style={{marginBottom:8,cursor:"pointer",opacity:.65}} onClick={()=>setStratModal(s.id)}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <Icon name={STRAT_ICON_MAP[s.id]||"diamond"} size={24} color="var(--acc)"/>
-                    <div>
-                      <div style={{fontSize:14,fontWeight:800,color:"var(--tx)"}}>{s.name}</div>
-                      <div style={{fontSize:11,color:"var(--tx3)",fontWeight:700,marginTop:1}}>{s.value}</div>
-                    </div>
-                  </div>
-                  <span style={{color:"var(--tx3)",fontSize:14}}>→</span>
-                </div>
-                <div style={{fontSize:12,color:"var(--tx3)",marginTop:8,lineHeight:1.5}}>{s.desc.slice(0,110)}…</div>
-                <div style={{marginTop:8,display:"flex",flexWrap:"wrap",gap:4}}>
-                  {s.missingCards.map(mid=>{
-                    const mc=CARDS.find(c=>c.id===mid);
-                    return mc?<span key={mid} style={{display:"inline-block",background:"#fef9ec",color:"#92400e",border:"1px solid #f59e0b",borderRadius:999,padding:"2px 10px",fontSize:11}}>Needs: {mc.short||mc.name}</span>:null;
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        );
-
-        if(!sections.length) return null;
-        /* Insert dividers between visible sections */
-        const withDividers=[];
-        sections.forEach((sec,i)=>{
-          if(i>0) withDividers.push(<div key={"strat-div-"+i} style={{borderTop:"1px solid #e5e7eb",margin:"16px 0"}}/>);
-          withDividers.push(sec);
-        });
-        return <div style={{marginBottom:16}}>{withDividers}</div>;
-      })()}
-
-      {/* My cards strip */}
-      <div style={{marginBottom:16}}>
-        <div className="section-hdr">
-          <div className="section-title">MY WALLET ({cards.length})</div>
-          <button className="btn-ghost btn-sm" onClick={()=>setTab("wallet")}>Edit</button>
+          })}
         </div>
-        <div className="hscroll" style={{paddingBottom:8}}>
-          {cards.map(c=><CreditCardDisplay key={c.id} card={c} size="sm"/>)}
-          <div onClick={()=>setTab("wallet")} style={{width:136,height:82,flexShrink:0,borderRadius:14,border:"2px dashed var(--br2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"var(--tx3)",fontSize:24}}>+</div>
+      )}
+
+      {/* No Annual Fee cards — collapsed section */}
+      {freeCards.length>0&&(
+        <div style={{marginBottom:16}}>
+          <button onClick={()=>setShowFreeCards(!showFreeCards)}
+            style={{display:"flex",alignItems:"center",gap:8,width:"100%",background:"none",border:"none",
+              cursor:"pointer",padding:"10px 0",borderTop:"1px solid var(--br2)"}}>
+            <Icon name={showFreeCards?"chevron-down":"chevron-right"} size={14} color="var(--tx3)"/>
+            <span style={{fontSize:12,fontWeight:600,color:"var(--tx3)",letterSpacing:.5,textTransform:"uppercase"}}>
+              No Annual Fee ({freeCards.length})
+            </span>
+          </button>
+          {showFreeCards&&(
+            <div style={{paddingLeft:4}}>
+              {freeCards.map(({card})=>{
+                const palette=getIssuerPalette(card.issuer);
+                return(
+                  <div key={card.id} className="surf" style={{marginBottom:6,borderLeft:`4px solid ${palette.grad[0]}`,padding:"10px 14px",opacity:.7}}>
+                    <div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{card.short||card.name}</div>
+                    <div style={{fontSize:11,color:"var(--tx3)",marginTop:1}}>{card.issuer} · $0/yr · No renewal decision needed</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
