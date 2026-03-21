@@ -865,6 +865,7 @@ const RESET_LABELS={monthly:"Monthly",quarterly:"Quarterly","semi-annual":"Semi-
 function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckDates,resetBadges=new Set(),skippedSet=new Set(),setSkippedBenefits}){
   const [filterCat,setFilterCat]=useState("all");
   const [openBen,setOpenBen]=useState(null);
+  const [upgradeCard,setUpgradeCard]=useState(null);
 
   const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
 
@@ -1012,6 +1013,37 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
                   <div className="prog-fill" style={{width:(totalSlots?Math.round(usedHere/totalSlots*100):0)+"%",background:getIssuerColor(card.issuer)}}/>
                 </div>
               </div>
+              {/* Per-card value summary */}
+              {(()=>{
+                const creditBens=allBenefits.filter(b=>b.cardId===card.id&&b.v!=null);
+                const totalCredits=creditBens.reduce((s,b)=>s+annualBenValue(b),0);
+                const netValue=totalCredits-card.fee;
+                return (
+                  <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+                    <div style={{flex:1,minWidth:80,padding:"6px 10px",borderRadius:8,background:"var(--s3)",textAlign:"center"}}>
+                      <div style={{fontSize:9,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase"}}>Fee</div>
+                      <div style={{fontSize:14,fontWeight:800,color:"var(--tx)"}}>{card.fee===0?"Free":"$"+card.fee}</div>
+                    </div>
+                    <div style={{flex:1,minWidth:80,padding:"6px 10px",borderRadius:8,background:"var(--s3)",textAlign:"center"}}>
+                      <div style={{fontSize:9,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase"}}>Credits</div>
+                      <div style={{fontSize:14,fontWeight:800,color:"var(--tx)"}}>${totalCredits.toLocaleString()}</div>
+                    </div>
+                    <div style={{flex:1,minWidth:80,padding:"6px 10px",borderRadius:8,background:netValue>=0?"rgba(22,163,74,.06)":"rgba(220,38,38,.06)",textAlign:"center"}}>
+                      <div style={{fontSize:9,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase"}}>Net Value</div>
+                      <div style={{fontSize:14,fontWeight:800,color:netValue>=0?"var(--grn2)":"var(--red2)"}}>{netValue>=0?"+":""}{netValue<0?"-":""}${Math.abs(netValue).toLocaleString()}</div>
+                    </div>
+                    {netValue<0&&card.fee>0&&(
+                      <button onClick={()=>setUpgradeCard(card)}
+                        style={{width:"100%",padding:"5px 0",background:"none",border:"none",cursor:"pointer",
+                          fontSize:11,fontWeight:600,color:"var(--acc)",fontFamily:"'Inter',sans-serif",textAlign:"center"}}
+                        onMouseEnter={e=>e.currentTarget.style.textDecoration="underline"}
+                        onMouseLeave={e=>e.currentTarget.style.textDecoration="none"}>
+                        Consider upgrading? →
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
               {(()=>{
                 const activeCreditBens=cardBens.filter(b=>b.type!=="perk"&&!skippedSet.has(b.key));
                 const activePerkBens=cardBens.filter(b=>b.type==="perk"&&!skippedSet.has(b.key));
@@ -1171,6 +1203,96 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
           );
         })}</div>
       )}
+
+      {/* Upgrade suggestion modal */}
+      {upgradeCard&&(()=>{
+        const uc=upgradeCard;
+        // Find the top earn categories for this card
+        const topCats=Object.entries(uc.earn||{}).filter(([k,v])=>k!=="o"&&parseFloat(String(v).replace(/[^0-9.]/g,""))>1).map(([k])=>k);
+        // Find alternative cards the user doesn't own that earn more in those categories or have better net value
+        const alternatives=CARDS.filter(c=>
+          c.id!==uc.id&&!myCards.includes(c.id)&&c.issuer===uc.issuer
+        );
+        // Also find cross-issuer cards that dominate the same categories
+        const crossIssuer=CARDS.filter(c=>
+          c.id!==uc.id&&!myCards.includes(c.id)&&c.issuer!==uc.issuer&&
+          topCats.some(cat=>c.earn&&parseFloat(String(c.earn[cat]||"0").replace(/[^0-9.]/g,""))>parseFloat(String(uc.earn[cat]||"0").replace(/[^0-9.]/g,"")))
+        );
+        const allAlts=[...alternatives,...crossIssuer];
+        // Score by net value (credits - fee) and earning rate overlap
+        const scored=allAlts.map(c=>{
+          const bens=[...c.annual,...c.monthly];
+          const credits=bens.filter(b=>b.v!=null).reduce((s,b)=>s+annualBenValue(b),0);
+          const net=credits-c.fee;
+          let earnBoost=0;
+          topCats.forEach(cat=>{
+            const oldRate=parseFloat(String(uc.earn[cat]||"0").replace(/[^0-9.]/g,""));
+            const newRate=parseFloat(String((c.earn&&c.earn[cat])||"0").replace(/[^0-9.]/g,""));
+            if(newRate>oldRate) earnBoost+=(newRate-oldRate);
+          });
+          return {...c,credits,net,earnBoost,score:net+earnBoost*100};
+        }).filter(c=>c.net>upgradeCard.fee*-1||c.earnBoost>0).sort((a,b)=>b.score-a.score).slice(0,3);
+
+        return (
+          <div className="sheet-overlay" onClick={()=>setUpgradeCard(null)}>
+            <div className="sheet" onClick={e=>e.stopPropagation()} style={{maxWidth:500,padding:"24px 20px 40px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+                <div>
+                  <div style={{fontSize:18,fontWeight:800,color:"var(--tx)",fontFamily:"'Playfair Display',Georgia,serif"}}>Upgrade Options</div>
+                  <div style={{fontSize:12,color:"var(--tx3)",marginTop:2}}>Cards with better value than {uc.short||uc.name}</div>
+                </div>
+                <button onClick={()=>setUpgradeCard(null)} style={{background:"none",border:"none",fontSize:22,color:"var(--tx3)",cursor:"pointer",padding:4,lineHeight:1}}>&times;</button>
+              </div>
+
+              {scored.length===0?(
+                <div style={{textAlign:"center",padding:"24px 0",color:"var(--tx3)",fontSize:13}}>No clear upgrades found for your spending categories. This card may still be worth keeping for its specific benefits.</div>
+              ):(
+                scored.map(alt=>{
+                  const palette=getIssuerPalette(alt.issuer);
+                  const applyUrl=APPLY_URLS[alt.id]&&!APPLY_URLS[alt.id].startsWith("#")?APPLY_URLS[alt.id]:null;
+                  return (
+                    <div key={alt.id} style={{marginBottom:14,borderRadius:12,border:"1px solid var(--br2)",overflow:"hidden"}}>
+                      <div style={{padding:"14px 16px",borderLeft:`3px solid ${palette.text}`}}>
+                        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                          <div style={{width:36,height:22,borderRadius:5,background:`linear-gradient(135deg,${alt.c1},${alt.c2})`,flexShrink:0,boxShadow:"0 1px 4px rgba(0,0,0,.12)"}}/>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>{alt.short||alt.name}</div>
+                            <div style={{fontSize:11,color:"var(--tx3)"}}>{alt.issuer} · {alt.fee===0?"No fee":"$"+alt.fee+"/yr"}</div>
+                          </div>
+                          <div style={{textAlign:"right"}}>
+                            <div style={{fontSize:14,fontWeight:800,color:alt.net>=0?"var(--grn2)":"var(--tx2)"}}>{alt.net>=0?"+":""}${alt.net.toLocaleString()}</div>
+                            <div style={{fontSize:9,color:"var(--tx3)",textTransform:"uppercase",fontWeight:600}}>Net value</div>
+                          </div>
+                        </div>
+                        <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+                          <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:"rgba(22,163,74,.08)",color:"var(--grn2)",border:"1px solid rgba(22,163,74,.15)"}}>${alt.credits.toLocaleString()} in credits</span>
+                          {alt.earnBoost>0&&<span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:"rgba(184,134,11,.08)",color:"var(--acc)",border:"1px solid rgba(184,134,11,.15)"}}>+{alt.earnBoost}x earn boost</span>}
+                        </div>
+                        {alt.signup&&alt.signup!=="No signup bonus"&&alt.signup!=="No sign-up bonus"&&(
+                          <div style={{fontSize:11,fontWeight:600,color:"var(--acc)",marginBottom:8}}>{alt.signup}</div>
+                        )}
+                        {applyUrl&&(
+                          <div>
+                            <a href={applyUrl} target="_blank" rel="noopener noreferrer"
+                              style={{display:"block",textAlign:"center",padding:"10px 20px",borderRadius:10,textDecoration:"none",
+                                background:"linear-gradient(135deg,var(--acc),var(--gld2))",color:"#fff",
+                                fontSize:13,fontWeight:700,boxShadow:"0 2px 8px rgba(184,134,11,.25)",transition:"all .2s"}}
+                              onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 14px rgba(184,134,11,.35)";}}
+                              onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 2px 8px rgba(184,134,11,.25)";}}>
+                              Apply Now →
+                            </a>
+                            <div className="apply-disclose" style={{textAlign:"center",marginTop:6}}>Affiliate link — we may earn a commission at no cost to you.</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
