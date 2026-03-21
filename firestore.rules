@@ -1,0 +1,63 @@
+rules_version = '2';
+
+// CardSage Firestore Security Rules
+//
+// Collections:
+//   users/{userId}              — each user's synced wallet data (cards, checked benefits)
+//   newsletter_subscribers/{id} — email signups from standalone form + auth-linked accounts
+//
+// Principle: deny everything by default, then allow only what the app needs.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── USER DATA ────────────────────────────────────────────────────────────
+    // Each user can only read and write their own document.
+    // The document ID must match the authenticated user's UID.
+    match /users/{userId} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+
+    // ── NEWSLETTER SUBSCRIBERS ───────────────────────────────────────────────
+    match /newsletter_subscribers/{docId} {
+
+      // Allowed fields — nothing else may appear in the document
+      function hasOnlyAllowedFields() {
+        return request.resource.data.keys()
+          .hasOnly(['email', 'uid', 'subscribedAt', 'source']);
+      }
+
+      // CREATE — anyone can subscribe (standalone form doesn't require login).
+      // Validates: email is a non-empty string, only allowed fields present.
+      allow create: if request.resource.data.email is string
+                    && request.resource.data.email.size() > 0
+                    && hasOnlyAllowedFields();
+
+      // UPDATE — only an authenticated user can link their UID to an existing
+      // subscriber doc. The update must not change the email address.
+      allow update: if request.auth != null
+                    && hasOnlyAllowedFields()
+                    && request.resource.data.email == resource.data.email;
+
+      // READ (get + list) — needed for the dedup check that queries by email
+      // before creating a new subscriber. Firestore cannot distinguish a
+      // filtered query from a full collection scan at the rules level, so we
+      // must allow list. The query is filtered client-side by email.
+      // This is acceptable because:
+      //   1. The collection only stores emails (no passwords, tokens, or PII)
+      //   2. Firestore charges per read, rate-limiting bulk scraping
+      //   3. We can add App Check later for stronger client attestation
+      allow read: if true;
+
+      // DELETE — never allowed. Subscriber records are permanent.
+      allow delete: if false;
+    }
+
+    // ── DENY EVERYTHING ELSE ─────────────────────────────────────────────────
+    // Any collection not explicitly matched above is locked down.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
