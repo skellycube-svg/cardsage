@@ -412,15 +412,23 @@ function StratModal({stratId,myCards,onClose}){
                 const card=CARDS.find(c=>c.id===cardId);
                 if(!card)return null;
                 return (
-                  <div key={cardId} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid var(--br)"}}>
-                    <div>
-                      <div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{s.req_names[i]}</div>
-                      <div style={{fontSize:11,color:"var(--tx3)"}}>Annual fee: {card.fee===0?"Free":"$"+card.fee}</div>
+                  <div key={cardId} style={{padding:"10px 0",borderBottom:"1px solid var(--br)"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{s.req_names[i]}</div>
+                        <div style={{fontSize:11,color:"var(--tx3)"}}>Annual fee: {card.fee===0?"Free":"$"+card.fee}</div>
+                      </div>
+                      <div>
+                        <a className="apply-btn" href={APPLY_URLS[cardId]||"#apply-"+cardId} target="_blank" rel="noopener noreferrer">Apply Now →</a>
+                        <div className="apply-disclose">Affiliate link — we may earn a commission at no cost to you.</div>
+                      </div>
                     </div>
-                    <div>
-                      <a className="apply-btn" href={APPLY_URLS[cardId]||"#apply-"+cardId} target="_blank" rel="noopener noreferrer">Apply Now →</a>
-                      <div className="apply-disclose">Affiliate link — we may earn a commission at no cost to you.</div>
-                    </div>
+                    {card.signup&&card.signup!=="No signup bonus"&&card.signup!=="No sign-up bonus"&&(
+                      <div style={{marginTop:6,fontSize:11,fontWeight:600,color:"var(--acc)",background:"rgba(184,134,11,.07)",
+                        border:"1px solid rgba(184,134,11,.15)",borderRadius:6,padding:"4px 10px",lineHeight:1.35,display:"inline-block"}}>
+                        {card.signup}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -2912,6 +2920,12 @@ function WalletTab({myCards,setMyCards}){
                 </div>
                 <div style={{fontSize:11,fontWeight:700,color:"var(--tx)",marginBottom:2,lineHeight:1.3}}>{card.name}{card.confidence==="estimated"&&<span style={{fontSize:9,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
                 <div style={{fontSize:10,color:"var(--tx3)",marginBottom:6}}>{card.issuer}</div>
+                {!inWallet&&card.signup&&card.signup!=="No signup bonus"&&card.signup!=="No sign-up bonus"&&(
+                  <div style={{fontSize:10,fontWeight:600,color:"var(--acc)",background:"rgba(184,134,11,.07)",
+                    border:"1px solid rgba(184,134,11,.15)",borderRadius:6,padding:"3px 8px",marginBottom:6,lineHeight:1.35}}>
+                    {card.signup}
+                  </div>
+                )}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div>
                     <span style={{fontSize:11,color:card.fee===0?"var(--grn2)":"var(--tx3)",fontWeight:700,display:"block"}}>{card.fee===0?"No fee":"$"+card.fee+"/yr"}</span>
