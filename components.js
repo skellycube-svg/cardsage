@@ -924,84 +924,119 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
                   <div className="prog-fill" style={{width:(totalSlots?Math.round(usedHere/totalSlots*100):0)+"%",background:getIssuerColor(card.issuer)}}/>
                 </div>
               </div>
-              <div className="benefit-item" style={{borderLeftColor:getIssuerColor(card.issuer),padding:"0 14px"}}>
-                {cardBens.map((b,i)=>{
-                  const pk=periodKeys(card.id,b,b.isMonthly);
-                  const isMulti=!!pk;
-                  const done=isMulti?pk.every(p=>checkedSet.has(p.key)):checkedSet.has(b.key);
-                  const isOpen=openBen===b.key;
-                  const bc=BCAT[b.cat]||BCAT.statement;
-                  const rl=RESET_LABELS[b.reset];
-                  const wasReset=resetBadges.has(b.key);
-                  const periodLabel=b.reset==="quarterly"?"quarter":b.reset==="semi-annual"?"6 months":b.isMonthly?"month":"year";
-                  return (
-                    <div key={b.key} onClick={()=>toggleExpand(b.key)}
-                      role="button" tabIndex={0}
-                      onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&toggleExpand(b.key)}
-                      style={{borderBottom:i<cardBens.length-1?"1px solid var(--br)":"none",padding:"10px 0",cursor:"pointer"}}>
-                      {/* Collapsed row */}
-                      <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
-                        {/* Single checkbox for monthly/annual, hidden for multi-period */}
-                        {!isMulti&&(
-                          <button className={"ben-check"+(done?" done":"")} onClick={e=>toggle(b.key,e)} style={{marginTop:2}}>
-                            {done&&<Icon name="check" size={13} color="var(--bg)"/>}
-                          </button>
-                        )}
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:3}}>
-                            <span style={{fontSize:13,fontWeight:600,color:done?"var(--tx3)":"var(--tx)",textDecoration:done?"line-through":"none"}}>{b.n}</span>
-                            <span style={{padding:"1px 7px",borderRadius:99,fontSize:10,fontWeight:700,color:bc.color,background:bc.bg}}><Icon name={BCAT_ICON_MAP[b.cat]||"credit-card"} size={10} color={bc.color}/> {bc.label}</span>
-                            {rl&&<span style={{padding:"1px 6px",borderRadius:99,fontSize:10,background:"rgba(148,163,184,.15)",color:"var(--tx3)",fontWeight:600}}>{rl}</span>}
-                            {wasReset&&<span style={{padding:"1px 7px",borderRadius:99,fontSize:10,background:"rgba(212,168,64,.18)",color:"var(--gld3)",fontWeight:700}}>↺ Refreshed</span>}
+              {(()=>{
+                const creditBens=cardBens.filter(b=>b.type!=="perk");
+                const perkBens=cardBens.filter(b=>b.type==="perk");
+                return (
+                  <div className="benefit-item" style={{borderLeftColor:getIssuerColor(card.issuer),padding:"0 14px"}}>
+                    {/* ── Trackable credits (with checkboxes) ── */}
+                    {creditBens.map((b,i)=>{
+                      const pk=periodKeys(card.id,b,b.isMonthly);
+                      const isMulti=!!pk;
+                      const done=isMulti?pk.every(p=>checkedSet.has(p.key)):checkedSet.has(b.key);
+                      const isOpen=openBen===b.key;
+                      const bc=BCAT[b.cat]||BCAT.statement;
+                      const rl=RESET_LABELS[b.reset];
+                      const wasReset=resetBadges.has(b.key);
+                      const periodLabel=b.reset==="quarterly"?"quarter":b.reset==="semi-annual"?"6 months":b.isMonthly?"month":"year";
+                      return (
+                        <div key={b.key} onClick={()=>toggleExpand(b.key)}
+                          role="button" tabIndex={0}
+                          onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&toggleExpand(b.key)}
+                          style={{borderBottom:i<creditBens.length-1?"1px solid var(--br)":"none",padding:"10px 0",cursor:"pointer"}}>
+                          <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                            {!isMulti&&(
+                              <button className={"ben-check"+(done?" done":"")} onClick={e=>toggle(b.key,e)} style={{marginTop:2}}>
+                                {done&&<Icon name="check" size={13} color="var(--bg)"/>}
+                              </button>
+                            )}
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:3}}>
+                                <span style={{fontSize:13,fontWeight:600,color:done?"var(--tx3)":"var(--tx)",textDecoration:done?"line-through":"none"}}>{b.n}</span>
+                                <span style={{padding:"1px 7px",borderRadius:99,fontSize:10,fontWeight:700,color:bc.color,background:bc.bg}}><Icon name={BCAT_ICON_MAP[b.cat]||"credit-card"} size={10} color={bc.color}/> {bc.label}</span>
+                                {rl&&<span style={{padding:"1px 6px",borderRadius:99,fontSize:10,background:"rgba(148,163,184,.15)",color:"var(--tx3)",fontWeight:600}}>{rl}</span>}
+                                {wasReset&&<span style={{padding:"1px 7px",borderRadius:99,fontSize:10,background:"rgba(212,168,64,.18)",color:"var(--gld3)",fontWeight:700}}>↺ Refreshed</span>}
+                              </div>
+                              {isMulti&&(
+                                <div style={{display:"flex",alignItems:"center",gap:pk.length>2?8:14,marginTop:6,marginBottom:4}}>
+                                  {pk.map(p=>{
+                                    const pd=checkedSet.has(p.key);
+                                    return (
+                                      <div key={p.key} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,opacity:p.past&&!pd?0.45:1}}>
+                                        <button className={"ben-check"+(pd?" done":"")}
+                                          onClick={e=>toggle(p.key,e)}
+                                          style={{width:22,height:22,borderRadius:6,border:p.current&&!pd?"2px solid var(--acc)":"",boxShadow:p.current?"0 0 0 2px rgba(184,134,11,.2)":"none"}}>
+                                          {pd&&<Icon name="check" size={11} color="var(--bg)"/>}
+                                        </button>
+                                        <span style={{fontSize:10,fontWeight:p.current?700:500,color:p.current?"var(--acc)":"var(--tx3)"}}>{p.label}</span>
+                                        {p.sub&&<span style={{fontSize:8,color:"var(--tx4)"}}>{p.sub}</span>}
+                                      </div>
+                                    );
+                                  })}
+                                  <div style={{fontSize:12,fontWeight:700,color:"var(--grn2)",marginLeft:4}}>${b.v}<span style={{fontSize:10,fontWeight:500,color:"var(--tx3)"}}> / {periodLabel}</span></div>
+                                </div>
+                              )}
+                              {!isMulti&&b.v&&<div style={{fontSize:11,color:"var(--grn2)",fontWeight:700}}>Up to ${b.isMonthly?b.v+"/mo ($"+b.v*12+"/yr)":b.v+(b.reset==="annual"?"/yr":"")}</div>}
+                            </div>
+                            <span style={{flexShrink:0,transition:"transform .15s",display:"inline-flex",transform:isOpen?"rotate(90deg)":"rotate(0deg)",marginTop:4}}><Icon name="chevron-right" size={14} color="var(--tx3)"/></span>
                           </div>
-                          {/* Multi-period checkboxes for quarterly / semi-annual */}
-                          {isMulti&&(
-                            <div style={{display:"flex",alignItems:"center",gap:isMulti&&pk.length>2?8:14,marginTop:6,marginBottom:4}}>
-                              {pk.map(p=>{
-                                const pd=checkedSet.has(p.key);
-                                return (
-                                  <div key={p.key} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,opacity:p.past&&!pd?0.45:1}}>
-                                    <button className={"ben-check"+(pd?" done":"")}
-                                      onClick={e=>toggle(p.key,e)}
-                                      style={{width:22,height:22,borderRadius:6,border:p.current&&!pd?"2px solid var(--acc)":"",boxShadow:p.current?"0 0 0 2px rgba(184,134,11,.2)":"none"}}>
-                                      {pd&&<Icon name="check" size={11} color="var(--bg)"/>}
-                                    </button>
-                                    <span style={{fontSize:10,fontWeight:p.current?700:500,color:p.current?"var(--acc)":"var(--tx3)"}}>{p.label}</span>
-                                    {p.sub&&<span style={{fontSize:8,color:"var(--tx4)"}}>{p.sub}</span>}
-                                  </div>
-                                );
-                              })}
-                              <div style={{fontSize:12,fontWeight:700,color:"var(--grn2)",marginLeft:4}}>${b.v}<span style={{fontSize:10,fontWeight:500,color:"var(--tx3)"}}> / {periodLabel}</span></div>
+                          {isOpen&&(
+                            <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid var(--br)"}}>
+                              {b.d&&<p style={{fontSize:12,color:"var(--tx2)",margin:"0 0 8px",lineHeight:1.6}}>{b.d}</p>}
+                              <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
+                                {b.v&&<span style={{fontSize:11,color:"var(--grn2)",fontWeight:700}}>Value: ${b.v}/{periodLabel} (${annualBenValue(b)}/yr)</span>}
+                                {rl&&<span style={{fontSize:11,color:"var(--tx3)"}}>↺ Resets: {rl}</span>}
+                                {b.enroll&&<span style={{fontSize:11,color:"var(--gld3)",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><Icon name="bolt" size={11} color="var(--gld3)"/> Activation required</span>}
+                              </div>
+                              <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+                                {b.enrollUrl&&<a href={b.enrollUrl} target="_blank" rel="noopener noreferrer"
+                                  onClick={e=>e.stopPropagation()}
+                                  style={{fontSize:12,color:"var(--acc)",fontWeight:600,textDecoration:"none"}}>Activate →</a>}
+                                {b.useUrl&&<a href={b.useUrl} target="_blank" rel="noopener noreferrer"
+                                  onClick={e=>e.stopPropagation()}
+                                  style={{fontSize:12,color:"var(--acc)",fontWeight:600,textDecoration:"none"}}>Use benefit →</a>}
+                              </div>
                             </div>
                           )}
-                          {/* Single-period value display */}
-                          {!isMulti&&b.v&&<div style={{fontSize:11,color:"var(--grn2)",fontWeight:700}}>Up to ${b.isMonthly?b.v+"/mo ($"+b.v*12+"/yr)":b.v+(b.reset==="annual"?"/yr":"")}</div>}
                         </div>
-                        <span style={{flexShrink:0,transition:"transform .15s",display:"inline-flex",transform:isOpen?"rotate(90deg)":"rotate(0deg)",marginTop:4}}><Icon name="chevron-right" size={14} color="var(--tx3)"/></span>
-                      </div>
-                      {/* Expanded section */}
-                      {isOpen&&(
-                        <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid var(--br)"}}>
-                          {b.d&&<p style={{fontSize:12,color:"var(--tx2)",margin:"0 0 8px",lineHeight:1.6}}>{b.d}</p>}
-                          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
-                            {b.v&&<span style={{fontSize:11,color:"var(--grn2)",fontWeight:700}}>Value: ${b.v}/{periodLabel} (${annualBenValue(b)}/yr)</span>}
-                            {rl&&<span style={{fontSize:11,color:"var(--tx3)"}}>↺ Resets: {rl}</span>}
-                            {b.enroll&&<span style={{fontSize:11,color:"var(--gld3)",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><Icon name="bolt" size={11} color="var(--gld3)"/> Activation required</span>}
+                      );
+                    })}
+                    {/* ── Always-on perks (read-only, no checkbox) ── */}
+                    {perkBens.length>0&&(
+                      <>
+                        {creditBens.length>0&&(
+                          <div style={{borderTop:"1px solid var(--br)",margin:"6px 0",paddingTop:10}}>
+                            <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,color:"#9ca3af",textTransform:"uppercase",marginBottom:6}}>INCLUDED PROTECTIONS & PERKS</div>
                           </div>
-                          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-                            {b.enrollUrl&&<a href={b.enrollUrl} target="_blank" rel="noopener noreferrer"
-                              onClick={e=>e.stopPropagation()}
-                              style={{fontSize:12,color:"var(--acc)",fontWeight:600,textDecoration:"none"}}>Activate →</a>}
-                            {b.useUrl&&<a href={b.useUrl} target="_blank" rel="noopener noreferrer"
-                              onClick={e=>e.stopPropagation()}
-                              style={{fontSize:12,color:"var(--acc)",fontWeight:600,textDecoration:"none"}}>Use benefit →</a>}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                        )}
+                        {perkBens.map((b,i)=>{
+                          const isOpen=openBen===b.key;
+                          return (
+                            <div key={b.key} onClick={()=>toggleExpand(b.key)}
+                              style={{borderBottom:i<perkBens.length-1?"1px solid var(--br)":"none",padding:"8px 0",cursor:"pointer"}}>
+                              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b8860b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
+                                  <path d="M12 2l7 4v5c0 5.25-3.5 9.74-7 11-3.5-1.26-7-5.75-7-11V6l7-4z"/><path d="M9 12l2 2 4-4"/>
+                                </svg>
+                                <div style={{flex:1,minWidth:0}}>
+                                  <span style={{fontSize:12,fontWeight:500,color:"#6b7280"}}>{b.n}</span>
+                                  {b.v&&<span style={{fontSize:10,color:"#9ca3af",marginLeft:6}}>up to ${b.v.toLocaleString()}</span>}
+                                </div>
+                                <span style={{flexShrink:0,transition:"transform .15s",display:"inline-flex",transform:isOpen?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={12} color="#9ca3af"/></span>
+                              </div>
+                              {isOpen&&(
+                                <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid var(--br)",marginLeft:26}}>
+                                  {b.d&&<p style={{fontSize:11,color:"#9ca3af",margin:0,lineHeight:1.5}}>{b.d}</p>}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           );
         })}</div>
