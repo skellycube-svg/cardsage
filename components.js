@@ -510,21 +510,27 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
   },0),[cards]);
   const netValue=totalCredits-totalFees;
 
-  const myStratIds=useMemo(()=>{
-    const seen=new Set();
-    cards.forEach(c=>(c.strat||[]).forEach(s=>seen.add(s)));
-    return [...seen];
-  },[cards]);
-
-  const oneCardAway=useMemo(()=>{
-    if(!myCards.length)return[];
-    return Object.values(STRATS).filter(s=>{
-      if(myStratIds.includes(s.id))return false;
-      if(s.req.filter(id=>!myCards.includes(id)).length===1)return true;
-      if(s.alt)return s.alt.some(arr=>arr.filter(id=>!myCards.includes(id)).length===1);
-      return false;
-    }).slice(0,3);
-  },[myCards,myStratIds]);
+  // Categorize ALL strategies into three buckets based on how many required cards the user has
+  const stratBuckets=useMemo(()=>{
+    const active=[];  // all required cards owned
+    const oneAway=[]; // exactly 1 card missing
+    const moreNeeded=[]; // 2+ cards missing
+    Object.values(STRATS).forEach(s=>{
+      // Find the best combo (req or any alt) — pick the one with fewest missing cards
+      const combos=[s.req,...(s.alt||[])];
+      let bestMissing=null;
+      combos.forEach(combo=>{
+        const missing=combo.filter(id=>!myCards.includes(id));
+        if(!bestMissing||missing.length<bestMissing.length) bestMissing=missing;
+      });
+      if(!bestMissing) bestMissing=s.req.filter(id=>!myCards.includes(id));
+      const entry={...s,missingCards:bestMissing};
+      if(bestMissing.length===0) active.push(entry);
+      else if(bestMissing.length===1) oneAway.push(entry);
+      else moreNeeded.push(entry);
+    });
+    return {active,oneAway,moreNeeded};
+  },[myCards]);
 
   const monthlyAlerts=useMemo(()=>{
     const list=[];
@@ -649,15 +655,20 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
         </div>
       )}
 
-      {/* Active strategies */}
-      {myStratIds.length>0&&(
-        <div style={{marginBottom:16}}>
-          <div className="section-title" style={{marginBottom:10}}><Icon name="trident" size={14} color="var(--acc)"/> YOUR ACTIVE STRATEGIES</div>
-          <div className="strats-list">{myStratIds.map(sid=>{
-            const s=STRATS[sid];
-            if(!s)return null;
-            return (
-              <div key={sid} className="surf glow-card" style={{marginBottom:8,cursor:"pointer"}} onClick={()=>setStratModal(sid)}>
+      {/* ── Strategy sections: Active / One Card Away / More Cards Needed ────── */}
+      {(()=>{
+        const {active,oneAway,moreNeeded}=stratBuckets;
+        const sections=[];
+
+        /* Section 1 — Active Strategies */
+        if(active.length>0) sections.push(
+          <div key="strat-active">
+            <div style={{marginBottom:4}}>
+              <div className="section-title" style={{marginBottom:2}}><Icon name="trident" size={14} color="var(--acc)"/> ACTIVE STRATEGIES</div>
+              <div style={{fontSize:12,color:"#6b7280",fontFamily:"'Inter',sans-serif",marginBottom:10}}>Strategies you can use right now</div>
+            </div>
+            {active.map(s=>(
+              <div key={s.id} className="surf glow-card" style={{marginBottom:8,cursor:"pointer"}} onClick={()=>setStratModal(s.id)}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
                     <Icon name={STRAT_ICON_MAP[s.id]||"diamond"} size={24} color="var(--acc)"/>
@@ -670,44 +681,79 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
                 </div>
                 <div style={{fontSize:12,color:"var(--tx3)",marginTop:8,lineHeight:1.5}}>{s.desc.slice(0,110)}…</div>
               </div>
-            );
-          })}</div>
-        </div>
-      )}
+            ))}
+          </div>
+        );
 
-      {/* One Card Away */}
-      {oneCardAway.length>0&&(
-        <div style={{marginBottom:16}}>
-          <div className="section-title" style={{marginBottom:10}}><Icon name="target" size={14} color="var(--acc)"/> ONE CARD AWAY FROM…</div>
-          {oneCardAway.map(s=>{
-            const missingId=s.req.find(id=>!myCards.includes(id))||
-              (s.alt&&s.alt.find(arr=>arr.filter(id=>!myCards.includes(id)).length===1)||[]).find(id=>!myCards.includes(id));
-            const mc=CARDS.find(c=>c.id===missingId);
-            return (
-              <div key={s.id} className="surf glow-card" style={{marginBottom:8,cursor:"pointer",borderColor:"rgba(245,158,11,.2)"}} onClick={()=>setStratModal(s.id)}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <Icon name={STRAT_ICON_MAP[s.id]||"diamond"} size={20} color="var(--acc)"/>
+        /* Section 2 — One Card Away */
+        if(oneAway.length>0) sections.push(
+          <div key="strat-one-away">
+            <div style={{marginBottom:4}}>
+              <div className="section-title" style={{marginBottom:2}}><Icon name="target" size={14} color="var(--acc)"/> ONE CARD AWAY</div>
+              <div style={{fontSize:12,color:"#6b7280",fontFamily:"'Inter',sans-serif",marginBottom:10}}>Add one card to unlock these</div>
+            </div>
+            {oneAway.map(s=>{
+              const mc=CARDS.find(c=>c.id===s.missingCards[0]);
+              return (
+                <div key={s.id} className="surf glow-card" style={{marginBottom:8,cursor:"pointer",borderLeft:"3px solid rgba(184,134,11,.5)"}} onClick={()=>setStratModal(s.id)}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <Icon name={STRAT_ICON_MAP[s.id]||"diamond"} size={24} color="var(--acc)"/>
+                      <div>
+                        <div style={{fontSize:14,fontWeight:800,color:"var(--tx)"}}>{s.name}</div>
+                        <div style={{fontSize:11,color:"var(--gld2)",fontWeight:700,marginTop:1}}>{s.value}</div>
+                      </div>
+                    </div>
+                    <span style={{color:"var(--tx3)",fontSize:14}}>→</span>
+                  </div>
+                  <div style={{fontSize:12,color:"var(--tx3)",marginTop:8,lineHeight:1.5}}>{s.desc.slice(0,110)}…</div>
+                  {mc&&<div style={{marginTop:8}}><span style={{display:"inline-block",background:"#fef9ec",color:"#92400e",border:"1px solid #f59e0b",borderRadius:999,padding:"2px 10px",fontSize:11}}>Needs: {mc.short||mc.name}</span></div>}
+                </div>
+              );
+            })}
+          </div>
+        );
+
+        /* Section 3 — More Cards Needed */
+        if(moreNeeded.length>0) sections.push(
+          <div key="strat-more-needed">
+            <div style={{marginBottom:4}}>
+              <div className="section-title" style={{marginBottom:2}}><Icon name="diamond" size={14} color="var(--acc)"/> MORE CARDS NEEDED</div>
+              <div style={{fontSize:12,color:"#6b7280",fontFamily:"'Inter',sans-serif",marginBottom:10}}>Strategies for building your portfolio</div>
+            </div>
+            {moreNeeded.map(s=>(
+              <div key={s.id} className="surf" style={{marginBottom:8,cursor:"pointer",opacity:.65}} onClick={()=>setStratModal(s.id)}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <Icon name={STRAT_ICON_MAP[s.id]||"diamond"} size={24} color="var(--acc)"/>
                     <div>
-                      <div style={{fontSize:13,fontWeight:800,color:"var(--tx)"}}>{s.name}</div>
-                      <div style={{fontSize:11,color:"var(--gld2)",fontWeight:700}}>{s.value} potential</div>
+                      <div style={{fontSize:14,fontWeight:800,color:"var(--tx)"}}>{s.name}</div>
+                      <div style={{fontSize:11,color:"var(--tx3)",fontWeight:700,marginTop:1}}>{s.value}</div>
                     </div>
                   </div>
-                  <div className="badge" style={{background:"rgba(245,158,11,.12)",color:"#fbbf24",border:"1px solid rgba(245,158,11,.25)",flexShrink:0}}>1 Card Needed</div>
+                  <span style={{color:"var(--tx3)",fontSize:14}}>→</span>
                 </div>
-                {mc&&(
-                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"rgba(245,158,11,.06)",borderRadius:10,marginBottom:8}}>
-                    <span style={{fontSize:11,color:"var(--tx3)"}}>Add:</span>
-                    <span style={{fontSize:12,fontWeight:700,color:"var(--gld2)"}}>{mc.name}</span>
-                    <span style={{fontSize:11,color:"var(--tx4)"}}>• {mc.fee===0?"Free":"$"+mc.fee+"/yr"}</span>
-                  </div>
-                )}
-                <div style={{fontSize:11,color:"var(--tx4)",lineHeight:1.55}}>{(s.forBeginners||"").slice(0,120)}… <span style={{color:"var(--acc2)"}}>Tap to learn more →</span></div>
+                <div style={{fontSize:12,color:"var(--tx3)",marginTop:8,lineHeight:1.5}}>{s.desc.slice(0,110)}…</div>
+                <div style={{marginTop:8,display:"flex",flexWrap:"wrap",gap:4}}>
+                  {s.missingCards.map(mid=>{
+                    const mc=CARDS.find(c=>c.id===mid);
+                    return mc?<span key={mid} style={{display:"inline-block",background:"#fef9ec",color:"#92400e",border:"1px solid #f59e0b",borderRadius:999,padding:"2px 10px",fontSize:11}}>Needs: {mc.short||mc.name}</span>:null;
+                  })}
+                </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        );
+
+        if(!sections.length) return null;
+        /* Insert dividers between visible sections */
+        const withDividers=[];
+        sections.forEach((sec,i)=>{
+          if(i>0) withDividers.push(<div key={"strat-div-"+i} style={{borderTop:"1px solid #e5e7eb",margin:"16px 0"}}/>);
+          withDividers.push(sec);
+        });
+        return <div style={{marginBottom:16}}>{withDividers}</div>;
+      })()}
 
       {/* My cards strip */}
       <div style={{marginBottom:16}}>
