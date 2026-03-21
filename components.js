@@ -19,8 +19,12 @@
 // Hooks: useLS (localStorage-backed state)
 // Helpers: Icon, CardArt, CreditCardDisplay, ValueMeter, CatChip, etc.
 
+// Pull out the React hooks we need so we can use them directly throughout the file.
 const {useState,useEffect,useCallback,useMemo,useRef}=React;
 
+// This self-running function creates the animated particle background you see behind the app.
+// It draws soft, glowing orbs on an HTML canvas element and slowly moves them around forever.
+// The orbs wrap around the edges of the screen so they never disappear.
 /* PARTICLE BG */
 (function(){
   const c=document.getElementById('bg'),ctx=c.getContext('2d');
@@ -33,6 +37,10 @@ const {useState,useEffect,useCallback,useMemo,useRef}=React;
   window.addEventListener('resize',resize);resize();draw();
 })();
 
+// useLS ("use localStorage") is a custom React hook that works like useState but also
+// saves the value to the browser's localStorage. This means data survives page refreshes.
+// Parameters: k = the storage key name, d = the default value if nothing is saved yet.
+// Returns: [currentValue, setterFunction] just like useState.
 /* LS hook */
 // This hook saves and loads data to your browser's local storage so your settings persist between visits.
 function useLS(k,d){
@@ -52,6 +60,9 @@ function useLS(k,d){
 /* ═══════════════════════════════════════════════════════════════════════════
    ICON SYSTEM — SVG stroke icons (24×24 viewBox, 1.5 stroke-width)
    ═══════════════════════════════════════════════════════════════════════════ */
+// ICON_PATHS stores the SVG drawing instructions for every icon used in the app.
+// Each key is a human-readable name (like "shield-check" or "plane") and each value
+// is the SVG path data that draws that icon. Icons are 24x24 with a 1.5px stroke.
 const ICON_PATHS={
 "shield-check":<><path d="M12 2l7 4v5c0 5.25-3.5 9.74-7 11-3.5-1.26-7-5.75-7-11V6l7-4z"/><path d="M9 12l2 2 4-4"/></>,
 "zap":<><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></>,
@@ -118,18 +129,29 @@ const ICON_PATHS={
 };
 
 // Draws an SVG icon by name. Used throughout the app for buttons, navigation, and labels.
+// Icon is a small helper component that renders an SVG icon by name.
+// Props: name (which icon to draw), size (pixel dimensions), color, className.
+// If the icon name is not found in ICON_PATHS, it renders nothing.
 function Icon({name,size=18,color="currentColor",className=""}){
   const paths=ICON_PATHS[name];
   if(!paths)return null;
   return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>{paths}</svg>);
 }
 
+// STRAT_ICON_MAP maps each card strategy ID to the icon name that represents it visually.
+// For example, the Chase Trifecta strategy uses a trident icon.
 /* ── ID-based icon maps (no emoji literals) ──────────────────────────────── */
 const STRAT_ICON_MAP={"chase-trifecta":"trident","amex-trifecta":"bolt","c1-duo":"diamond","citi-duo":"globe","ink-trio":"diamond","atmos-strategy":"wave"};
+// BCAT_ICON_MAP maps benefit categories (like travel, dining, entertainment) to icon names.
 const BCAT_ICON_MAP={travel:"plane",dining:"utensils",entertainment:"film",status:"star",statement:"credit-card",awards:"gift",protection:"shield"};
+// SPEND_CAT_ICON maps spending category short codes (d=dining, g=grocery, etc.) to icon names.
 const SPEND_CAT_ICON={d:"utensils",g:"shopping-cart",gas:"car",t:"plane",s:"tv",a:"package",tr:"car",p:"pill",o:"credit-card"};
+// SPECIAL_CAT_ICON maps brand-specific categories (Hyatt, Delta, etc.) to icon names.
 const SPECIAL_CAT_ICON={hyatt:"building",delta:"plane",sw:"plane",united:"plane",hilton:"building",marriott:"building",alaska:"wave",aa:"plane",amazon:"package",rent:"home",ihg:"building"};
 
+// CATEGORY_COLORS defines the color scheme for each spending category.
+// Each category has a background color (bg), text color (text), and border color (border).
+// These are used to create the colored chips/badges throughout the app.
 /* ── Category color system ────────────────────────────────────────────────── */
 const CATEGORY_COLORS={
   dining:       {bg:"#fdf4ec",text:"#92400e",border:"#f59e0b"},
@@ -143,7 +165,12 @@ const CATEGORY_COLORS={
   other:        {bg:"#f9fafb",text:"#374151",border:"#9ca3af"},
   entertainment:{bg:"#f0f9ff",text:"#0c4a6e",border:"#0ea5e9"},
 };
+// SPEND_CAT_COLOR maps the short spending category codes to their color theme names.
+// For example, 'd' (dining) maps to the 'dining' color scheme in CATEGORY_COLORS.
 const SPEND_CAT_COLOR={d:"dining",g:"grocery",gas:"gas",t:"travel",s:"streaming",a:"shopping",tr:"transit",p:"health",o:"other"};
+// CatChip renders a small colored pill/badge for a spending category.
+// It looks up the category's color scheme and displays the label inside a styled span.
+// Props: cat (category key), label (display text, defaults to the cat key).
 // A small colored pill/badge that shows a spending category name (like 'Dining' or 'Travel').
 function CatChip({cat,label}){
   const cc=CATEGORY_COLORS[cat]||CATEGORY_COLORS.other;
@@ -154,6 +181,9 @@ function CatChip({cat,label}){
    CreditCardDisplay — unified card component
    Usage: <CreditCardDisplay card={card} size="md"/> or size="sm"
    ═══════════════════════════════════════════════════════════════════════════ */
+// CreditCardDisplay renders a realistic-looking credit card with the card's gradient colors,
+// issuer name, card name, a gold chip, card number dots, and network logo (Visa, Mastercard, etc.).
+// Props: card (a card object from CARDS), size ("sm" for small thumbnail or "md" for medium).
 function CreditCardDisplay({card,size="md"}){
   const isSm=size==="sm";
   const w=isSm?160:280;
@@ -193,6 +223,9 @@ function CreditCardDisplay({card,size="md"}){
 ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── STITCH DESIGN HELPERS ────────────────────────────────────────────────── */
+// getIssuerColor returns a solid brand color for a given card issuer name.
+// For example, Chase returns a dark navy blue, Amex returns a bright blue.
+// Used for progress bars, accent colors, and card tags throughout the app.
 // Returns the brand color for a card issuer (e.g., Chase blue, Amex blue).
 function getIssuerColor(issuer){
   const map={'Chase':'#112e51','American Express':'#006fcf','Capital One':'#003a70',
@@ -201,6 +234,9 @@ function getIssuerColor(issuer){
     'Discover':'#f06c00','Barclays':'#00aeef'};
   return map[issuer]||'#0f172a';
 }
+// getIssuerGradient returns a CSS gradient string for a card's background.
+// Special cases like Amex Platinum get a silver gradient. Otherwise it uses the issuer's brand colors.
+// Falls back to the card's own c1/c2 gradient colors if the issuer is not in the map.
 // Returns a CSS gradient background matching the card's issuer branding.
 function getIssuerGradient(card){
   if(card.id==='amex-plat')return'linear-gradient(135deg,#a8a8a8,#d4d4d4)';
@@ -212,6 +248,9 @@ function getIssuerGradient(card){
     'Cardless':'linear-gradient(135deg,#1a1a1a,#333)'};
   return map[card.issuer]||`linear-gradient(135deg,${card.c1},${card.c2})`;
 }
+// getTopEarnCats looks at a card's earning rates and returns the top 2 categories
+// where it earns more than 1x points (e.g., ["Dining", "Travel"]).
+// Used to show tag badges on wallet cards so users can see at a glance what each card is best for.
 // Finds the top 2 spending categories where a card earns the most points.
 function getTopEarnCats(card){
   const labels={d:'Dining',g:'Grocery',gas:'Gas',t:'Travel',s:'Streaming',
@@ -221,12 +260,16 @@ function getTopEarnCats(card){
     .sort((a,b)=>parseFloat(String(b[1]).replace(/[^0-9.]/g,''))-parseFloat(String(a[1]).replace(/[^0-9.]/g,'')))
     .slice(0,2).map(([k])=>labels[k]||k);
 }
+// NfcIcon renders a small contactless payment (tap-to-pay) icon shown on the credit card display.
 // Draws the contactless payment (tap-to-pay) icon shown on card art.
 function NfcIcon(){
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" strokeWidth="1.5" strokeLinecap="round"><path d="M6 18.5a8 8 0 019-12.5"/><path d="M8 15.5a4.5 4.5 0 015.5-7"/><circle cx="10" cy="14" r="1" fill="rgba(255,255,255,.6)"/></svg>;
 }
 
 /* ── VALUE METER ──────────────────────────────────────────────────────────── */
+// ValueMeter renders a row of small dots to visually show a 1-to-3 value rating.
+// Lit dots are gold, unlit dots are dark. Used on tips and strategies.
+// Props: v (current value), max (maximum possible value, defaults to 3).
 // Shows a 1-to-3 dot rating to indicate how valuable a tip or strategy is.
 function ValueMeter({v=1,max=3}){
   return <span className="value-badge" title={`Value: ${v}/${max}`}>
@@ -237,6 +280,9 @@ function ValueMeter({v=1,max=3}){
 }
 
 /* ── CARD ART ─────────────────────────────────────────────────────────────── */
+// CardArt renders a simpler, smaller version of a credit card visual.
+// Shows the issuer, card name, and network on a gradient background.
+// Props: card (a card object), large (boolean for a wider layout).
 // Renders a visual credit card with the card's gradient colors, issuer logo, network badge, and NFC icon.
 function CardArt({card,large}){
   const s=large?{width:"100%",height:110,borderRadius:18,padding:"18px 20px"}:{};
@@ -252,6 +298,11 @@ function CardArt({card,large}){
 }
 
 /* ── STRATEGY MODAL ───────────────────────────────────────────────────────── */
+// StratModal is a bottom-sheet popup that shows full details about a card strategy.
+// It appears when a user taps on a strategy card anywhere in the app.
+// Shows: required cards, strategy description, beginner explanation, analogy, how to start,
+// proven plays, common mistakes, and Apply Now buttons for missing cards.
+// Props: stratId (which strategy to show), myCards (user's wallet), onClose (dismiss handler).
 // A slide-up panel that shows the details of a card strategy (which cards are needed, how they work together, and step-by-step playbook).
 function StratModal({stratId,myCards,onClose}){
   if(!stratId)return null;
@@ -383,6 +434,9 @@ function StratModal({stratId,myCards,onClose}){
 }
 
 /* ── NEWSLETTER SUBSCRIBE (standalone, Firestore-backed) ─────────────────── */
+// NewsletterSubscribe renders an email signup form for monthly benefit reminders.
+// It saves the email to Firestore (the cloud database) and shows success/error messages.
+// Checks for duplicate emails before subscribing. Shown at the bottom of the app.
 // A form that lets users enter their email to subscribe to the CardSage newsletter. Saves to Firebase and prevents duplicate signups.
 function NewsletterSubscribe(){
   const [email,setEmail]=useState('');
@@ -438,6 +492,11 @@ function NewsletterSubscribe(){
 }
 
 /* ── HOME TAB ─────────────────────────────────────────────────────────────── */
+// HomeTab is the main dashboard screen users see when they open the app.
+// If the user has no cards, it shows a welcome hero section with feature highlights.
+// If they have cards, it shows: stats (fees, credits, net value), monthly credit alerts,
+// active strategies, strategies they are one card away from unlocking, and a wallet strip.
+// Props: myCards, setMyCards, checkedSet, setTab, setStratModal.
 // The main dashboard screen. Shows your wallet stats (total fees, benefit value, points earned),
 // strategy recommendations, rotating quarterly categories, and a newsletter signup.
 function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
@@ -666,9 +725,16 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
 }
 
 /* ── BENEFITS TAB ─────────────────────────────────────────────────────────── */
+// RESET_LABELS maps benefit reset frequency codes to human-readable labels.
+// For example, 'monthly' becomes 'Monthly', 'semi-annual' becomes 'Semi-annual'.
 // The benefit tracker screen. Lists all monthly and annual perks for your cards,
 // lets you check off benefits you've redeemed, and shows when each benefit resets.
 const RESET_LABELS={monthly:"Monthly",quarterly:"Quarterly","semi-annual":"Semi-annual",annual:"Annual"};
+// BenefitsTab shows all credit card benefits the user can track and check off.
+// It displays a progress bar showing what percentage of benefits have been redeemed,
+// category filter pills, and an expandable list of every benefit grouped by card.
+// Each benefit can be checked/unchecked and expanded to see details and activation links.
+// Props: myCards, checkedSet, setCheckedBenefits, checkDates, setCheckDates, resetBadges.
 function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckDates,resetBadges=new Set()}){
   const [filterCat,setFilterCat]=useState("all");
   const [openBen,setOpenBen]=useState(null);
@@ -767,7 +833,7 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
                 <CreditCardDisplay card={card} size="sm"/>
                 <div style={{flex:1}}>
-                  <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:16,fontWeight:600,color:"var(--tx)"}}>{card.short||card.name}</div>
+                  <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:16,fontWeight:600,color:"var(--tx)"}}>{card.short||card.name}{card.confidence==="estimated"&&<span style={{fontSize:10,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
                   <div style={{fontSize:11,color:"var(--tx3)"}}>{usedHere}/{trackHere.length} credits used</div>
                 </div>
                 <div className="prog-track" style={{width:80}}>
@@ -837,6 +903,8 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
 /* ── TIPS TAB ─────────────────────────────────────────────────────────────── */
 // The tips and strategies screen. Shows curated advice for earning and redeeming points,
 // grouped by category, with a beginner/advanced toggle and 'Start Here' section for newcomers.
+// TIP_SECTIONS defines the navigation tabs within the Tips page.
+// Each section groups tips by topic: Flights, Hotels, Stacking, and Other.
 const TIP_SECTIONS=[
   {id:"flights",label:"Flights"},
   {id:"hotels",label:"Hotels"},
@@ -844,6 +912,11 @@ const TIP_SECTIONS=[
   {id:"other",label:"Other"},
 ];
 
+// TipsTab shows credit card tips and strategies, organized by section (Flights, Hotels, etc.).
+// Tips are split into two groups: ones the user can use with their current cards,
+// and ones that require cards they don't have yet (shown as locked/unlock-able).
+// Each tip card expands to show details, related cards, transfer partners, and apply links.
+// Props: myCards (array of card IDs in the user's wallet).
 function TipsTab({myCards}){
   const [section,setSection]=useState("flights");
   const [openTip,setOpenTip]=useState(null);
@@ -898,7 +971,7 @@ function TipsTab({myCards}){
            onClick={()=>setOpenTip(isOpen?null:tip.id)}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:15,fontWeight:700,color:"var(--tx)",lineHeight:1.4}}>{tip.title}</div>
+            <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:15,fontWeight:700,color:"var(--tx)",lineHeight:1.4}}>{tip.title}{tip.confidence==="estimated"&&<span style={{fontSize:10,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
           </div>
           <span style={{transition:"transform .2s",transform:isOpen?"rotate(90deg)":"none",flexShrink:0,marginTop:3,display:"inline-flex"}}>
             <Icon name="chevron-right" size={14} color="var(--tx3)"/>
@@ -1011,12 +1084,20 @@ function TipsTab({myCards}){
 /* ── USE CARD TAB ─────────────────────────────────────────────────────────── */
 // The 'which card to use' guide. For each spending category (dining, groceries, gas, etc.),
 // shows which of your cards earns the most points, ranked from best to worst.
+// UsecardTab is the "Optimizer Guide" that tells users which card to pull at the register.
+// It has four modes: Basic (everyday categories), Specialty (airline/hotel cards),
+// Rotating (quarterly bonus categories), and Merchant (search by store name).
+// For each category or merchant, it shows the top 1-3 cards ranked by earn rate.
+// Props: myCards (array of card IDs in the user's wallet).
 function UsecardTab({myCards}){
   const [mode,setMode]=useState("basic");
   const [selCat,setSelCat]=useState(null);
   const [merchant,setMerchant]=useState("");
   const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
 
+  // getBestForCat finds the best cards in the user's wallet for a given spending category.
+  // It checks the global EARN_PRIORITY list, filters to wallet cards, and returns the top 3.
+  // Returns an array of {card, rate} objects. Falls back to the user's first 2 cards if none match.
   function getBestForCat(catId){
     const priority=EARN_PRIORITY[catId]||[];
     const inWallet=priority.filter(id=>myCards.includes(id));
@@ -1030,6 +1111,8 @@ function UsecardTab({myCards}){
     return results;
   }
 
+  // merchantResults uses the search text to guess which spending category a merchant falls into
+  // (e.g., typing "Starbucks" maps to dining, "Shell" maps to gas) and then finds the best cards.
   const merchantResults=useMemo(()=>{
     if(merchant.trim().length<2)return[];
     const q=merchant.toLowerCase();
@@ -1050,6 +1133,8 @@ function UsecardTab({myCards}){
     return bestCats.flatMap(cid=>getBestForCat(cid));
   },[merchant,myCards]);
 
+  // MODE_TABS defines the four sub-tabs within the Use Card page.
+  // Each has an id, a short label, and a subtitle description.
   const MODE_TABS=[
     {id:"basic",l:"Basic",s:"Everyday categories"},
     {id:"specialty",l:"Specialty",s:"Airline & hotel cards"},
@@ -1113,7 +1198,7 @@ function UsecardTab({myCards}){
                       <div style={{width:30,height:30,borderRadius:9,background:`linear-gradient(135deg,${card.c1},${card.c2})`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"rgba(255,255,255,.8)"}}>#{i+1}</div>
                       <div style={{flex:1}}>
                         <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          <span style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{card.short}</span>
+                          <span style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{card.short}{card.confidence==="estimated"&&<span style={{fontSize:9,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:3}}>(unverified)</span>}</span>
                         </div>
                         <div style={{fontSize:11,color:"var(--tx3)"}}>{card.cur}</div>
                       </div>
@@ -1223,6 +1308,11 @@ function UsecardTab({myCards}){
 }
 
 /* ── OFFERS TAB ───────────────────────────────────────────────────────────── */
+// MERCHANT_OFFERS is a large database of real merchant-specific credit card offers.
+// Each entry has: merchant name, URL slug, category, optional aliases for search,
+// and an array of programs (e.g., Amex Offers, Chase Offers) with typical deal values,
+// how often the offer appears (frequent/seasonal/occasional), and usage notes.
+// This data is curated from public sources and powers the Offers tab.
 const MERCHANT_OFFERS=[
 // ── SHOPPING ──────────────────────────────────────────────────────────────
 {merchant:"Nike",slug:"nike",cat:"shopping",programs:[
@@ -1442,6 +1532,8 @@ const MERCHANT_OFFERS=[
 ]},
 ];
 
+// PROG_COLORS assigns a color scheme to each card issuer's offers program.
+// Used to visually distinguish Amex Offers (blue) from Chase Offers (navy), etc.
 const PROG_COLORS={
   "Amex Offers":       {bg:"rgba(0,111,203,.1)",  text:"#005a9e", border:"rgba(0,111,203,.22)"},
   "Chase Offers":      {bg:"rgba(0,34,100,.1)",   text:"#002264", border:"rgba(0,34,100,.22)"},
@@ -1453,12 +1545,17 @@ const PROG_COLORS={
   "US Bank Offers":    {bg:"rgba(0,83,159,.1)",   text:"#00539f", border:"rgba(0,83,159,.22)"},
 };
 
+// FREQ_CONFIG maps offer frequency labels (frequent, seasonal, occasional) to their
+// display colors. Frequent offers are green, seasonal are gold, occasional are gray.
 const FREQ_CONFIG={
   frequent:  {label:"Frequent",  bg:"rgba(22,163,74,.1)",   text:"#15803d"},
   seasonal:  {label:"Seasonal",  bg:"rgba(154,110,26,.12)", text:"#7a5a12"},
   occasional:{label:"Occasional",bg:"rgba(25,28,30,.07)",   text:"#6b7280"},
 };
 
+// ISSUER_TO_PROG maps card issuer names to their offer program names.
+// For example, 'American Express' maps to 'Amex Offers'.
+// Used to determine which offers are relevant to the user's cards.
 const ISSUER_TO_PROG={
   "American Express":"Amex Offers",
   "Chase":"Chase Offers",
@@ -1470,6 +1567,11 @@ const ISSUER_TO_PROG={
   "US Bank":"US Bank Offers",
 };
 
+// MerchantOfferCard renders a single merchant row in the Offers tab.
+// It shows the merchant name, category badge, and issuer program pills in a collapsed view.
+// When expanded, it shows detailed offer information grouped by the user's programs first,
+// then other programs. Merchants without matching cards appear dimmed.
+// Props: m (merchant offer object), myPrograms (Set of user's program names), showOnlyMine (boolean).
 function MerchantOfferCard({m, myPrograms, showOnlyMine}){
   const [open,setOpen]=useState(false);
   const pColor=p=>PROG_COLORS[p.prog]||{bg:"rgba(117,91,6,.1)",text:"var(--acc)",border:"rgba(117,91,6,.22)"};
@@ -1564,6 +1666,11 @@ function MerchantOfferCard({m, myPrograms, showOnlyMine}){
   );
 }
 
+// OffersTab is the main Offers page that lets users browse merchant-specific credit card deals.
+// It shows a wallet summary of which offer programs the user has access to,
+// a toggle between "Only my cards' offers" and "Show all merchants",
+// a search bar, category filter pills, and a scrollable list of merchant offer cards.
+// Props: myCards (array of card IDs in the user's wallet).
 // The merchant offers screen. Shows current card-linked offers from issuers,
 // highlighting which ones match cards in your wallet.
 function OffersTab({myCards}){
@@ -1743,6 +1850,11 @@ function OffersTab({myCards}){
 }
 
 /* ── WALLET TAB ───────────────────────────────────────────────────────────── */
+// WalletTab lets users manage their credit card collection.
+// It has three views: (1) the main wallet grid showing all added cards with visual card art,
+// (2) the "Add Cards" browser where users can filter by issuer and toggle cards in/out,
+// (3) a card detail view showing full info, benefits, partners, and apply/remove buttons.
+// Props: myCards (array of card IDs), setMyCards (setter to update the wallet).
 // The card browser. Browse all ~100 cards, search by name, filter by issuer,
 // and add or remove cards from your personal wallet.
 function WalletTab({myCards,setMyCards}){
@@ -1883,7 +1995,7 @@ function WalletTab({myCards,setMyCards}){
                     {card.isNew&&<span className="badge new-badge">New</span>}
                   </div>
                 </div>
-                <div style={{fontSize:11,fontWeight:700,color:"var(--tx)",marginBottom:2,lineHeight:1.3}}>{card.name}</div>
+                <div style={{fontSize:11,fontWeight:700,color:"var(--tx)",marginBottom:2,lineHeight:1.3}}>{card.name}{card.confidence==="estimated"&&<span style={{fontSize:9,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
                 <div style={{fontSize:10,color:"var(--tx3)",marginBottom:6}}>{card.issuer}</div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <span style={{fontSize:11,color:card.fee===0?"var(--grn2)":"var(--tx3)",fontWeight:700}}>{card.fee===0?"No fee":"$"+card.fee+"/yr"}</span>
@@ -1955,6 +2067,11 @@ function WalletTab({myCards,setMyCards}){
 
 /* ── TOP NAV ──────────────────────────────────────────────────────────────── */
 /* ── QUIZ ─────────────────────────────────────────────────────────────────── */
+// QUIZ_QS defines the 5 questions in the Card Finder quiz.
+// Each question has: an id, the question text (q), whether multiple answers are allowed (multi),
+// and an array of answer options (opts) with id, label, optional subtitle, icon, and exclusivity flag.
+// The quiz covers: top spending category, monthly spend amount, brand loyalty,
+// annual fee tolerance, and rewards experience level.
 const QUIZ_QS=[
   {id:"spend",q:"What do you spend the most on?",multi:false,opts:[
     {id:"dining",   label:"Dining & Restaurants",iconName:"utensils"},
@@ -1993,8 +2110,15 @@ const QUIZ_QS=[
   ]},
 ];
 
+// parseEarnNum extracts a numeric earn rate from a string like "3x" or "5%".
+// Returns the number (e.g., 3) or 1 as a default if the value cannot be parsed.
 function parseEarnNum(v){const n=parseFloat(String(v||1).replace(/[^0-9.]/g,''));return isNaN(n)?1:n;}
 
+// calcQuizResults takes the user's quiz answers and scores every personal (non-business) card.
+// It considers: earn rate in the user's top spending category, transfer partner matches,
+// brand loyalty alignment, experience level preferences, signup bonus presence,
+// and whether the card's annual fee is justified by the user's spending level.
+// Returns the top 3 cards sorted by score, each with a personalized explanation (reason).
 function calcQuizResults(ans){
   const SPEND_FIELD={dining:'d',grocery:'g',travel:'t',gas:'gas',everything:'o'};
   const SPEND_LABEL={dining:'dining',grocery:'groceries',travel:'travel',gas:'gas',everything:'everyday spending'};
@@ -2054,6 +2178,9 @@ function calcQuizResults(ans){
     });
 }
 
+// pickQuizStrat recommends a card strategy based on the user's quiz answers.
+// Considers brand loyalty (Alaska -> Atmos), experience level, and top spending category
+// to pick one of the 6 defined strategies (e.g., Chase Trifecta, Amex Trifecta, etc.).
 function pickQuizStrat(ans){
   const brands=(ans.brand||['none']).filter(b=>b!=='none');
   if(brands.includes('alaska'))return 'atmos-strategy';
@@ -2064,6 +2191,11 @@ function pickQuizStrat(ans){
   return 'c1-duo';
 }
 
+// QuizResults shows the quiz output after the user finishes all 5 questions.
+// Displays the top 3 recommended cards with personalized reasons, Apply Now buttons,
+// an "In wallet" badge for cards already owned, a recommended strategy section,
+// and a Retake Quiz button.
+// Props: answers (quiz answer object), onRetake (reset handler), myCards (wallet card IDs).
 function QuizResults({answers,onRetake,myCards}){
   const [openStrat,setOpenStrat]=useState(false);
   const results=useMemo(()=>calcQuizResults(answers),[answers]);
@@ -2138,6 +2270,11 @@ function QuizResults({answers,onRetake,myCards}){
   );
 }
 
+// QuizTab manages the Card Finder quiz flow -- showing one question at a time with
+// animated transitions, a progress bar, single-select and multi-select question types.
+// Saves completed answers to localStorage so results persist across visits.
+// If the user already has saved answers, it shows QuizResults instead of the quiz.
+// Props: myCards (array of card IDs in the user's wallet).
 // The card finder quiz. Asks 5 questions about your spending habits and preferences,
 // then recommends the top 3 cards and a strategy that fits your profile.
 function QuizTab({myCards}){
@@ -2240,6 +2377,11 @@ function QuizTab({myCards}){
 }
 
 /* ── AUTH MODAL ──────────────────────────────────────────────────────────── */
+// AuthModal is a popup for signing in or creating a CardSage account.
+// Supports Google sign-in and email/password authentication.
+// On sign-up, optionally subscribes the user to the newsletter.
+// Shows error messages for common auth issues (wrong password, duplicate email, etc.).
+// Props: onClose (handler to dismiss the modal).
 // A login/signup popup. Lets users sign in with Google or email/password to sync their wallet across devices.
 function AuthModal({onClose}){
   const [email,setEmail]=useState('');
@@ -2347,6 +2489,10 @@ function AuthModal({onClose}){
 }
 
 /* ── AUTH BUTTON (header) ────────────────────────────────────────────────── */
+// AuthButton renders the login/account button in the top navigation bar.
+// When not signed in, shows a "Login" button. When signed in, shows the user's avatar
+// or initial with a dropdown menu containing their email, sync status, and sign-out option.
+// Props: user (Firebase auth user or null), onSignIn (opens auth modal), fbReady (boolean).
 // The sign-in / sign-out button shown in the navigation bar.
 function AuthButton({user,onSignIn,fbReady}){
   const [open,setOpen]=useState(false);
@@ -2398,6 +2544,8 @@ function AuthButton({user,onSignIn,fbReady}){
   );
 }
 
+// NAV_TABS defines the main navigation tabs shown at the top of the app.
+// Each entry has an id (used for routing), a short label, and a subtitle.
 const NAV_TABS=[
   {id:"home",   label:"Home",     sub:"Your Overview"},
   {id:"benefits",label:"Benefits",sub:"Track & Redeem"},
@@ -2407,6 +2555,8 @@ const NAV_TABS=[
   {id:"wallet", label:"Wallet",   sub:"My Cards"},
 ];
 
+// NavIcon renders a navigation-specific SVG icon for each tab in the top nav bar.
+// Each icon is hand-drawn SVG for a consistent look. Returns null if the name is unknown.
 function NavIcon({name,size=18}){
   const icons={
     home:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>,
@@ -2419,6 +2569,10 @@ function NavIcon({name,size=18}){
   return icons[name]||null;
 }
 
+// TopNav is the sticky navigation bar at the top of every screen.
+// It contains: the CardSage logo/wordmark, an optional PWA install button,
+// the auth/login button, and a horizontal row of tab buttons for navigation.
+// Props: tab, setTab, cardCount, user, onAuthClick, fbReady, pwaPrompt, onInstall.
 function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady,pwaPrompt,onInstall}){
   return (
     <div className="top-nav">
@@ -2446,7 +2600,13 @@ function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady,pwaPrompt,onInsta
 }
 
 /* ── BENEFIT RESET HELPER ─────────────────────────────────────────────────── */
+// benKey creates a unique string key for each benefit, used to track check-off state.
+// Monthly benefits get a "-m-" prefix to distinguish them from annual benefits with the same name.
 function benKey(cardId,b,isMonthly){return isMonthly?cardId+"-m-"+b.n:cardId+"-"+b.n;}
+// needsReset checks whether a benefit's check-off should be automatically cleared.
+// It compares the date the benefit was last checked against the current date,
+// using the benefit's reset schedule (monthly, quarterly, semi-annual, or annual).
+// Returns true if enough time has passed that the benefit has refreshed.
 function needsReset(reset,checkDate,now){
   const cy=now.getFullYear(),cm=now.getMonth();
   const ly=checkDate.getFullYear(),lm=checkDate.getMonth();
@@ -2460,6 +2620,10 @@ function needsReset(reset,checkDate,now){
 }
 
 /* ── APP ROOT ─────────────────────────────────────────────────────────────── */
+// App is the root component that holds all app-wide state and renders everything.
+// It manages: the user's card wallet, checked-off benefits, check dates, active tab,
+// Firebase authentication, Firestore cloud sync, PWA install prompts, iOS/Android banners,
+// and automatic benefit reset logic. All other components are rendered inside this one.
 // The root component that ties everything together. Manages your card wallet,
 // checked-off benefits, and which tab is currently showing. All other components live inside this.
 function App(){
@@ -2690,4 +2854,6 @@ function App(){
   );
 }
 
+// This line starts the entire app by creating a React root on the HTML element with id="root"
+// and rendering the App component into it. This is the entry point that kicks everything off.
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
