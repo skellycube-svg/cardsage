@@ -503,7 +503,12 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
 
   const totalFees=useMemo(()=>cards.reduce((s,c)=>s+c.fee,0),[cards]);
   const totalCredits=useMemo(()=>cards.reduce((s,c)=>{
-    const ann=c.annual.reduce((a,b)=>a+(b.v||0),0);
+    const ann=c.annual.reduce((a,b)=>{
+      if(!b.v)return a;
+      if(b.reset==="quarterly")return a+b.v*4;
+      if(b.reset==="semi-annual")return a+b.v*2;
+      return a+b.v;
+    },0);
     const mon=c.monthly.reduce((a,b)=>a+((b.v||0)*12),0);
     return s+ann+mon;
   },0),[cards]);
@@ -799,14 +804,43 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
 
   const filtered=useMemo(()=>{
     if(filterCat==="all")return allBenefits;
-    if(filterCat==="unused")return trackable.filter(b=>!checkedSet.has(b.key));
+    if(filterCat==="unused")return trackable.filter(b=>{
+      const pk=periodKeys(b.cardId,b,b.isMonthly);
+      if(pk) return pk.some(p=>!checkedSet.has(p.key));
+      return !checkedSet.has(b.key);
+    });
     return allBenefits.filter(b=>b.cat===filterCat);
   },[allBenefits,trackable,filterCat,checkedSet]);
 
-  const checkedCount=useMemo(()=>trackable.filter(b=>checkedSet.has(b.key)).length,[trackable,checkedSet]);
-  const pct=useMemo(()=>trackable.length?Math.round((checkedCount/trackable.length)*100):0,[checkedCount,trackable]);
-  const usedValue=useMemo(()=>trackable.filter(b=>checkedSet.has(b.key)).reduce((s,b)=>s+(b.isMonthly?(b.v*12):b.v),0),[trackable,checkedSet]);
-  const totalValue=useMemo(()=>trackable.reduce((s,b)=>s+(b.isMonthly?(b.v*12):b.v),0),[trackable]);
+  // For multi-period benefits, count each period separately
+  const totalPeriodSlots=useMemo(()=>{
+    let count=0;
+    trackable.forEach(b=>{
+      const pk=periodKeys(b.cardId,b,b.isMonthly);
+      count+=pk?pk.length:1;
+    });
+    return count;
+  },[trackable]);
+  const checkedCount=useMemo(()=>{
+    let count=0;
+    trackable.forEach(b=>{
+      const pk=periodKeys(b.cardId,b,b.isMonthly);
+      if(pk) pk.forEach(p=>{if(checkedSet.has(p.key))count++;});
+      else if(checkedSet.has(b.key)) count++;
+    });
+    return count;
+  },[trackable,checkedSet]);
+  const pct=useMemo(()=>totalPeriodSlots?Math.round((checkedCount/totalPeriodSlots)*100):0,[checkedCount,totalPeriodSlots]);
+  const usedValue=useMemo(()=>{
+    let total=0;
+    trackable.forEach(b=>{
+      const pk=periodKeys(b.cardId,b,b.isMonthly);
+      if(pk) pk.forEach(p=>{if(checkedSet.has(p.key))total+=b.v;});
+      else if(checkedSet.has(b.key)) total+=annualBenValue(b);
+    });
+    return total;
+  },[trackable,checkedSet]);
+  const totalValue=useMemo(()=>trackable.reduce((s,b)=>s+annualBenValue(b),0),[trackable]);
 
   function toggle(key,e){
     e.stopPropagation();
@@ -872,54 +906,85 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
           const cardBens=filtered.filter(b=>b.cardId===card.id);
           if(!cardBens.length)return null;
           const trackHere=cardBens.filter(b=>b.v!=null);
-          const usedHere=trackHere.filter(b=>checkedSet.has(b.key)).length;
+          let totalSlots=0,usedHere=0;
+          trackHere.forEach(b=>{
+            const pk=periodKeys(card.id,b,b.isMonthly);
+            if(pk){totalSlots+=pk.length;pk.forEach(p=>{if(checkedSet.has(p.key))usedHere++;});}
+            else{totalSlots++;if(checkedSet.has(b.key))usedHere++;}
+          });
           return (
             <div key={card.id} style={{marginBottom:18}}>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10,background:getIssuerTint(card.issuer),borderRadius:12,padding:"10px 12px",border:`1px solid ${getIssuerColor(card.issuer)}15`}}>
                 <CreditCardDisplay card={card} size="sm"/>
                 <div style={{flex:1}}>
                   <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:16,fontWeight:600,color:getIssuerColor(card.issuer)}}>{card.short||card.name}{card.confidence==="estimated"&&<span style={{fontSize:10,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
-                  <div style={{fontSize:11,color:"var(--tx3)"}}>{usedHere}/{trackHere.length} credits used</div>
+                  <div style={{fontSize:11,color:"var(--tx3)"}}>{usedHere}/{totalSlots} credits used</div>
                 </div>
                 <div className="prog-track" style={{width:80}}>
-                  <div className="prog-fill" style={{width:(trackHere.length?Math.round(usedHere/trackHere.length*100):0)+"%",background:getIssuerColor(card.issuer)}}/>
+                  <div className="prog-fill" style={{width:(totalSlots?Math.round(usedHere/totalSlots*100):0)+"%",background:getIssuerColor(card.issuer)}}/>
                 </div>
               </div>
               <div className="benefit-item" style={{borderLeftColor:getIssuerColor(card.issuer),padding:"0 14px"}}>
                 {cardBens.map((b,i)=>{
-                  const done=checkedSet.has(b.key);
+                  const pk=periodKeys(card.id,b,b.isMonthly);
+                  const isMulti=!!pk;
+                  const done=isMulti?pk.every(p=>checkedSet.has(p.key)):checkedSet.has(b.key);
                   const isOpen=openBen===b.key;
                   const bc=BCAT[b.cat]||BCAT.statement;
                   const rl=RESET_LABELS[b.reset];
                   const wasReset=resetBadges.has(b.key);
+                  const periodLabel=b.reset==="quarterly"?"quarter":b.reset==="semi-annual"?"6 months":b.isMonthly?"month":"year";
                   return (
                     <div key={b.key} onClick={()=>toggleExpand(b.key)}
                       role="button" tabIndex={0}
                       onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&toggleExpand(b.key)}
                       style={{borderBottom:i<cardBens.length-1?"1px solid var(--br)":"none",padding:"10px 0",cursor:"pointer"}}>
                       {/* Collapsed row */}
-                      <div style={{display:"flex",alignItems:"center",gap:10}}>
-                        <button className={"ben-check"+(done?" done":"")} onClick={e=>toggle(b.key,e)}>
-                          {done&&<Icon name="check" size={13} color="var(--bg)"/>}
-                        </button>
+                      <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                        {/* Single checkbox for monthly/annual, hidden for multi-period */}
+                        {!isMulti&&(
+                          <button className={"ben-check"+(done?" done":"")} onClick={e=>toggle(b.key,e)} style={{marginTop:2}}>
+                            {done&&<Icon name="check" size={13} color="var(--bg)"/>}
+                          </button>
+                        )}
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:3}}>
                             <span style={{fontSize:13,fontWeight:600,color:done?"var(--tx3)":"var(--tx)",textDecoration:done?"line-through":"none"}}>{b.n}</span>
                             <span style={{padding:"1px 7px",borderRadius:99,fontSize:10,fontWeight:700,color:bc.color,background:bc.bg}}><Icon name={BCAT_ICON_MAP[b.cat]||"credit-card"} size={10} color={bc.color}/> {bc.label}</span>
-                            {/* one-time (protections) intentionally shows no reset pill */}
                             {rl&&<span style={{padding:"1px 6px",borderRadius:99,fontSize:10,background:"rgba(148,163,184,.15)",color:"var(--tx3)",fontWeight:600}}>{rl}</span>}
                             {wasReset&&<span style={{padding:"1px 7px",borderRadius:99,fontSize:10,background:"rgba(212,168,64,.18)",color:"var(--gld3)",fontWeight:700}}>↺ Refreshed</span>}
                           </div>
-                          {b.v&&<div style={{fontSize:11,color:"var(--grn2)",fontWeight:700}}>Up to ${b.isMonthly?b.v+"/mo ("+b.v*12+"/yr)":b.v}</div>}
+                          {/* Multi-period checkboxes for quarterly / semi-annual */}
+                          {isMulti&&(
+                            <div style={{display:"flex",alignItems:"center",gap:isMulti&&pk.length>2?8:14,marginTop:6,marginBottom:4}}>
+                              {pk.map(p=>{
+                                const pd=checkedSet.has(p.key);
+                                return (
+                                  <div key={p.key} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,opacity:p.past&&!pd?0.45:1}}>
+                                    <button className={"ben-check"+(pd?" done":"")}
+                                      onClick={e=>toggle(p.key,e)}
+                                      style={{width:22,height:22,borderRadius:6,border:p.current&&!pd?"2px solid var(--acc)":"",boxShadow:p.current?"0 0 0 2px rgba(184,134,11,.2)":"none"}}>
+                                      {pd&&<Icon name="check" size={11} color="var(--bg)"/>}
+                                    </button>
+                                    <span style={{fontSize:10,fontWeight:p.current?700:500,color:p.current?"var(--acc)":"var(--tx3)"}}>{p.label}</span>
+                                    {p.sub&&<span style={{fontSize:8,color:"var(--tx4)"}}>{p.sub}</span>}
+                                  </div>
+                                );
+                              })}
+                              <div style={{fontSize:12,fontWeight:700,color:"var(--grn2)",marginLeft:4}}>${b.v}<span style={{fontSize:10,fontWeight:500,color:"var(--tx3)"}}> / {periodLabel}</span></div>
+                            </div>
+                          )}
+                          {/* Single-period value display */}
+                          {!isMulti&&b.v&&<div style={{fontSize:11,color:"var(--grn2)",fontWeight:700}}>Up to ${b.isMonthly?b.v+"/mo ($"+b.v*12+"/yr)":b.v+(b.reset==="annual"?"/yr":"")}</div>}
                         </div>
-                        <span style={{flexShrink:0,transition:"transform .15s",display:"inline-flex",transform:isOpen?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={14} color="var(--tx3)"/></span>
+                        <span style={{flexShrink:0,transition:"transform .15s",display:"inline-flex",transform:isOpen?"rotate(90deg)":"rotate(0deg)",marginTop:4}}><Icon name="chevron-right" size={14} color="var(--tx3)"/></span>
                       </div>
                       {/* Expanded section */}
                       {isOpen&&(
                         <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid var(--br)"}}>
                           {b.d&&<p style={{fontSize:12,color:"var(--tx2)",margin:"0 0 8px",lineHeight:1.6}}>{b.d}</p>}
                           <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
-                            {b.v&&<span style={{fontSize:11,color:"var(--grn2)",fontWeight:700}}>Value: ${b.isMonthly?b.v+"/mo":b.v}</span>}
+                            {b.v&&<span style={{fontSize:11,color:"var(--grn2)",fontWeight:700}}>Value: ${b.v}/{periodLabel} (${annualBenValue(b)}/yr)</span>}
                             {rl&&<span style={{fontSize:11,color:"var(--tx3)"}}>↺ Resets: {rl}</span>}
                             {b.enroll&&<span style={{fontSize:11,color:"var(--gld3)",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><Icon name="bolt" size={11} color="var(--gld3)"/> Activation required</span>}
                           </div>
@@ -1916,7 +1981,12 @@ function WalletTab({myCards,setMyCards}){
   if(detailId){
     const c=CARDS.find(x=>x.id===detailId);
     if(!c)return null;
-    const annCredits=c.annual.reduce((s,b)=>s+(b.v||0),0);
+    const annCredits=c.annual.reduce((s,b)=>{
+      if(!b.v)return s;
+      if(b.reset==="quarterly")return s+b.v*4;
+      if(b.reset==="semi-annual")return s+b.v*2;
+      return s+b.v;
+    },0);
     const monCredits=c.monthly.reduce((s,b)=>s+((b.v||0)*12),0);
     const totalCredits=annCredits+monCredits;
     return (
@@ -2656,6 +2726,33 @@ function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady,pwaPrompt,onInsta
 // benKey creates a unique string key for each benefit, used to track check-off state.
 // Monthly benefits get a "-m-" prefix to distinguish them from annual benefits with the same name.
 function benKey(cardId,b,isMonthly){return isMonthly?cardId+"-m-"+b.n:cardId+"-"+b.n;}
+// Returns an array of period keys for multi-period benefits (quarterly/semi-annual).
+// For quarterly: [{key:"cardId-name-2026-Q1",label:"Q1",current:false}, ...x4]
+// For semi-annual: [{key:"cardId-name-2026-H1",label:"H1",sub:"Jan–Jun",current:false}, ...x2]
+// For monthly/annual/one-time: returns null (use single benKey instead).
+function periodKeys(cardId,b,isMonthly){
+  const year=new Date().getFullYear();
+  const month=new Date().getMonth(); // 0-11
+  const base=benKey(cardId,b,isMonthly);
+  if(b.reset==="quarterly"){
+    const cq=Math.floor(month/3);
+    return [0,1,2,3].map(i=>({key:base+"-"+year+"-Q"+(i+1),label:"Q"+(i+1),current:i===cq,past:i<cq}));
+  }
+  if(b.reset==="semi-annual"){
+    const ch=month<6?0:1;
+    return [{key:base+"-"+year+"-H1",label:"H1",sub:"Jan–Jun",current:ch===0,past:false},
+            {key:base+"-"+year+"-H2",label:"H2",sub:"Jul–Dec",current:ch===1,past:ch>1}];
+  }
+  return null;
+}
+// Returns the annual dollar value of a benefit accounting for its reset period.
+function annualBenValue(b){
+  if(!b.v)return 0;
+  if(b.isMonthly)return b.v*12;
+  if(b.reset==="quarterly")return b.v*4;
+  if(b.reset==="semi-annual")return b.v*2;
+  return b.v;
+}
 // needsReset checks whether a benefit's check-off should be automatically cleared.
 // It compares the date the benefit was last checked against the current date,
 // using the benefit's reset schedule (monthly, quarterly, semi-annual, or annual).
@@ -2723,20 +2820,37 @@ function App(){
     const newDates={...checkDates};
     const badgeKeys=new Set();
 
-    // Build flat benefit map for wallet cards
+    // Build flat benefit map for wallet cards (includes period keys for multi-period benefits)
     const benefitMap={};
     myCards.forEach(cardId=>{
       const card=CARDS.find(c=>c.id===cardId);
       if(!card) return;
-      card.annual.forEach(b=>{benefitMap[benKey(cardId,b,false)]={...b,isMonthly:false};});
-      card.monthly.forEach(b=>{benefitMap[benKey(cardId,b,true)]={...b,isMonthly:true};});
+      card.annual.forEach(b=>{
+        const entry={...b,isMonthly:false};
+        benefitMap[benKey(cardId,b,false)]=entry;
+        const pk=periodKeys(cardId,b,false);
+        if(pk) pk.forEach(p=>{benefitMap[p.key]=entry;});
+      });
+      card.monthly.forEach(b=>{
+        const entry={...b,isMonthly:true};
+        benefitMap[benKey(cardId,b,true)]=entry;
+      });
     });
 
     checkedArr.forEach(key=>{
       const b=benefitMap[key];
       const dateStr=checkDates[key];
       if(!b||!dateStr||!b.reset) return;
-      if(needsReset(b.reset,new Date(dateStr),now)){
+      // Period keys (e.g. -2026-Q1) reset when the year changes
+      const isPeriodKey=/-\d{4}-[QH]\d$/.test(key);
+      if(isPeriodKey){
+        const keyYear=parseInt(key.match(/-(\d{4})-/)[1]);
+        if(now.getFullYear()>keyYear){
+          newChecked.delete(key);
+          delete newDates[key];
+          badgeKeys.add(key);
+        }
+      }else if(needsReset(b.reset,new Date(dateStr),now)){
         newChecked.delete(key);
         delete newDates[key];
         badgeKeys.add(key);
