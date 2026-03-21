@@ -3752,6 +3752,11 @@ function App(){
           CardSage may earn a commission from card applications. This does not influence our recommendations.
         </div>
       </div>
+      <div style={{textAlign:"center",padding:"16px 0 24px",borderTop:"1px solid #e5e7eb"}}>
+        <div style={{fontFamily:"'Inter',sans-serif",fontSize:11,color:"#9ca3af"}}>
+          &copy; 2025&ndash;2026 CardSage. All rights reserved.
+        </div>
+      </div>
     </div>
   );
 }
