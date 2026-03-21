@@ -785,7 +785,7 @@ const RESET_LABELS={monthly:"Monthly",quarterly:"Quarterly","semi-annual":"Semi-
 // category filter pills, and an expandable list of every benefit grouped by card.
 // Each benefit can be checked/unchecked and expanded to see details and activation links.
 // Props: myCards, checkedSet, setCheckedBenefits, checkDates, setCheckDates, resetBadges.
-function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckDates,resetBadges=new Set()}){
+function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckDates,resetBadges=new Set(),skippedSet=new Set(),setSkippedBenefits}){
   const [filterCat,setFilterCat]=useState("all");
   const [openBen,setOpenBen]=useState(null);
 
@@ -812,35 +812,36 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
     return allBenefits.filter(b=>b.cat===filterCat);
   },[allBenefits,trackable,filterCat,checkedSet]);
 
-  // For multi-period benefits, count each period separately
+  // For multi-period benefits, count each period separately — exclude skipped from progress
+  const unskippedTrackable=useMemo(()=>trackable.filter(b=>!skippedSet.has(b.key)),[trackable,skippedSet]);
   const totalPeriodSlots=useMemo(()=>{
     let count=0;
-    trackable.forEach(b=>{
+    unskippedTrackable.forEach(b=>{
       const pk=periodKeys(b.cardId,b,b.isMonthly);
       count+=pk?pk.length:1;
     });
     return count;
-  },[trackable]);
+  },[unskippedTrackable]);
   const checkedCount=useMemo(()=>{
     let count=0;
-    trackable.forEach(b=>{
+    unskippedTrackable.forEach(b=>{
       const pk=periodKeys(b.cardId,b,b.isMonthly);
       if(pk) pk.forEach(p=>{if(checkedSet.has(p.key))count++;});
       else if(checkedSet.has(b.key)) count++;
     });
     return count;
-  },[trackable,checkedSet]);
+  },[unskippedTrackable,checkedSet]);
   const pct=useMemo(()=>totalPeriodSlots?Math.round((checkedCount/totalPeriodSlots)*100):0,[checkedCount,totalPeriodSlots]);
   const usedValue=useMemo(()=>{
     let total=0;
-    trackable.forEach(b=>{
+    unskippedTrackable.forEach(b=>{
       const pk=periodKeys(b.cardId,b,b.isMonthly);
       if(pk) pk.forEach(p=>{if(checkedSet.has(p.key))total+=b.v;});
       else if(checkedSet.has(b.key)) total+=annualBenValue(b);
     });
     return total;
-  },[trackable,checkedSet]);
-  const totalValue=useMemo(()=>trackable.reduce((s,b)=>s+annualBenValue(b),0),[trackable]);
+  },[unskippedTrackable,checkedSet]);
+  const totalValue=useMemo(()=>unskippedTrackable.reduce((s,b)=>s+annualBenValue(b),0),[unskippedTrackable]);
 
   function toggle(key,e){
     e.stopPropagation();
@@ -861,6 +862,15 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
 
   function toggleExpand(key){
     setOpenBen(prev=>prev===key?null:key);
+  }
+  function toggleSkip(key,e){
+    e.stopPropagation();
+    if(!setSkippedBenefits) return;
+    setSkippedBenefits(prev=>{
+      const n=new Set(prev);
+      n.has(key)?n.delete(key):n.add(key);
+      return n;
+    });
   }
 
   if(!myCards.length){
@@ -905,32 +915,34 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
         <div className="benefits-list">{cards.map(card=>{
           const cardBens=filtered.filter(b=>b.cardId===card.id);
           if(!cardBens.length)return null;
-          const trackHere=cardBens.filter(b=>b.v!=null);
+          const trackHere=cardBens.filter(b=>b.v!=null&&!skippedSet.has(b.key));
           let totalSlots=0,usedHere=0;
           trackHere.forEach(b=>{
             const pk=periodKeys(card.id,b,b.isMonthly);
             if(pk){totalSlots+=pk.length;pk.forEach(p=>{if(checkedSet.has(p.key))usedHere++;});}
             else{totalSlots++;if(checkedSet.has(b.key))usedHere++;}
           });
+          const skippedHere=cardBens.filter(b=>b.v!=null&&skippedSet.has(b.key)).length;
           return (
             <div key={card.id} style={{marginBottom:18}}>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10,background:getIssuerTint(card.issuer),borderRadius:12,padding:"10px 12px",border:`1px solid ${getIssuerColor(card.issuer)}15`}}>
                 <CreditCardDisplay card={card} size="sm"/>
                 <div style={{flex:1}}>
                   <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:16,fontWeight:600,color:getIssuerColor(card.issuer)}}>{card.short||card.name}{card.confidence==="estimated"&&<span style={{fontSize:10,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
-                  <div style={{fontSize:11,color:"var(--tx3)"}}>{usedHere}/{totalSlots} credits used</div>
+                  <div style={{fontSize:11,color:"var(--tx3)"}}>{usedHere}/{totalSlots} credits used{skippedHere>0&&<span style={{marginLeft:4,fontSize:10,fontStyle:"italic",color:"#9ca3af"}}>({skippedHere} skipped)</span>}</div>
                 </div>
                 <div className="prog-track" style={{width:80}}>
                   <div className="prog-fill" style={{width:(totalSlots?Math.round(usedHere/totalSlots*100):0)+"%",background:getIssuerColor(card.issuer)}}/>
                 </div>
               </div>
               {(()=>{
-                const creditBens=cardBens.filter(b=>b.type!=="perk");
-                const perkBens=cardBens.filter(b=>b.type==="perk");
+                const activeCreditBens=cardBens.filter(b=>b.type!=="perk"&&!skippedSet.has(b.key));
+                const activePerkBens=cardBens.filter(b=>b.type==="perk"&&!skippedSet.has(b.key));
+                const skippedBens=cardBens.filter(b=>skippedSet.has(b.key));
                 return (
                   <div className="benefit-item" style={{borderLeftColor:getIssuerColor(card.issuer),padding:"0 14px"}}>
-                    {/* ── Trackable credits (with checkboxes) ── */}
-                    {creditBens.map((b,i)=>{
+                    {/* ── Active trackable credits (with checkboxes) ── */}
+                    {activeCreditBens.map((b,i)=>{
                       const pk=periodKeys(card.id,b,b.isMonthly);
                       const isMulti=!!pk;
                       const done=isMulti?pk.every(p=>checkedSet.has(p.key)):checkedSet.has(b.key);
@@ -943,7 +955,7 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
                         <div key={b.key} onClick={()=>toggleExpand(b.key)}
                           role="button" tabIndex={0}
                           onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&toggleExpand(b.key)}
-                          style={{borderBottom:i<creditBens.length-1?"1px solid var(--br)":"none",padding:"10px 0",cursor:"pointer"}}>
+                          style={{borderBottom:i<activeCreditBens.length-1?"1px solid var(--br)":"none",padding:"10px 0",cursor:"pointer"}}>
                           <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
                             {!isMulti&&(
                               <button className={"ben-check"+(done?" done":"")} onClick={e=>toggle(b.key,e)} style={{marginTop:2}}>
@@ -978,6 +990,12 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
                               )}
                               {!isMulti&&b.v&&<div style={{fontSize:11,color:"var(--grn2)",fontWeight:700}}>Up to ${b.isMonthly?b.v+"/mo ($"+b.v*12+"/yr)":b.v+(b.reset==="annual"?"/yr":"")}</div>}
                             </div>
+                            {/* Skip button */}
+                            <button onClick={e=>toggleSkip(b.key,e)} title="Skip this benefit"
+                              style={{flexShrink:0,background:"none",border:"none",cursor:"pointer",padding:4,marginTop:2,opacity:0.35,transition:"opacity .15s"}}
+                              onMouseEnter={e=>e.currentTarget.style.opacity=1} onMouseLeave={e=>e.currentTarget.style.opacity=0.35}>
+                              <Icon name="x" size={13} color="var(--tx3)"/>
+                            </button>
                             <span style={{flexShrink:0,transition:"transform .15s",display:"inline-flex",transform:isOpen?"rotate(90deg)":"rotate(0deg)",marginTop:4}}><Icon name="chevron-right" size={14} color="var(--tx3)"/></span>
                           </div>
                           {isOpen&&(
@@ -1001,19 +1019,19 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
                         </div>
                       );
                     })}
-                    {/* ── Always-on perks (read-only, no checkbox) ── */}
-                    {perkBens.length>0&&(
+                    {/* ── Active always-on perks (read-only, no checkbox) ── */}
+                    {activePerkBens.length>0&&(
                       <>
-                        {creditBens.length>0&&(
+                        {activeCreditBens.length>0&&(
                           <div style={{borderTop:"1px solid var(--br)",margin:"6px 0",paddingTop:10}}>
                             <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,color:"#9ca3af",textTransform:"uppercase",marginBottom:6}}>INCLUDED PROTECTIONS & PERKS</div>
                           </div>
                         )}
-                        {perkBens.map((b,i)=>{
+                        {activePerkBens.map((b,i)=>{
                           const isOpen=openBen===b.key;
                           return (
                             <div key={b.key} onClick={()=>toggleExpand(b.key)}
-                              style={{borderBottom:i<perkBens.length-1?"1px solid var(--br)":"none",padding:"8px 0",cursor:"pointer"}}>
+                              style={{borderBottom:i<activePerkBens.length-1?"1px solid var(--br)":"none",padding:"8px 0",cursor:"pointer"}}>
                               <div style={{display:"flex",alignItems:"center",gap:10}}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b8860b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
                                   <path d="M12 2l7 4v5c0 5.25-3.5 9.74-7 11-3.5-1.26-7-5.75-7-11V6l7-4z"/><path d="M9 12l2 2 4-4"/>
@@ -1026,6 +1044,41 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
                               </div>
                               {isOpen&&(
                                 <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid var(--br)",marginLeft:26}}>
+                                  {b.d&&<p style={{fontSize:11,color:"#9ca3af",margin:0,lineHeight:1.5}}>{b.d}</p>}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                    {/* ── Skipped benefits (dimmed, with undo) ── */}
+                    {skippedBens.length>0&&(
+                      <>
+                        <div style={{borderTop:"1px solid var(--br)",margin:"6px 0",paddingTop:10}}>
+                          <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,color:"#9ca3af",textTransform:"uppercase",marginBottom:6}}>SKIPPED</div>
+                        </div>
+                        {skippedBens.map((b,i)=>{
+                          const isOpen=openBen===b.key;
+                          return (
+                            <div key={b.key} onClick={()=>toggleExpand(b.key)}
+                              style={{borderBottom:i<skippedBens.length-1?"1px solid var(--br)":"none",padding:"8px 0",cursor:"pointer",opacity:0.4}}>
+                              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                                <div style={{flex:1,minWidth:0}}>
+                                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                                    <span style={{fontSize:12,fontWeight:500,color:"var(--tx)",textDecoration:"line-through"}}>{b.n}</span>
+                                    <span style={{fontSize:10,fontStyle:"italic",color:"#9ca3af"}}>skipped</span>
+                                  </div>
+                                  {b.v&&<div style={{fontSize:10,color:"var(--tx3)"}}>${b.v}{b.isMonthly?"/mo":b.reset==="quarterly"?"/quarter":b.reset==="semi-annual"?"/6 mo":"/yr"}</div>}
+                                </div>
+                                <button onClick={e=>toggleSkip(b.key,e)} title="Un-skip benefit"
+                                  style={{flexShrink:0,background:"none",border:"none",cursor:"pointer",padding:4,opacity:1}}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                                </button>
+                                <span style={{flexShrink:0,transition:"transform .15s",display:"inline-flex",transform:isOpen?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={12} color="#9ca3af"/></span>
+                              </div>
+                              {isOpen&&(
+                                <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid var(--br)",marginLeft:4}}>
                                   {b.d&&<p style={{fontSize:11,color:"#9ca3af",margin:0,lineHeight:1.5}}>{b.d}</p>}
                                 </div>
                               )}
@@ -2815,6 +2868,7 @@ function App(){
   const [myCards,setMyCards]=useLS(CS_CONFIG.LS_KEYS.cards,[]);
   const [tab,setTab]=useState("home");
   const [checkedArr,setCheckedArr]=useLS(CS_CONFIG.LS_KEYS.checked,[]);
+  const [skippedArr,setSkippedArr]=useLS(CS_CONFIG.LS_KEYS.skipped,[]);
   const [checkDates,setCheckDates]=useLS(CS_CONFIG.LS_KEYS.checkDates,{});
   const [resetBadges,setResetBadges]=useState(new Set());
   const [stratModal,setStratModal]=useState(null);
@@ -2847,6 +2901,7 @@ function App(){
   const mountedRef=useRef(false);
 
   const checkedSet=useMemo(()=>new Set(checkedArr),[checkedArr]);
+  const skippedSet=useMemo(()=>new Set(skippedArr),[skippedArr]);
 
   useEffect(()=>{
     if(!checkedArr.length) return;
@@ -2903,6 +2958,10 @@ function App(){
     const newSet=updateFn(checkedSet);
     setCheckedArr([...newSet]);
   }
+  function setSkippedBenefits(updateFn){
+    const newSet=updateFn(skippedSet);
+    setSkippedArr([...newSet]);
+  }
 
   // ── PWA install prompt ────────────────────────────────────────────────────
   useEffect(()=>{
@@ -2947,10 +3006,11 @@ function App(){
           const cloud=snap.data();
           setMyCards(cloud.cs_cards||[]);
           setCheckedArr(cloud.cs_checked||[]);
+          if(cloud.cs_skipped) setSkippedArr(cloud.cs_skipped);
         } else {
           // New user — upload current localStorage data to cloud
           await fb.setDoc(fb.doc(fb.db,'users',u.uid),{
-            cs_cards:cardsRef.current, cs_checked:checkedRef.current
+            cs_cards:cardsRef.current, cs_checked:checkedRef.current, cs_skipped:[]
           });
         }
       }catch(e){ console.warn('Firestore load failed:',e.message); }
@@ -2977,10 +3037,10 @@ function App(){
     const u=userRef.current;
     if(!fb||!u) return;
     fb.setDoc(fb.doc(fb.db,'users',u.uid),
-      {cs_cards:myCards, cs_checked:checkedArr},
+      {cs_cards:myCards, cs_checked:checkedArr, cs_skipped:skippedArr},
       {merge:true}
     ).catch(e=>console.warn('Firestore write failed:',e.message));
-  },[myCards,checkedArr]);
+  },[myCards,checkedArr,skippedArr]);
 
   useEffect(()=>{window.scrollTo({top:0,behavior:"smooth"});},[tab]);
 
@@ -3012,7 +3072,7 @@ function App(){
       )}
       <div className="tab-content-wrap" style={{paddingTop:8}}>
         {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal}/>}
-        {tab==="benefits"&&<BenefitsTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges}/>}
+        {tab==="benefits"&&<BenefitsTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits}/>}
         {tab==="tips"&&    <TipsTab myCards={myCards}/>}
         {tab==="usecard"&& <UsecardTab myCards={myCards}/>}
         {tab==="offers"&&  <OffersTab myCards={myCards}/>}

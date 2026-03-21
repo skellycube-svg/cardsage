@@ -86,6 +86,8 @@ CardSage/
 
 **BENEFITS DATA RULE**: Every recurring benefit must be stored as ONE entry with the correct `reset` field (`monthly` / `quarterly` / `semi-annual` / `annual`). NEVER split a recurring benefit into multiple entries (e.g. "1st half" and "2nd half"). The UI renders multiple checkboxes from a single entry based on the `reset` field. Duplicating entries causes the benefit to appear multiple times in the list.
 
+**SKIP PERSISTENCE RULE**: Skipped benefit state (`cs_skipped`) does NOT reset with quarterly/annual resets — it persists until the user manually un-skips. Skipped benefits are excluded from progress bar calculations (both numerator and denominator) but remain visible in the list under a "SKIPPED" divider at the bottom of each card.
+
 ### `STRATS` — object keyed by strategy ID
 ```js
 {
@@ -177,6 +179,7 @@ Returns integer days until a given date string. Used for benefit reset countdown
 | `cs_quiz` | `object \| null` | Saved quiz answers object |
 | `cs_tips_mode` | `string` | Tips tab mode preference (`'beginner'` or `'advanced'`) |
 | `cs_benefit_check_dates` | `object` | Map of benefit key → ISO date string when it was last checked |
+| `cs_skipped` | `string[]` | Array of benefit keys the user has skipped (excluded from progress) |
 
 All keys are managed via the `useLS(key, defaultValue)` hook, which wraps `useState` + `localStorage`.
 
