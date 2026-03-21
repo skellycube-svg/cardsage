@@ -47,17 +47,38 @@ footer a:hover{color:var(--acc);}
   <p>CardSage is a personal finance tool that runs entirely in your browser. We take your privacy seriously and have designed the app to collect as little data as possible.</p>
 
   <h2>Data We Collect</h2>
-  <p>CardSage stores the following data <strong>locally in your browser</strong> using localStorage. This data never leaves your device and is never sent to any server:</p>
+  <p>CardSage stores the following data <strong>locally in your browser</strong> using localStorage. If you do not sign in, this data never leaves your device:</p>
   <ul>
     <li>The cards you've added to your wallet</li>
-    <li>Benefits you've marked as used or redeemed</li>
+    <li>Benefits you've marked as used, redeemed, or skipped</li>
     <li>Your Card Finder quiz answers and results</li>
+    <li>Saved trips from the Plan tab</li>
     <li>Your email address, if you voluntarily subscribe to benefit reminders</li>
   </ul>
 
   <div class="callout">
-    <strong>No server. No account. No tracking.</strong> CardSage has no backend, no database, and no analytics. Your data lives only in your browser's localStorage and is deleted when you clear your browser data.
+    <strong>Local-first by default.</strong> If you never sign in, CardSage has no backend interaction — your data lives only in your browser's localStorage and is deleted when you clear your browser data.
   </div>
+
+  <h2>Optional Cloud Sync (Firebase)</h2>
+  <p>CardSage offers optional cloud sync so your data carries across devices and browsers. Cloud sync is entirely opt-in — it activates only when you sign in.</p>
+
+  <p><strong>Authentication.</strong> Sign-in is powered by <a href="https://firebase.google.com/products/auth">Firebase Authentication</a> (a Google Cloud service). You can sign in with:</p>
+  <ul>
+    <li><strong>Google sign-in</strong> — we receive your name, email address, and profile photo from your Google account</li>
+    <li><strong>Email and password</strong> — your password is hashed by Firebase and never visible to us</li>
+  </ul>
+
+  <p><strong>Data stored in the cloud.</strong> When signed in, the following data is synced to <a href="https://firebase.google.com/products/firestore">Cloud Firestore</a> (a Google Cloud database):</p>
+  <ul>
+    <li>Your card wallet selections (card IDs)</li>
+    <li>Benefit tracking state (checked and skipped benefits)</li>
+    <li>Benefit check dates</li>
+  </ul>
+
+  <p><strong>Security.</strong> All data transmitted between your browser and Firebase is encrypted in transit via TLS. Data stored in Firestore is encrypted at rest by Google Cloud. We do not store payment information, credit card numbers, or financial account credentials.</p>
+
+  <p><strong>What we do NOT store in the cloud:</strong> quiz answers, saved trips, email subscription preferences, or any content you haven't explicitly synced by signing in.</p>
 
   <h2>Email Address (Optional)</h2>
   <p>If you choose to subscribe to benefit reminders, you enter your email address voluntarily. This email is:</p>
@@ -74,16 +95,18 @@ footer a:hover{color:var(--acc);}
   <h2>Third-Party Services</h2>
   <p>CardSage loads the following third-party resources to function:</p>
   <ul>
-    <li><strong>Google Fonts</strong> — typography (Cormorant Garamond, Barlow, Source Code Pro)</li>
+    <li><strong>Google Firebase</strong> — authentication and cloud data sync (only when you sign in)</li>
+    <li><strong>Google Fonts</strong> — typography (Playfair Display, Inter, Source Code Pro)</li>
     <li><strong>unpkg.com</strong> — React and Babel via CDN</li>
   </ul>
-  <p>These CDN services may log your IP address as part of normal operations. We have no control over their data practices.</p>
+  <p>These services may log your IP address as part of normal operations. Firebase is governed by <a href="https://firebase.google.com/terms">Google's Terms of Service</a> and <a href="https://policies.google.com/privacy">Google's Privacy Policy</a>. We have no control over their data practices beyond what they publicly document.</p>
 
   <h2>No Third-Party Data Sharing</h2>
-  <p>We do not sell, rent, trade, or share your personal information with any third parties. The email address you optionally provide is used solely for benefit reminders sent directly from your own email client.</p>
+  <p>We do not sell, rent, trade, or share your personal information with any third parties. Your cloud-synced data in Firebase is used solely to provide the sync feature and is not accessed for marketing, analytics, or any other purpose.</p>
 
   <h2>Deleting Your Data</h2>
-  <p>All CardSage data lives in your browser's localStorage. You can delete it at any time by clearing your browser's site data, using developer tools to clear localStorage, or uninstalling the app if installed as a PWA.</p>
+  <p><strong>Local data.</strong> All locally stored CardSage data lives in your browser's localStorage. You can delete it at any time by clearing your browser's site data, using developer tools to clear localStorage, or uninstalling the app if installed as a PWA.</p>
+  <p><strong>Cloud data.</strong> If you signed in and want your cloud-stored data deleted from Firebase, email <a href="mailto:cardsage.co@gmail.com">cardsage.co@gmail.com</a> with the email address you used to sign in. We will delete your Firestore document and Firebase Authentication account within 30 days of your request.</p>
 
   <h2>Children's Privacy</h2>
   <p>CardSage is not directed at children under 13. We do not knowingly collect personal information from children.</p>
