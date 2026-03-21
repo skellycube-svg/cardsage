@@ -156,9 +156,9 @@ input,select,button{font-family:inherit}
 .tip-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.07)}
 .tip-card.open{background:#fafaf8;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .tip-card.tip-unlock{border-left:3px solid rgba(184,134,11,.4)}
-.tip-title{font-family:'Playfair Display',Georgia,serif;font-size:15px;font-weight:600;line-height:1.4;color:#0f172a;margin-bottom:6px}
-.tip-body{font-family:'Inter',sans-serif;font-size:13px;font-weight:400;line-height:1.65;color:#4b5563}
-.tip-body strong{font-weight:600;color:#1a1a2e}
+.tip-title{font-family:'Playfair Display',Georgia,serif !important;font-size:15px !important;font-weight:600 !important;line-height:1.4;color:#0f172a;margin-bottom:6px}
+.tip-body{font-family:'Inter',sans-serif !important;font-size:13px !important;font-weight:400 !important;line-height:1.65;color:#4b5563}
+.tip-body strong{font-weight:600 !important;color:#1a1a2e}
 .tip-section-pill{display:inline-flex;align-items:center;padding:6px 16px;border-radius:999px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .18s;white-space:nowrap;font-family:'Inter',sans-serif}
 .tip-section-pill.active{background:#b8860b;color:#ffffff}
 .tip-section-pill.inactive{background:#f8f8f6;color:var(--tx)}
