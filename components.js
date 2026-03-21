@@ -498,6 +498,90 @@ function NewsletterSubscribe(){
   );
 }
 
+/* ── NEWSLETTER POPUP (one-time modal for new visitors) ───────────────────── */
+// Shows a newsletter signup modal 30 seconds after first visit.
+// Checks cs_popup_dismissed in localStorage so it only appears once.
+// On desktop: centered overlay modal. On mobile: bottom sheet.
+// Reuses the Firestore subscription logic from NewsletterSubscribe.
+function NewsletterPopup(){
+  const [show,setShow]=useState(false);
+  const [email,setEmail]=useState('');
+  const [status,setStatus]=useState('');// 'success'|'exists'|'error'|''
+  const [loading,setLoading]=useState(false);
+
+  useEffect(()=>{
+    if(localStorage.getItem('cs_popup_dismissed')) return;
+    const t=setTimeout(()=>setShow(true),30000);
+    return ()=>clearTimeout(t);
+  },[]);
+
+  const dismiss=()=>{
+    setShow(false);
+    localStorage.setItem('cs_popup_dismissed','1');
+  };
+
+  const submit=async(e)=>{
+    e.preventDefault();
+    const v=email.trim();
+    if(!v||!v.includes('@')) return;
+    const fb=window.CS_FB;
+    if(!fb){setStatus('error');return;}
+    setLoading(true);
+    try{
+      const q=fb.query(fb.collection(fb.db,'newsletter_subscribers'),fb.where('email','==',v));
+      const snap=await fb.getDocs(q);
+      if(!snap.empty){
+        setStatus('exists');
+      }else{
+        await fb.setDoc(fb.doc(fb.collection(fb.db,'newsletter_subscribers')),{
+          email:v,uid:null,subscribedAt:fb.serverTimestamp(),source:'popup'
+        });
+        setStatus('success');
+        setEmail('');
+        localStorage.setItem('cs_popup_dismissed','1');
+      }
+    }catch(err){
+      console.warn('Newsletter popup subscribe failed:',err.message);
+      setStatus('error');
+    }
+    setLoading(false);
+  };
+
+  if(!show) return null;
+
+  return(
+    <div className="nl-popup-overlay" onClick={dismiss}>
+      <div className="nl-popup" onClick={e=>e.stopPropagation()}>
+        <button className="nl-popup-close" onClick={dismiss} aria-label="Close">×</button>
+        <div className="nl-popup-icon">✉</div>
+        <h3 className="nl-popup-title">Get Monthly Points Strategies</h3>
+        <p className="nl-popup-sub">Join travelers who maximize every dollar. One email per month — no spam.</p>
+        {status==='success'?(
+          <div className="nl-popup-msg" style={{color:"var(--grn2)"}}>You're on the list! 🎉</div>
+        ):status==='exists'?(
+          <div className="nl-popup-msg" style={{color:"var(--gold)"}}>You're already subscribed!</div>
+        ):status==='error'?(
+          <div className="nl-popup-msg" style={{color:"var(--red2)"}}>Something went wrong. Please try again.</div>
+        ):(
+          <form className="nl-popup-form" onSubmit={submit}>
+            <input className="nl-popup-input" type="email" placeholder="you@email.com"
+              value={email} onChange={e=>setEmail(e.target.value)} required autoFocus/>
+            <button className="nl-popup-btn" type="submit" disabled={loading}>
+              {loading?'Subscribing…':'Subscribe'}
+            </button>
+          </form>
+        )}
+        {status!=='success'&&(
+          <button className="nl-popup-dismiss" onClick={dismiss}>No thanks</button>
+        )}
+        {status==='success'&&(
+          <button className="nl-popup-dismiss" onClick={dismiss} style={{marginTop:12}}>Close</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── HOME TAB ─────────────────────────────────────────────────────────────── */
 // HomeTab is the main dashboard screen users see when they open the app.
 // If the user has no cards, it shows a welcome hero section with feature highlights.
@@ -3940,6 +4024,7 @@ function App(){
         {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={setMyCards}/>}
       </div>
       {stratModal&&<StratModal stratId={stratModal} myCards={myCards} onClose={()=>setStratModal(null)}/>}
+      <NewsletterPopup/>
       <NewsletterSubscribe/>
       <div style={{padding:"32px 24px 28px",background:"var(--s3)",marginTop:24}}>
         <div style={{display:"flex",flexWrap:"wrap",justifyContent:"space-between",gap:"6px 16px",marginBottom:10,maxWidth:1000,margin:"0 auto 10px"}}>
