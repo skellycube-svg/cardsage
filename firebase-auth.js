@@ -6,21 +6,36 @@
 // Loaded via <script type="module" src="firebase-auth.js"> in index.html.
 
 // ─── FIREBASE INIT (config from config.js → CS_CONFIG.FIREBASE) ─────────────
+// Read the Firebase connection settings from config.js
 const firebaseConfig = CS_CONFIG.FIREBASE;
+
+// Only proceed if Firebase is configured (apiKey exists)
 if (firebaseConfig.apiKey) {
   const v = CS_CONFIG.FIREBASE_SDK_VERSION;
+
+  // Download three Firebase modules from Google's CDN in parallel:
+  //   1. firebase-app    — the core Firebase library
+  //   2. firebase-auth   — handles user login (Google sign-in, email/password)
+  //   3. firebase-firestore — the database (stores newsletter subscriptions)
   Promise.all([
     import(`https://www.gstatic.com/firebasejs/${v}/firebase-app.js`),
     import(`https://www.gstatic.com/firebasejs/${v}/firebase-auth.js`),
     import(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore.js`)
   ]).then(([{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged},{getFirestore,doc,getDoc,setDoc,collection,query,where,getDocs,serverTimestamp}])=>{
+    // Start the Firebase app and create auth + database connections
     const app=initializeApp(firebaseConfig);
+
+    // Expose all Firebase tools on window.CS_FB so React components can use them.
+    // This is how the rest of the app accesses login, logout, and database functions.
     window.CS_FB={
       auth:getAuth(app),db:getFirestore(app),
       GoogleAuthProvider,signInWithPopup,signInWithEmailAndPassword,
       createUserWithEmailAndPassword,signOut,onAuthStateChanged,
       doc,getDoc,setDoc,collection,query,where,getDocs,serverTimestamp
     };
+
+    // Tell the rest of the app that Firebase is ready to use.
+    // React components listen for this event before trying to access CS_FB.
     window.dispatchEvent(new CustomEvent('cs-firebase-ready'));
   }).catch(e=>console.warn('Firebase init failed:',e.message));
 }

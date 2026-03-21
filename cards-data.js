@@ -1,4 +1,7 @@
 /* BENEFIT CATEGORIES */
+// These are the benefit categories used to organize and color-code each card perk.
+// Each category (like travel, dining, entertainment) has a label, icon, color, and background color
+// so the app can display benefits in a visually grouped and recognizable way.
 const BCAT={
   travel:{label:"Travel",icon:"✈️",color:"#38bdf8",bg:"rgba(56,189,248,.12)"},
   dining:{label:"Dining & Food",icon:"🍽️",color:"#f97316",bg:"rgba(249,115,22,.12)"},
@@ -10,6 +13,14 @@ const BCAT={
 };
 
 /* CARDS */
+// This is the master list of every credit card tracked in CardSage.
+// Each card object contains: id (unique short code), name (full official name), short (display name),
+// issuer (the bank), isBiz (true if it is a business card), fee (annual fee in dollars),
+// network (Visa/Mastercard/Amex/Discover), cur (the points currency it earns),
+// c1 and c2 (two colors used to draw the card art as a gradient),
+// partners (airline and hotel transfer partners), annual (list of yearly benefits),
+// monthly (list of monthly benefits), strat (which strategies this card belongs to),
+// signup (the welcome bonus offer), and earn (reward rates for each spending category).
 const CARDS=[
 // ── CHASE ──────────────────────────────────────────────────────────────────────
 {id:"csr",name:"Chase Sapphire Reserve",short:"Sapphire Reserve",issuer:"Chase",isBiz:false,fee:795,network:"Visa",cur:"Chase Ultimate Rewards",c1:"#1a1a2e",c2:"#4a3728",
@@ -451,6 +462,8 @@ const CARDS=[
 ];
 
 /* APPLICATION URLS — issuer direct apply pages */
+// Affiliate application links for each card. When a user clicks 'Apply Now',
+// they're taken to the issuer's application page through our affiliate tracking link.
 const APPLY_URLS={
   // Chase
   "csr":              "https://creditcards.chase.com/rewards-credit-cards/sapphire/reserve",
@@ -579,6 +592,8 @@ const APPLY_URLS={
 };
 
 /* STRATEGIES — with beginner fields */
+// Strategies are predefined combinations of cards that work well together.
+// Each strategy has a name, required cards, alternative card combos, a description, and a step-by-step playbook.
 const STRATS={
 "chase-trifecta":{id:"chase-trifecta",name:"Chase Trifecta",emoji:"🔱",
   req:["csr","cfu","cff"],alt:[["csp","cfu","cff"]],
@@ -643,6 +658,8 @@ const STRATS={
 };
 
 /* STRUCTURED TIPS DB */
+// The tips database. Each tip is a piece of advice about earning or redeeming points.
+// Tips have a category, difficulty level, value rating, and list of relevant cards.
 const TIPS_DB=[
 // ── FLIGHTS ──────────────────────────────────────────────────────────────────
 {id:"tip-001",title:"ANA First Class via Virgin Atlantic — $25k cabin for 75k points",section:"flights",requiresCards:["amex-plat","amex-gold"],
@@ -771,6 +788,8 @@ const TIPS_DB=[
 ];
 
 /* ROTATING CATEGORIES */
+// Current quarter's rotating bonus categories for cards like Chase Freedom Flex and Discover it.
+// Updated each quarter with new categories, earn rates, and activation deadlines.
 const ROTATING_Q1=[
   {card:"Chase Freedom Flex",id:"cff",q:"Q1 2026",cats:"Dining, American Heart Association, Norwegian Cruise Line",rate:"5x",note:"Activate at chase.com/freedom — deadline 3/14/26",verified:true},
   {card:"Chase Freedom Flex",id:"cff",q:"Q2 2026",cats:"Amazon, Chase Travel, Whole Foods, Feeding America",rate:"5x",note:"Activate at chase.com/freedom — deadline 6/14/26",verified:true},
@@ -779,6 +798,8 @@ const ROTATING_Q1=[
 ];
 
 /* CATEGORIES */
+// The 9 standard spending categories used to compare card earn rates.
+// Keys are short codes (d=dining, g=groceries, etc.) mapped to display labels and icons.
 const BASIC_CATS=[
   {id:"d",label:"Restaurants",sub:"Dining & cafes",icon:"🍽️",color:"#ef4444",bg:"rgba(239,68,68,.12)"},
   {id:"g",label:"Groceries",sub:"Supermarkets",icon:"🛒",color:"#22c55e",bg:"rgba(34,197,94,.12)"},
@@ -790,6 +811,8 @@ const BASIC_CATS=[
   {id:"p",label:"Pharmacy",sub:"CVS, Walgreens",icon:"💊",color:"#ec4899",bg:"rgba(236,72,153,.12)"},
   {id:"o",label:"Everything Else",sub:"Catch-all",icon:"💳",color:"#94a3b8",bg:"rgba(148,163,184,.12)"},
 ];
+// Brand-specific spending categories for co-branded cards (e.g., Hyatt stays, Delta flights).
+// These earn bonus rates only on purchases with that specific brand.
 const SPECIAL_CATS=[
   {id:"hyatt",label:"Hyatt Hotels",sub:"World of Hyatt",icon:"🏨",color:"#7c3aed",bg:"rgba(124,58,237,.12)",cardId:"hyatt",rate:"9x"},
   {id:"delta",label:"Delta Airlines",sub:"SkyMiles",icon:"✈",color:"#c8000a",bg:"rgba(200,0,10,.12)",cardId:"delta-gold",rate:"2x"},
@@ -803,6 +826,8 @@ const SPECIAL_CATS=[
   {id:"rent",label:"Rent Payments",sub:"Bilt cards",icon:"🏠",color:"#10b981",bg:"rgba(16,185,129,.12)",cardId:"bilt-palladium",rate:"1.25x"},
   {id:"ihg",label:"IHG Hotels",sub:"4th Night Free",icon:"🌿",color:"#006747",bg:"rgba(0,103,71,.12)",cardId:"ihg-premier",rate:"26x"},
 ];
+// For each spending category, lists which cards earn the most points, ranked best to worst.
+// Used by the 'Use Card' tab to show the optimal card for each purchase type.
 const EARN_PRIORITY={
   d:["amex-gold","amex-biz-gold","csr","csp","bilt-palladium","bilt-obsidian","cff","cfu","citi-premier","wf-autograph","savorone","venture-x","venture","hilton-aspire","hilton-surpass","hilton-biz","marriott-bevy","marriott-biz","delta-gold"],
   g:["amex-gold","amex-bcp","bilt-palladium","citi-premier","csp","marriott-boundless","savorone","amazon-prime"],
@@ -814,4 +839,6 @@ const EARN_PRIORITY={
   p:["cfu","cff","bilt-palladium","apple-card"],
   o:["amex-bbp","robinhood","bilt-palladium","venture-x","venture","citi-dc","wf-active-cash","fidelity","cfu"],
 };
+// Calculates how many days remain until a given date. Used for benefit reset countdowns
+// (e.g., '15 days until your monthly Uber credit resets').
 function daysUntil(d){if(!d)return 999;const dt=new Date(d),n=new Date();n.setHours(0,0,0,0);dt.setHours(0,0,0,0);return Math.ceil((dt-n)/86400000);}

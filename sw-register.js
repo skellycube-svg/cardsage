@@ -4,15 +4,25 @@
 // Uses CS_CONFIG.LS_KEYS.appVersion (from config.js) for version tracking.
 // Loaded via <script src="sw-register.js"> in index.html.
 
+// Only run if the browser supports service workers (all modern browsers do)
 if('serviceWorker' in navigator){
-  // Reload whenever a new service worker takes control of this tab
+
+  // If a new service worker takes over, reload the page so the user
+  // gets the latest version of the app immediately.
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
     window.location.reload();
   });
+
+  // After the page finishes loading:
   window.addEventListener('load',()=>{
+
+    // 1. Register the service worker (sw.js) so it can cache files and work offline
     navigator.serviceWorker.register('./sw.js')
       .catch(err=>console.warn('SW registration failed:',err));
-    // Version check: if a new version deployed while tab was open, force reload
+
+    // 2. Version check — fetch version.json (bypassing cache) to see if a new
+    //    version was deployed. If the version changed since the last visit,
+    //    reload the page so the user gets the update.
     fetch('./version.json',{cache:'no-store'})
       .then(r=>r.json())
       .then(({version})=>{

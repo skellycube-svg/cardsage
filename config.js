@@ -1,5 +1,8 @@
-// CardSage central configuration. Change any setting here and it flows everywhere.
-// Never hardcode these values in other files.
+// config.js — CardSage central configuration
+//
+// This is the single source of truth for every setting in CardSage.
+// Change any value here and it automatically flows to every file that needs it.
+// Never hardcode these values in other files — always read them from CS_CONFIG.
 //
 // IMPORTANT: After changing CACHE_VERSION, also update version.json to match.
 // version.json is fetched by the client to detect new deployments.
@@ -7,9 +10,13 @@
 const CS_CONFIG = {
 
   // ── Versioning ──────────────────────────────────────────────────────────────
+  // The current app version. Incrementing this forces all users' browsers to
+  // download fresh files instead of using old cached copies.
   CACHE_VERSION: 'v34',
 
   // ── Site Metadata ───────────────────────────────────────────────────────────
+  // Basic info about the site — name, URL, contact email, and descriptions
+  // used in the browser tab, search engine results, and social media previews.
   SITE_NAME: 'CardSage',
   SITE_URL: 'https://cardsage.co',
   CONTACT_EMAIL: 'cardsage.co@gmail.com',
@@ -17,6 +24,8 @@ const CS_CONFIG = {
   SITE_DESCRIPTION: 'CardSage helps you track credit card benefits, maximize points, and never miss a monthly credit. Free tool for points & miles enthusiasts.',
 
   // ── Firebase ────────────────────────────────────────────────────────────────
+  // Connection details for Google Firebase, which handles user login and
+  // stores newsletter subscriptions. These are public keys (safe to share).
   FIREBASE: {
     apiKey: 'AIzaSyDbUxUYn3Pj6JdIIfwceTeQoNWX0VrqAVw',
     authDomain: 'cardsage-fc437.firebaseapp.com',
@@ -28,6 +37,7 @@ const CS_CONFIG = {
   FIREBASE_SDK_VERSION: '12.0.0',
 
   // ── Colors (semantic names for JS usage) ────────────────────────────────────
+  // Named colors used by JavaScript code (e.g., for card art gradients and charts).
   COLORS: {
     primary:   '#b8860b',
     gold:      '#b8860b',
@@ -40,7 +50,9 @@ const CS_CONFIG = {
   },
 
   // ── CSS Custom Properties (applied to :root) ───────────────────────────────
-  // These are the canonical source for all var(--xx) used in stylesheets.
+  // These color values are injected as CSS variables (e.g., var(--gold), var(--tx))
+  // so that styles.css can reference them. This is the single source of truth
+  // for every color used in the app's stylesheet.
   CSS_VARS: {
     bg: '#ffffff', s1: '#ffffff', s2: '#ffffff', s3: '#f8f8f6', s4: '#f0f0ee',
     br: 'rgba(0,0,0,.06)', br2: '#e5e7eb', br3: '#d1d5db',
@@ -54,6 +66,9 @@ const CS_CONFIG = {
   },
 
   // ── localStorage Keys ───────────────────────────────────────────────────────
+  // Names for the browser storage slots where CardSage saves your data locally.
+  // Your card wallet, checked-off benefits, quiz answers, and preferences
+  // are all stored under these keys so they persist between visits.
   LS_KEYS: {
     cards:      'cs_cards',
     checked:    'cs_checked',
@@ -67,7 +82,9 @@ const CS_CONFIG = {
 };
 
 // ── Inject CSS custom properties into :root ─────────────────────────────────
-// Runs in the browser only (skipped in service worker context)
+// This block takes all the color values from CSS_VARS above and writes them
+// into the page as CSS variables (like --gold, --tx, --bg) so the stylesheet
+// can use them. It only runs in the browser — the service worker skips it.
 if (typeof document !== 'undefined') {
   const cssText = ':root{' +
     Object.entries(CS_CONFIG.CSS_VARS).map(([k, v]) => '--' + k + ':' + v).join(';') +

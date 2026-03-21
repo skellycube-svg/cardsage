@@ -1,11 +1,29 @@
-// ── CACHE_VERSION from config.js (single source of truth) ──────────────────
+// sw.js — Service Worker for CardSage
+//
+// A service worker is a background script that runs separately from the web page.
+// It intercepts every network request the app makes and can serve files from a
+// local cache, making the app work offline and load faster on repeat visits.
+//
+// How it works:
+//   1. INSTALL — When a new version is deployed, the browser downloads all app files
+//      and stores them in a local cache (like a mini offline copy of the site).
+//   2. ACTIVATE — The old cache is deleted so only the latest version is kept.
+//   3. FETCH — Every time the app requests a file, the service worker decides whether
+//      to fetch it fresh from the internet or serve the cached copy.
+//
+// Cache strategy:
+//   - HTML, CSS, and JS files use "network-first" — try the internet, fall back to cache.
+//   - Images, icons, and fonts use "cache-first" — use the cached copy, only fetch if missing.
+
+// ── Read the current version number from config.js ──────────────────────────
 importScripts('./config.js');
 const CACHE_VERSION = CS_CONFIG.CACHE_VERSION;
-// ─────────────────────────────────────────────────────────────────────────
 
+// The cache name includes the version so each deploy gets its own cache
 const CACHE = 'cardsage-' + CACHE_VERSION;
 
-// Local app files — always pre-cached on install
+// Every file the app needs to work offline — these are all downloaded
+// and cached when the service worker first installs.
 const LOCAL_ASSETS = [
   './index.html',
   './config.js',
@@ -23,14 +41,17 @@ const LOCAL_ASSETS = [
   './affiliate-disclosure.html',
 ];
 
-// CDN assets — cache on first fetch
+// External resources (React library, fonts) — these are cached the first time
+// the user's browser downloads them, so they load instantly on future visits.
 const CDN_ORIGINS = [
   'https://unpkg.com',
   'https://fonts.googleapis.com',
   'https://fonts.gstatic.com',
 ];
 
-// ── Install: pre-cache all local assets ───────────────────────────────────
+// ── INSTALL: Download and cache all app files ────────────────────────────
+// This runs once when a new version of the service worker is detected.
+// It downloads every file in LOCAL_ASSETS and stores them in the cache.
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
@@ -39,7 +60,9 @@ self.addEventListener('install', e => {
   );
 });
 
-// ── Activate: delete ALL old caches, then claim open tabs immediately ──────
+// ── ACTIVATE: Clean up old caches and take control ──────────────────────
+// After a new version installs, this deletes all old cached versions
+// so only the latest files remain, then takes control of all open tabs.
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
@@ -50,7 +73,8 @@ self.addEventListener('activate', e => {
   );
 });
 
-// ── Fetch ──────────────────────────────────────────────────────────────────
+// ── FETCH: Intercept every network request ──────────────────────────────
+// Every time the app tries to load a file, this handler decides how to get it.
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   const isLocal = url.origin === self.location.origin;
