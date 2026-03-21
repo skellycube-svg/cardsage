@@ -1169,7 +1169,7 @@ function TipsTab({myCards}){
            onClick={()=>setOpenTip(isOpen?null:tip.id)}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:15,fontWeight:700,color:"var(--tx)",lineHeight:1.4}}>{tip.title}{tip.confidence==="estimated"&&<span style={{fontSize:10,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
+            <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:16,fontWeight:600,color:"#0f172a",lineHeight:1.4}}>{tip.title}{tip.confidence==="estimated"&&<span style={{fontFamily:"'Inter',sans-serif",fontSize:10,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
           </div>
           <span style={{transition:"transform .2s",transform:isOpen?"rotate(90deg)":"none",flexShrink:0,marginTop:3,display:"inline-flex"}}>
             <Icon name="chevron-right" size={14} color="var(--tx3)"/>
@@ -1178,16 +1178,16 @@ function TipsTab({myCards}){
 
         {isOpen&&(
           <div style={{marginTop:12,borderTop:"1px solid var(--br)",paddingTop:12}}>
-            <div style={{fontSize:14,color:"#6b7280",lineHeight:1.75,marginBottom:tipCards.length>0?14:0}}>{tip.body}</div>
+            <div style={{fontFamily:"'Inter',sans-serif",fontSize:14,fontWeight:400,color:"#4b5563",lineHeight:1.6,marginBottom:tipCards.length>0?14:0}} dangerouslySetInnerHTML={{__html:tip.body}}/>
 
             {tipCards.length>0&&(
               <div style={{marginBottom:partners.length>0?12:0}}>
-                <div style={{fontSize:10,color:"var(--tx3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>USE WITH</div>
+                <div style={{fontFamily:"'Inter',sans-serif",fontSize:10,color:"var(--tx3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>USE WITH</div>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                   {tipCards.map(c=>(
                     <div key={c.id} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",background:"rgba(255,255,255,.05)",borderRadius:8,border:"1px solid var(--br)"}}>
                       <div style={{width:8,height:8,borderRadius:2,background:c.c1}}/>
-                      <span style={{fontSize:11,fontWeight:600,color:myCards.includes(c.id)?"var(--tx)":"var(--tx3)"}}>{c.short}</span>
+                      <span style={{fontFamily:"'Inter',sans-serif",fontSize:11,fontWeight:600,color:myCards.includes(c.id)?"var(--tx)":"var(--tx3)"}}>{c.short}</span>
                       {myCards.includes(c.id)&&<Icon name="check" size={10} color="var(--grn2)"/>}
                     </div>
                   ))}
@@ -1197,10 +1197,10 @@ function TipsTab({myCards}){
 
             {partners.length>0&&(
               <div style={{marginBottom:firstMissing?12:0}}>
-                <div style={{fontSize:10,color:"var(--tx3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>TRANSFER PARTNERS</div>
+                <div style={{fontFamily:"'Inter',sans-serif",fontSize:10,color:"var(--tx3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>TRANSFER PARTNERS</div>
                 <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
                   {partners.map(p=>(
-                    <span key={p} style={{fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:99,background:"rgba(117,91,6,.1)",color:"var(--acc)",border:"1px solid rgba(117,91,6,.2)"}}>{p}</span>
+                    <span key={p} style={{fontFamily:"'Inter',sans-serif",fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:99,background:"rgba(117,91,6,.1)",color:"var(--acc)",border:"1px solid rgba(117,91,6,.2)"}}>{p}</span>
                   ))}
                 </div>
               </div>
@@ -1208,10 +1208,10 @@ function TipsTab({myCards}){
 
             {isLocked&&firstMissing&&(
               <div style={{padding:"10px 12px",background:"rgba(117,91,6,.06)",borderRadius:10,border:"1px dashed rgba(117,91,6,.2)"}}>
-                <div style={{fontSize:11,color:"var(--tx2)",marginBottom:8}}>Add <strong style={{color:"var(--tx)"}}>{firstMissing.name}</strong> to unlock this strategy</div>
+                <div style={{fontFamily:"'Inter',sans-serif",fontSize:11,color:"var(--tx2)",marginBottom:8}}>Add <strong style={{color:"var(--tx)"}}>{firstMissing.name}</strong> to unlock this strategy</div>
                 <a href={APPLY_URLS[firstMissing.id]||"#apply-"+firstMissing.id} target="_blank"
                    onClick={e=>e.stopPropagation()}
-                   style={{display:"inline-block",fontSize:11,fontWeight:700,color:"var(--acc)",background:"rgba(117,91,6,.1)",padding:"5px 12px",borderRadius:8,border:"1px solid rgba(117,91,6,.25)",textDecoration:"none"}}>
+                   style={{fontFamily:"'Inter',sans-serif",display:"inline-block",fontSize:11,fontWeight:700,color:"var(--acc)",background:"rgba(117,91,6,.1)",padding:"5px 12px",borderRadius:8,border:"1px solid rgba(117,91,6,.25)",textDecoration:"none"}}>
                   Apply for {firstMissing.short} →
                 </a>
                 <div className="apply-disclose">Affiliate link — we may earn a commission at no cost to you.</div>
@@ -1259,7 +1259,7 @@ function TipsTab({myCards}){
       )}
 
       {withYourCards.length===0&&myCards.length===0&&(
-        <div style={{textAlign:"center",padding:"32px 16px",color:"var(--tx3)",fontSize:13,lineHeight:1.6}}>
+        <div style={{fontFamily:"'Inter',sans-serif",textAlign:"center",padding:"32px 16px",color:"#9ca3af",fontSize:14,fontStyle:"italic",lineHeight:1.6}}>
           Add cards to your wallet to see personalized tips.
         </div>
       )}
