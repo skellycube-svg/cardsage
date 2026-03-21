@@ -12,7 +12,7 @@ const CS_CONFIG = {
   // ── Versioning ──────────────────────────────────────────────────────────────
   // The current app version. Incrementing this forces all users' browsers to
   // download fresh files instead of using old cached copies.
-  CACHE_VERSION: 'v37',
+  CACHE_VERSION: 'v38',
 
   // ── Site Metadata ───────────────────────────────────────────────────────────
   // Basic info about the site — name, URL, contact email, and descriptions
@@ -63,6 +63,32 @@ const CS_CONFIG = {
     red: '#991b1b', red2: '#dc2626',
     sky: '#004c97', pnk: '#db2777', teal: '#0d9488',
     chase: '#112e51', amex: '#006fcf', citi: '#004c97', capone: '#003a70'
+  },
+
+  // ── Issuer Colors ──────────────────────────────────────────────────────────
+  // Each card issuer (bank) gets a distinct color palette: a gradient pair for
+  // card faces, a light tint for backgrounds/badges, and a text color for labels.
+  // These are deep/muted tones that feel luxurious against the white background.
+  ISSUER_COLORS: {
+    'Chase':            { grad: ['#0a2540','#1a4a7a'], tint: '#e8f0fb', text: '#0a2540' },
+    'American Express': { grad: ['#2c6e49','#52b788'], tint: '#e8f5ee', text: '#2c6e49' },
+    'Citi':             { grad: ['#003087','#4169b8'], tint: '#e8eef8', text: '#003087' },
+    'Capital One':      { grad: ['#8b0000','#c0392b'], tint: '#fde8e8', text: '#8b0000' },
+    'Discover':         { grad: ['#d97706','#f59e0b'], tint: '#fef3cd', text: '#92400e' },
+    'Wells Fargo':      { grad: ['#7c3a00','#c05f00'], tint: '#fdf0e4', text: '#7c3a00' },
+    'Bank of America':  { grad: ['#cc0000','#8b0000'], tint: '#fde8e8', text: '#cc0000' },
+    'Barclays':         { grad: ['#00395d','#005f8e'], tint: '#e4f0f8', text: '#00395d' },
+    'Bilt':             { grad: ['#1a1a2e','#4a4a6a'], tint: '#ececf4', text: '#1a1a2e' },
+    'Bilt / Column N.A.':{ grad: ['#1a1a2e','#4a4a6a'], tint: '#ececf4', text: '#1a1a2e' },
+    'Cardless':         { grad: ['#1a1a2e','#4a4a6a'], tint: '#ececf4', text: '#1a1a2e' },
+    'U.S. Bank':        { grad: ['#6b0f1a','#a91b2e'], tint: '#fce8eb', text: '#6b0f1a' },
+    'Goldman Sachs':    { grad: ['#1a1a2e','#3d3d50'], tint: '#ededf2', text: '#1a1a2e' },
+    'Elan Financial':   { grad: ['#1a4a2e','#2d7a4a'], tint: '#e8f3ec', text: '#1a4a2e' },
+    'Coastal Community Bank':{ grad: ['#006b2d','#00a846'], tint: '#e5f5eb', text: '#006b2d' },
+    'Synchrony':        { grad: ['#2a2a5a','#4a4a8a'], tint: '#ebebf5', text: '#2a2a5a' },
+    'Navy Federal CU':  { grad: ['#002b5c','#004a8a'], tint: '#e5ecf5', text: '#002b5c' },
+    'PenFed CU':        { grad: ['#1a3a6e','#2d5a9e'], tint: '#e8eef8', text: '#1a3a6e' },
+    'default':          { grad: ['#374151','#6b7280'], tint: '#f3f4f6', text: '#374151' }
   },
 
   // ── localStorage Keys ───────────────────────────────────────────────────────

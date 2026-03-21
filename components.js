@@ -223,30 +223,29 @@ function CreditCardDisplay({card,size="md"}){
 ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── STITCH DESIGN HELPERS ────────────────────────────────────────────────── */
-// getIssuerColor returns a solid brand color for a given card issuer name.
-// For example, Chase returns a dark navy blue, Amex returns a bright blue.
-// Used for progress bars, accent colors, and card tags throughout the app.
-// Returns the brand color for a card issuer (e.g., Chase blue, Amex blue).
-function getIssuerColor(issuer){
-  const map={'Chase':'#112e51','American Express':'#006fcf','Capital One':'#003a70',
-    'Citi':'#004c97','Cardless':'#1a1a1a','Bilt':'#1a1a1a',
-    'Bank of America':'#c01230','Wells Fargo':'#c8222c','US Bank':'#003087',
-    'Discover':'#f06c00','Barclays':'#00aeef'};
-  return map[issuer]||'#0f172a';
+// Looks up the issuer color palette from config.js (ISSUER_COLORS).
+// Returns {grad, tint, text} for any issuer, falling back to 'default' for unknown issuers.
+function getIssuerPalette(issuer){
+  const ic=CS_CONFIG.ISSUER_COLORS;
+  return ic[issuer]||ic['default'];
 }
-// getIssuerGradient returns a CSS gradient string for a card's background.
-// Special cases like Amex Platinum get a silver gradient. Otherwise it uses the issuer's brand colors.
-// Falls back to the card's own c1/c2 gradient colors if the issuer is not in the map.
-// Returns a CSS gradient background matching the card's issuer branding.
+// Returns the primary brand color (gradient start) for a given card issuer.
+// Used for progress bars, accent borders, card tags, and text highlights.
+function getIssuerColor(issuer){
+  return getIssuerPalette(issuer).text;
+}
+// Returns a CSS gradient string for a card's background.
+// Special cases like Amex Platinum get a signature silver gradient.
+// All other cards use their issuer's gradient pair from ISSUER_COLORS.
 function getIssuerGradient(card){
-  if(card.id==='amex-plat')return'linear-gradient(135deg,#a8a8a8,#d4d4d4)';
-  const map={'Chase':'linear-gradient(135deg,#0f1e3d,#1a3a6b)',
-    'American Express':'linear-gradient(135deg,#006fcf,#00b2ff)',
-    'Capital One':'linear-gradient(135deg,#0d1b2a,#1b3a5c)',
-    'Citi':'linear-gradient(135deg,#003087,#0052cc)',
-    'Bilt':'linear-gradient(135deg,#1a1a1a,#333)',
-    'Cardless':'linear-gradient(135deg,#1a1a1a,#333)'};
-  return map[card.issuer]||`linear-gradient(135deg,${card.c1},${card.c2})`;
+  if(card.id==='amex-plat'||card.id==='amex-biz-plat')return'linear-gradient(135deg,#a8a8a8,#d4d4d4)';
+  const p=getIssuerPalette(card.issuer);
+  return `linear-gradient(135deg,${p.grad[0]},${p.grad[1]})`;
+}
+// Returns the light tint background color for a given issuer.
+// Used for card header backgrounds, hover states, and badge fills.
+function getIssuerTint(issuer){
+  return getIssuerPalette(issuer).tint;
 }
 // getTopEarnCats looks at a card's earning rates and returns the top 2 categories
 // where it earns more than 1x points (e.g., ["Dining", "Travel"]).
@@ -876,10 +875,10 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
           const usedHere=trackHere.filter(b=>checkedSet.has(b.key)).length;
           return (
             <div key={card.id} style={{marginBottom:18}}>
-              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10,background:getIssuerTint(card.issuer),borderRadius:12,padding:"10px 12px",border:`1px solid ${getIssuerColor(card.issuer)}15`}}>
                 <CreditCardDisplay card={card} size="sm"/>
                 <div style={{flex:1}}>
-                  <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:16,fontWeight:600,color:"var(--tx)"}}>{card.short||card.name}{card.confidence==="estimated"&&<span style={{fontSize:10,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
+                  <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:16,fontWeight:600,color:getIssuerColor(card.issuer)}}>{card.short||card.name}{card.confidence==="estimated"&&<span style={{fontSize:10,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
                   <div style={{fontSize:11,color:"var(--tx3)"}}>{usedHere}/{trackHere.length} credits used</div>
                 </div>
                 <div className="prog-track" style={{width:80}}>
@@ -2033,9 +2032,9 @@ function WalletTab({myCards,setMyCards}){
             const inWallet=myCards.includes(card.id);
             return (
               <div key={card.id} onClick={()=>toggleCard(card.id)}
-                style={{background:"rgba(255,255,255,.03)",border:"1.5px solid",borderColor:inWallet?"var(--grn)":"var(--br2)",borderRadius:14,padding:12,cursor:"pointer",transition:"all .18s"}}>
+                style={{background:inWallet?getIssuerTint(card.issuer)+"80":"rgba(255,255,255,.03)",border:"1.5px solid",borderColor:inWallet?"var(--grn)":"var(--br2)",borderLeft:`4px solid ${getIssuerColor(card.issuer)}`,borderRadius:14,padding:12,cursor:"pointer",transition:"all .18s"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                  <div style={{width:10,height:10,borderRadius:3,background:card.c1,flexShrink:0,marginTop:2}}/>
+                  <div style={{width:10,height:10,borderRadius:3,background:getIssuerPalette(card.issuer).grad[0],flexShrink:0,marginTop:2}}/>
                   <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
                     {card.isBiz&&<span className="badge biz-badge">Biz</span>}
                     {card.isNew&&<span className="badge new-badge">New</span>}
@@ -2064,6 +2063,14 @@ function WalletTab({myCards,setMyCards}){
         <div>
           <h2 className="page-title">Your Ledger</h2>
           <p className="page-subtitle">Managing {myCards.length} active credit line{myCards.length!==1?"s":""}</p>
+          {myCardObjs.length>0&&(()=>{
+            const issuers=[...new Set(myCardObjs.map(c=>c.issuer))];
+            return <div style={{display:'flex',gap:4,marginTop:6}}>{issuers.map(iss=>(
+              <div key={iss} title={iss} style={{width:10,height:10,borderRadius:'50%',background:getIssuerPalette(iss).grad[0],cursor:'default',transition:'transform .15s'}}
+                onMouseEnter={e=>e.currentTarget.style.transform='scale(1.4)'}
+                onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}/>
+            ))}</div>;
+          })()}
         </div>
         <button className="page-action" onClick={()=>setShowAdd(true)}>+ Add New Card</button>
       </div>
@@ -2076,10 +2083,10 @@ function WalletTab({myCards,setMyCards}){
       ):(
         <div className="wallet-card-grid">{myCardObjs.map(c=>{
           const ic=getIssuerColor(c.issuer);
-          const ig=getIssuerGradient(c);
+          const it=getIssuerTint(c.issuer);
           const tags=getTopEarnCats(c);
           return (
-            <div key={c.id} className="wallet-card" onClick={()=>setDetailId(c.id)}>
+            <div key={c.id} className="wallet-card" style={{borderLeft:`4px solid ${ic}`}} onClick={()=>setDetailId(c.id)}>
               <CreditCardDisplay card={c} size="md"/>
               <div className="wallet-card-info">
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:4}}>
@@ -2093,7 +2100,7 @@ function WalletTab({myCards,setMyCards}){
                   </div>
                 </div>
                 <div className="wallet-card-tags">
-                  {tags.map(t=>(<span key={t} className="wallet-card-tag" style={{background:ic+'1a',color:ic}}>{t}</span>))}
+                  {tags.map(t=>(<span key={t} className="wallet-card-tag" style={{background:it,color:ic,border:`1px solid ${ic}20`}}>{t}</span>))}
                   {c.isBiz&&<span className="wallet-card-tag" style={{background:'rgba(184,134,11,.1)',color:'var(--acc)'}}>Business</span>}
                 </div>
               </div>
