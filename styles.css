@@ -447,6 +447,65 @@ a.tip-requires-chip:hover{background:#fdf0d5;border-color:#d97706;color:#78350f}
   .nl-popup{border-radius:20px 20px 0 0;max-width:100%;width:100%;padding:32px 24px 28px;
     animation:nlSlideUp .3s ease}
 }
+/* Share Portfolio — button, modal, and rendered card image */
+.share-portfolio-row{display:flex;justify-content:flex-end;margin:-8px 0 16px}
+.share-portfolio-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;
+  border-radius:8px;border:1px solid var(--br2);background:#fff;
+  font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;
+  font-family:'Inter',sans-serif;transition:all .18s;letter-spacing:.3px}
+.share-portfolio-btn:hover{background:var(--s3);border-color:var(--br3);color:var(--tx)}
+.share-modal{background:#fff;border-radius:16px;padding:28px 24px 24px;max-width:440px;width:92%;
+  margin:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.2);
+  animation:popIn .25s cubic-bezier(.34,1.56,.64,1)}
+.share-modal-title{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;
+  font-size:20px;font-weight:700;color:var(--tx);margin-bottom:16px;text-align:center}
+.share-preview-wrap{margin-bottom:20px;display:flex;justify-content:center}
+.share-preview-img{width:100%;max-width:380px;border-radius:12px;
+  box-shadow:0 4px 16px rgba(0,0,0,.1);display:block}
+.share-preview-loading{display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding:40px 0;color:var(--tx3);font-size:12px;font-weight:600}
+.share-spinner{width:24px;height:24px;border:2.5px solid var(--br2);border-top-color:var(--gold);
+  border-radius:50%;animation:spin .7s linear infinite}
+.share-actions{display:flex;gap:8px;flex-wrap:wrap}
+.share-action-btn{flex:1;min-width:100px;display:inline-flex;align-items:center;justify-content:center;
+  gap:6px;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;
+  cursor:pointer;transition:all .18s;border:none;font-family:'Inter',sans-serif}
+.share-action-copy{background:var(--s3);color:var(--tx)}
+.share-action-copy:hover{background:var(--s4)}
+.share-action-x{background:#0f172a;color:#fff}
+.share-action-x:hover{opacity:.88}
+.share-action-dl{background:linear-gradient(135deg,#9a6e1a,#d4a840);color:#fff}
+.share-action-dl:hover{opacity:.9}
+.share-action-btn:disabled{opacity:.4;cursor:default}
+/* Rendered share card (offscreen, captured by html2canvas) */
+.share-card-render{width:480px;padding:4px}
+.share-card-inner{background:linear-gradient(145deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);
+  border-radius:20px;padding:36px 32px 28px;color:#fff;position:relative;overflow:hidden}
+.share-card-inner::before{content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(135deg,transparent,transparent 2px,rgba(255,255,255,.015) 2px,rgba(255,255,255,.015) 4px);
+  pointer-events:none}
+.share-card-logo{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;
+  font-size:28px;font-weight:700;color:#d4a840;margin-bottom:4px}
+.share-card-headline{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
+  text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:16px}
+.share-card-divider{height:1px;background:rgba(255,255,255,.1);margin-bottom:20px}
+.share-card-stats{display:flex;gap:32px;margin-bottom:16px}
+.share-card-stat{flex:1}
+.share-card-stat-val{font-family:'Source Code Pro',monospace;font-size:32px;font-weight:700;
+  line-height:1.1;margin-bottom:4px}
+.share-card-stat-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;
+  color:rgba(255,255,255,.45)}
+.share-card-details{display:flex;gap:8px;font-size:12px;color:rgba(255,255,255,.4);
+  margin-bottom:20px;flex-wrap:wrap}
+.share-card-footer{font-size:11px;color:rgba(212,168,64,.6);font-weight:600;
+  letter-spacing:.5px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)}
+@media(max-width:767px){
+  .share-modal{max-width:100%;width:100%;border-radius:20px 20px 0 0;
+    position:fixed;bottom:0;left:0;right:0;margin:0;
+    animation:slideSheet .3s ease;max-height:90vh;overflow-y:auto}
+  .share-actions{flex-direction:column}
+  .share-action-btn{min-width:unset}
+}
 /* PWA install banner — the prompt encouraging users to add CardSage to their home screen */
 .install-btn{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:99px;
   border:1px solid var(--br2);background:#ffffff;cursor:pointer;

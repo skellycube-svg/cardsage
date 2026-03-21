@@ -126,6 +126,8 @@ const ICON_PATHS={
 "hammer":<><path d="M15 12l-8.5 8.5c-.83.83-2.17.83-3 0s-.83-2.17 0-3L12 9"/><path d="M17.64 6.36l2.12 2.12-5.66 5.66-2.12-2.12zM21.15 3.85l-1.41-1.41c-.78-.78-2.05-.78-2.83 0L14.5 4.85l4.24 4.24 2.41-2.41a2 2 0 0 0 0-2.83z"/></>,
 "wrench":<><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></>,
 "wave":<><path d="M2 12c2-2 4-4 6-2s4 2 6 0 4-4 6-2"/><path d="M2 17c2-2 4-4 6-2s4 2 6 0 4-4 6-2"/></>,
+"share":<><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></>,
+"download":<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>,
 };
 
 // Draws an SVG icon by name. Used throughout the app for buttons, navigation, and labels.
@@ -582,6 +584,129 @@ function NewsletterPopup(){
   );
 }
 
+/* ── SHARE PORTFOLIO MODAL ─────────────────────────────────────────────────── */
+// Generates a shareable card image showing portfolio stats using html2canvas,
+// then offers copy-to-clipboard, share-to-X/Twitter, and download-as-PNG options.
+function SharePortfolioModal({netValue,totalFees,totalCredits,numCards,activeStrats,onClose}){
+  const cardRef=useRef(null);
+  const [imgBlob,setImgBlob]=useState(null);
+  const [imgUrl,setImgUrl]=useState(null);
+  const [copied,setCopied]=useState(false);
+  const [rendering,setRendering]=useState(true);
+
+  useEffect(()=>{
+    if(!cardRef.current) return;
+    const timer=setTimeout(()=>{
+      html2canvas(cardRef.current,{
+        scale:2,backgroundColor:null,useCORS:true,logging:false
+      }).then(canvas=>{
+        canvas.toBlob(blob=>{
+          setImgBlob(blob);
+          setImgUrl(URL.createObjectURL(blob));
+          setRendering(false);
+        },'image/png');
+      }).catch(()=>setRendering(false));
+    },100);
+    return ()=>clearTimeout(timer);
+  },[]);
+
+  const copyImage=async()=>{
+    if(!imgBlob) return;
+    try{
+      await navigator.clipboard.write([new ClipboardItem({'image/png':imgBlob})]);
+      setCopied(true);
+      setTimeout(()=>setCopied(false),2000);
+    }catch{
+      // Fallback: download instead
+      downloadPng();
+    }
+  };
+
+  const downloadPng=()=>{
+    if(!imgUrl) return;
+    const a=document.createElement('a');
+    a.href=imgUrl;
+    a.download='cardsage-portfolio.png';
+    a.click();
+  };
+
+  const shareToX=()=>{
+    const val=netValue>=0?'+$'+netValue:'−$'+Math.abs(netValue);
+    const text=encodeURIComponent(
+      "I'm getting "+val+"/year in value from my credit cards — check yours at cardsage.co"
+    );
+    window.open('https://x.com/intent/tweet?text='+text,'_blank','noopener');
+  };
+
+  return(
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="share-modal" onClick={e=>e.stopPropagation()}>
+        <button className="nl-popup-close" onClick={onClose} aria-label="Close">×</button>
+        <h3 className="share-modal-title">Share Your Portfolio</h3>
+
+        {/* Hidden render target for html2canvas */}
+        <div style={{position:'absolute',left:'-9999px',top:0}}>
+          <div ref={cardRef} className="share-card-render">
+            <div className="share-card-inner">
+              <div className="share-card-logo">CardSage</div>
+              <div className="share-card-headline">My Card Portfolio</div>
+              <div className="share-card-divider"/>
+              <div className="share-card-stats">
+                <div className="share-card-stat">
+                  <div className="share-card-stat-val" style={{color:'#16a34a'}}>
+                    {netValue>=0?'+':''}{netValue<0?'−':''}${Math.abs(netValue)}
+                  </div>
+                  <div className="share-card-stat-lbl">Net Value / Year</div>
+                </div>
+                <div className="share-card-stat">
+                  <div className="share-card-stat-val" style={{color:'#b8860b'}}>{activeStrats}</div>
+                  <div className="share-card-stat-lbl">Active {activeStrats===1?'Strategy':'Strategies'}</div>
+                </div>
+              </div>
+              <div className="share-card-details">
+                <span>{numCards} card{numCards!==1?'s':''}</span>
+                <span>·</span>
+                <span>${totalCredits} in credits</span>
+                <span>·</span>
+                <span>${totalFees} in fees</span>
+              </div>
+              <div className="share-card-footer">Built with cardsage.co</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Preview */}
+        <div className="share-preview-wrap">
+          {rendering?(
+            <div className="share-preview-loading">
+              <div className="share-spinner"/>
+              Generating image…
+            </div>
+          ):imgUrl?(
+            <img src={imgUrl} alt="Portfolio card" className="share-preview-img"/>
+          ):null}
+        </div>
+
+        {/* Action buttons */}
+        <div className="share-actions">
+          <button className="share-action-btn share-action-copy" onClick={copyImage} disabled={!imgBlob}>
+            <Icon name="clipboard" size={16} color="currentColor"/>
+            {copied?'Copied!':'Copy Image'}
+          </button>
+          <button className="share-action-btn share-action-x" onClick={shareToX}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            Share to X
+          </button>
+          <button className="share-action-btn share-action-dl" onClick={downloadPng} disabled={!imgBlob}>
+            <Icon name="download" size={16} color="currentColor"/>
+            Download PNG
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── HOME TAB ─────────────────────────────────────────────────────────────── */
 // HomeTab is the main dashboard screen users see when they open the app.
 // If the user has no cards, it shows a welcome hero section with feature highlights.
@@ -591,6 +716,7 @@ function NewsletterPopup(){
 // The main dashboard screen. Shows your wallet stats (total fees, benefit value, points earned),
 // strategy recommendations, rotating quarterly categories, and a newsletter signup.
 function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
+  const [showShare,setShowShare]=useState(false);
   const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
 
   const totalFees=useMemo(()=>cards.reduce((s,c)=>s+c.fee,0),[cards]);
@@ -728,6 +854,19 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
           <div className="stat-lbl">Net Value</div>
         </div>
       </div>
+
+      {/* Share portfolio button */}
+      <div className="share-portfolio-row fu">
+        <button className="share-portfolio-btn" onClick={()=>setShowShare(true)}>
+          <Icon name="share" size={14} color="currentColor"/>
+          Share My Portfolio
+        </button>
+      </div>
+
+      {showShare&&<SharePortfolioModal
+        netValue={netValue} totalFees={totalFees} totalCredits={totalCredits}
+        numCards={cards.length} activeStrats={stratBuckets.active.length}
+        onClose={()=>setShowShare(false)}/>}
 
       {/* Monthly credits alert */}
       {monthlyAlerts.length>0&&(
