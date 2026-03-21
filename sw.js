@@ -42,6 +42,7 @@ const LOCAL_ASSETS = [
   './fo-verify.html',
   './robots.txt',
   './sitemap.xml',
+  './404.html',
 ];
 
 // External resources (React library, fonts) — these are cached the first time
