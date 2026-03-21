@@ -19,7 +19,7 @@
 | UI framework | React 18 (via CDN, `react.development.js`) |
 | JSX transpilation | Babel Standalone (via CDN, `@babel/standalone`) |
 | Build system | **None** — single-file HTML app, no npm, no bundler |
-| Fonts | Google Fonts: Cormorant Garamond (serif display), Barlow (body), Source Code Pro (mono) |
+| Fonts | Google Fonts: Playfair Display (serif display), Inter (body), Source Code Pro (mono) |
 | Analytics | Plausible (`data-domain="YOUR_DOMAIN"` — replace with `cardsage.co`) |
 | Hosting | Netlify (auto-deploy from GitHub) |
 | PWA | manifest.json + sw.js service worker |
@@ -32,9 +32,15 @@
 
 ```
 CardSage/
-├── CardSage.html          # Main app — all React components + CSS
+├── index.html             # Slim HTML shell (~60 lines) — loads all other files
+├── config.js              # Central configuration (single source of truth)
+├── styles.css             # All CSS styles
+├── firebase-auth.js       # Firebase initialization (module script)
 ├── cards-data.js          # All data: CARDS, STRATS, TIPS_DB, APPLY_URLS, etc.
-├── sw.js                  # Service worker (cache-first PWA strategy)
+├── components.js          # All React components (loaded via Babel Standalone)
+├── sw-register.js         # Service worker registration + version check
+├── sw.js                  # Service worker (network-first for code, cache-first for assets)
+├── version.json           # Deployment version (must match CS_CONFIG.CACHE_VERSION)
 ├── manifest.json          # PWA manifest
 ├── icon-192.png           # PWA icon (192×192)
 ├── icon-512.png           # PWA icon (512×512)
@@ -44,10 +50,14 @@ CardSage/
 └── .gitignore
 ```
 
-**Load order in CardSage.html**:
-1. CSS styles (inline `<style>` block)
-2. `<script src="cards-data.js">` — loads all data as globals
-3. `<script type="text/babel">` — React app (can reference all cards-data.js globals)
+**Load order in index.html**:
+1. `config.js` — central config, injects CSS custom properties into `:root`
+2. `styles.css` — all styles (references CSS vars from config.js)
+3. `firebase-auth.js` — module script, loads Firebase SDK async, dispatches `cs-firebase-ready`
+4. React 18 + ReactDOM 18 + Babel Standalone (CDN)
+5. `cards-data.js` — all card/tip/strategy data as globals
+6. `components.js` — all React components (`<script type="text/babel">`, transpiled by Babel on DOMContentLoaded)
+7. `sw-register.js` — registers service worker + checks version.json for updates
 
 ---
 
@@ -191,18 +201,21 @@ Full disclosure page: `affiliate-disclosure.html`
 {
   "name": "CardSage",
   "short_name": "CardSage",
-  "start_url": "./CardSage.html",
+  "start_url": "./index.html",
   "display": "standalone",
-  "theme_color": "#3730a3",
-  "background_color": "#f8f7f4"
+  "theme_color": "#03071d",
+  "background_color": "#ffffff"
 }
 ```
 
-**sw.js** — cache-first strategy
-- `CACHE_VERSION` constant at top — **increment this on every deploy** (see Deployment Rules)
-- `LOCAL_ASSETS` pre-cached on install: CardSage.html, cards-data.js, manifest.json, icons, all legal pages
+**sw.js** — reads `CACHE_VERSION` from `config.js` via `importScripts()`
+- `LOCAL_ASSETS` pre-cached on install: index.html, config.js, styles.css, firebase-auth.js, cards-data.js, components.js, sw-register.js, version.json, manifest.json, icons, all legal pages
 - CDN origins cached on first fetch: unpkg.com, fonts.googleapis.com, fonts.gstatic.com
+- Network-first for all `.html`, `.css`, `.js` files (always fresh when online)
+- Cache-first for everything else (icons, manifest, CDN assets)
 - Old caches deleted on activate
+
+**version.json** — `{"version":"v34"}` — must match `CS_CONFIG.CACHE_VERSION` in config.js
 
 ---
 
@@ -220,16 +233,16 @@ Full disclosure page: `affiliate-disclosure.html`
 
 ## Design System
 
-**CSS variables (`:root`)**:
-- Background: `--bg: #f8f7f4` (warm off-white)
-- Accent: `--acc: #3730a3` (indigo)
-- Gold: `--gold: #9a6e1a`, `--gld3: #d4a840`
-- Text: `--tx: #0f172a`, `--tx2: #475569`, `--tx3: #94a3b8`
-- Green: `--grn2: #16a34a` (success states)
+**CSS variables** — defined in `config.js` → `CS_CONFIG.CSS_VARS`, injected into `:root` at load time:
+- Background: `--bg: #ffffff`, `--s3: #f8f8f6` (subtle), `--s4: #f0f0ee`
+- Accent/gold: `--acc: #b8860b`, `--gold: #b8860b`, `--gld2: #d4a840`, `--gld3: #fef9ec`
+- Text: `--tx: #1a1a2e`, `--tx2: #6b7280`, `--tx3: #9ca3af`
+- Issuer brand colors: `--chase: #112e51`, `--amex: #006fcf`, `--citi: #004c97`, `--capone: #003a70`
+- Green: `--grn: #166534`, `--grn2: #16a34a` (success states)
 
 **Fonts**:
-- Display/brand: Cormorant Garamond (italic, gold gradient shimmer on `.grad-text`)
-- Body: Barlow
+- Display/brand: Playfair Display (italic, gold gradient shimmer on `.grad-text`)
+- Body: Inter
 - Financial values: Source Code Pro (`.mono`, `.stat-val`)
 
 ---
@@ -244,3 +257,33 @@ After completing any significant change to CardSage, always do the following aut
 4. **DEPLOY TO GITHUB**: `git add . && git commit -m "[description]" && git push`
 5. **CONFIRM**: After pushing, tell me "Deployed to GitHub — Netlify will update in ~30 seconds"
 6. **VERIFY BENEFITS**: When updating any card's data, always web search for "[card name] current benefits 2026" to verify all credits, perks, protections, and reset schedules are complete and accurate before committing. Never remove a benefit unless confirmed discontinued. Never add a benefit without a source.
+
+---
+
+## Rules
+
+### Pre-Change Commit Rule
+Before starting any major refactor or feature, commit the current working state first. This creates a restore point. Format: `"checkpoint: before [description of upcoming change]"`
+
+### End-of-Session Rule
+At the end of every session, before closing:
+1. Update the Session History table with what was done
+2. Update any other outdated sections of CLAUDE.md
+3. Commit CLAUDE.md: `"docs: update CLAUDE.md with session [#] progress"`
+
+### Context Warning Rule
+If context usage reaches 70%, pause current work and:
+1. Update CLAUDE.md with everything done so far
+2. Commit it
+3. Tell the user context is getting full and recommend starting a new session
+
+---
+
+## Session History
+
+| # | Date | What Was Built / Changed |
+|---|------|------------------------|
+| 1 | Pre-March 2026 | Initial CardSage build: React SPA, cards data, tips, Firebase auth, PWA setup |
+| 2 | March 2026 | Stitch design overhaul: Playfair Display fonts, gold color scheme, decorative credit card, SVG nav icons |
+| 3 | March 2026 | Newsletter signup, Bilt 2.0 cards, tips restructure (flights/hotels/stacking/other), emoji elimination |
+| 4 | March 21, 2026 | Modular refactor: config.js, split index.html into separate files, plain English comments |
