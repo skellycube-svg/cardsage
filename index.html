@@ -41,13 +41,13 @@ if (firebaseConfig.apiKey) {
     import(`https://www.gstatic.com/firebasejs/${v}/firebase-app.js`),
     import(`https://www.gstatic.com/firebasejs/${v}/firebase-auth.js`),
     import(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore.js`)
-  ]).then(([{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged},{getFirestore,doc,getDoc,setDoc}])=>{
+  ]).then(([{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged},{getFirestore,doc,getDoc,setDoc,collection,query,where,getDocs,serverTimestamp}])=>{
     const app=initializeApp(firebaseConfig);
     window.CS_FB={
       auth:getAuth(app),db:getFirestore(app),
       GoogleAuthProvider,signInWithPopup,signInWithEmailAndPassword,
       createUserWithEmailAndPassword,signOut,onAuthStateChanged,
-      doc,getDoc,setDoc
+      doc,getDoc,setDoc,collection,query,where,getDocs,serverTimestamp
     };
     window.dispatchEvent(new CustomEvent('cs-firebase-ready'));
   }).catch(e=>console.warn('Firebase init failed:',e.message));
@@ -412,6 +412,34 @@ input,select,button{font-family:inherit}
   width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .auth-sync-badge{font-size:9px;color:var(--grn2);font-weight:700;
   background:rgba(22,163,74,.1);border-radius:99px;padding:2px 6px}
+/* ── NEWSLETTER CHECKBOX ────────────────────────────────────────────────────── */
+.nl-check-wrap{display:flex;align-items:flex-start;gap:10px;margin:14px 0 4px;cursor:pointer}
+.nl-check-wrap input[type="checkbox"]{display:none}
+.nl-check-box{width:18px;height:18px;border:1.5px solid #d1d5db;border-radius:4px;
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;margin-top:1px}
+.nl-check-wrap input:checked+.nl-check-box{background:#b8860b;border-color:#b8860b}
+.nl-check-box svg{opacity:0;transition:opacity .15s}
+.nl-check-wrap input:checked+.nl-check-box svg{opacity:1}
+.nl-check-label{font-size:14px;color:#374151;line-height:1.4;user-select:none}
+/* ── STANDALONE NEWSLETTER ─────────────────────────────────────────────────── */
+.nl-standalone{padding:28px 24px;text-align:center;max-width:560px;margin:0 auto}
+.nl-standalone-title{font-family:'Playfair Display',Georgia,serif;font-style:italic;
+  font-size:16px;color:var(--tx2);margin-bottom:14px}
+.nl-standalone-form{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.nl-standalone-input{padding:10px 14px;border:1px solid var(--br2);border-radius:8px;
+  font-size:13px;font-family:inherit;background:var(--bg);color:var(--tx);outline:none;
+  min-width:200px;flex:1;max-width:320px}
+.nl-standalone-input:focus{border-color:var(--acc)}
+.nl-standalone-btn{padding:10px 20px;background:var(--acc);color:#fff;border:none;
+  border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.3px;
+  white-space:nowrap;transition:opacity .15s}
+.nl-standalone-btn:hover{opacity:.88}
+.nl-standalone-btn:disabled{opacity:.6;cursor:default}
+.nl-standalone-msg{font-size:13px;margin-top:10px;line-height:1.4}
+@media(max-width:480px){
+  .nl-standalone-form{flex-direction:column;align-items:stretch}
+  .nl-standalone-input{max-width:100%}
+}
 /* ── PWA INSTALL ────────────────────────────────────────────────────────────── */
 .install-btn{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:99px;
   border:1px solid var(--br2);background:#ffffff;cursor:pointer;
@@ -846,67 +874,56 @@ function StratModal({stratId,myCards,onClose}){
   );
 }
 
-/* ── EMAIL CAPTURE ────────────────────────────────────────────────────────── */
-function EmailCapture({context}){
-  const [saved,setSaved]=useLS('cs_email','');
-  const [draft,setDraft]=useState('');
-  const [invalid,setInvalid]=useState(false);
+/* ── NEWSLETTER SUBSCRIBE (standalone, Firestore-backed) ─────────────────── */
+function NewsletterSubscribe(){
+  const [email,setEmail]=useState('');
+  const [status,setStatus]=useState('');// 'success'|'exists'|'error'|''
+  const [loading,setLoading]=useState(false);
 
-  const submit=e=>{
+  const submit=async(e)=>{
     e.preventDefault();
-    const v=draft.trim();
-    if(!v||!v.includes('@')){setInvalid(true);return;}
-    setInvalid(false);
-    setSaved(v);
-    const sub=encodeURIComponent('CardSage Email Signup');
-    const bod=encodeURIComponent('New subscriber:\n\nEmail: '+v+'\n');
-    window.location.href='mailto:cardsage.co@gmail.com?subject='+sub+'&body='+bod;
+    const v=email.trim();
+    if(!v||!v.includes('@')) return;
+    const fb=window.CS_FB;
+    if(!fb){setStatus('error');return;}
+    setLoading(true);
+    try{
+      const q=fb.query(fb.collection(fb.db,'newsletter_subscribers'),fb.where('email','==',v));
+      const snap=await fb.getDocs(q);
+      if(!snap.empty){
+        setStatus('exists');
+      }else{
+        await fb.setDoc(fb.doc(fb.collection(fb.db,'newsletter_subscribers')),{
+          email:v,uid:null,subscribedAt:fb.serverTimestamp(),source:'standalone'
+        });
+        setStatus('success');
+        setEmail('');
+      }
+    }catch(err){
+      console.warn('Newsletter subscribe failed:',err.message);
+      setStatus('error');
+    }
+    setLoading(false);
   };
 
-  const isHome=context==='home';
-
-  if(saved){
-    return(
-      <div style={{display:"flex",alignItems:"center",gap:6,padding:isHome?"12px 16px":"10px 14px",
-        background:"rgba(16,185,129,.07)",border:"1px solid rgba(16,185,129,.2)",
-        borderRadius:12,marginBottom:isHome?14:12}}>
-        <Icon name="check-circle" size={13} color="var(--grn2)"/>
-        <span style={{fontSize:11,color:"var(--grn)",fontWeight:600}}>Subscribed</span>
-        <span style={{fontSize:11,color:"var(--tx3)"}}>— reminders go to {saved}</span>
-      </div>
-    );
-  }
-
   return(
-    <div style={{padding:isHome?"16px 20px":"12px 14px",
-      background:"var(--s1)",
-      border:"1px solid var(--br2)",
-      borderRadius:8,marginBottom:isHome?18:12}}>
-      <div style={{fontSize:12,fontWeight:600,color:"var(--tx2)",marginBottom:10,lineHeight:1.4,
-        fontFamily:"'Playfair Display',Georgia,serif",fontStyle:"italic",fontSize:14}}>
-        {isHome
-          ?"Get monthly benefit reminders by email"
-          :"Never miss a monthly credit again — get reminders on the 1st"}
-      </div>
-      <form onSubmit={submit} style={{display:"flex",gap:8,alignItems:"flex-start",flexWrap:"wrap"}}>
-        <input type="email" placeholder="you@email.com" value={draft}
-          onChange={e=>{setDraft(e.target.value);setInvalid(false)}}
-          style={{flex:1,minWidth:160,padding:"9px 14px",
-            fontSize:13,background:"var(--bg)",color:"var(--tx)",
-            border:`1px solid ${invalid?"var(--red2)":"var(--br2)"}`,
-            borderRadius:8,outline:"none",fontFamily:"inherit"}}
-          onFocus={e=>e.target.style.borderColor="var(--acc)"}
-          onBlur={e=>e.target.style.borderColor=invalid?"var(--red2)":"var(--br2)"}/>
-        <button type="submit"
-          style={{padding:"9px 18px",background:"var(--acc)",color:"#fff",border:"none",
-            borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",
-            transition:"opacity .15s",flexShrink:0,letterSpacing:".3px"}}
-          onMouseEnter={e=>e.currentTarget.style.opacity='.85'}
-          onMouseLeave={e=>e.currentTarget.style.opacity='1'}>
-          Subscribe
-        </button>
-      </form>
-      {invalid&&<div style={{fontSize:11,color:"var(--red2)",marginTop:5}}>Please enter a valid email address.</div>}
+    <div className="nl-standalone">
+      <div className="nl-standalone-title">Get monthly benefit reminders by email</div>
+      {status==='success'?(
+        <div className="nl-standalone-msg" style={{color:"var(--grn2)"}}>You're on the list! Expect your first email next month.</div>
+      ):status==='exists'?(
+        <div className="nl-standalone-msg" style={{color:"var(--gold)"}}>You're already subscribed!</div>
+      ):status==='error'?(
+        <div className="nl-standalone-msg" style={{color:"var(--red2)"}}>Something went wrong. Please try again.</div>
+      ):(
+        <form className="nl-standalone-form" onSubmit={submit}>
+          <input className="nl-standalone-input" type="email" placeholder="you@email.com"
+            value={email} onChange={e=>setEmail(e.target.value)} required/>
+          <button className="nl-standalone-btn" type="submit" disabled={loading}>
+            {loading?'…':'Subscribe'}
+          </button>
+        </form>
+      )}
     </div>
   );
 }
@@ -1039,8 +1056,6 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
           <div className="stat-lbl">Net Value</div>
         </div>
       </div>
-
-      <EmailCapture context="home"/>
 
       {/* Monthly credits alert */}
       {monthlyAlerts.length>0&&(
@@ -1225,8 +1240,6 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
           </button>
         ))}
       </div>
-
-      <EmailCapture context="benefits"/>
 
       {filtered.length===0?(
         <div style={{textAlign:"center",padding:"32px 0",color:"var(--tx3)"}}>No benefits in this category.</div>
@@ -2710,12 +2723,30 @@ function AuthModal({onClose}){
   const [isNew,setIsNew]=useState(false);
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(false);
+  const [nlChecked,setNlChecked]=useState(true);
   const fb=window.CS_FB;
+
+  const subscribeNewsletter=async(user)=>{
+    if(!fb||!user) return;
+    try{
+      const q=fb.query(fb.collection(fb.db,'newsletter_subscribers'),fb.where('email','==',user.email));
+      const snap=await fb.getDocs(q);
+      if(!snap.empty){
+        const existingDoc=snap.docs[0];
+        await fb.setDoc(existingDoc.ref,{uid:user.uid,source:'signup'},{merge:true});
+      }else{
+        await fb.setDoc(fb.doc(fb.db,'newsletter_subscribers',user.uid),{
+          email:user.email,uid:user.uid,subscribedAt:fb.serverTimestamp(),source:'signup'
+        });
+      }
+    }catch(err){console.warn('Newsletter subscribe failed:',err.message);}
+  };
 
   const signInGoogle=async()=>{
     setLoading(true);setError('');
     try{
-      await fb.signInWithPopup(fb.auth,new fb.GoogleAuthProvider());
+      const result=await fb.signInWithPopup(fb.auth,new fb.GoogleAuthProvider());
+      if(nlChecked&&isNew) await subscribeNewsletter(result.user);
       onClose();
     }catch(e){
       if(e.code!=='auth/popup-closed-by-user') setError('Google sign-in failed. Try again.');
@@ -2727,8 +2758,10 @@ function AuthModal({onClose}){
     e.preventDefault();
     setLoading(true);setError('');
     try{
-      if(isNew) await fb.createUserWithEmailAndPassword(fb.auth,email,password);
-      else await fb.signInWithEmailAndPassword(fb.auth,email,password);
+      let cred;
+      if(isNew) cred=await fb.createUserWithEmailAndPassword(fb.auth,email,password);
+      else cred=await fb.signInWithEmailAndPassword(fb.auth,email,password);
+      if(nlChecked&&isNew) await subscribeNewsletter(cred.user);
       onClose();
     }catch(e){
       const msg={
@@ -2768,6 +2801,15 @@ function AuthModal({onClose}){
             placeholder={isNew?"Create a password (6+ chars)":"Password"}
             value={password} onChange={e=>setPassword(e.target.value)}
             required autoComplete={isNew?"new-password":"current-password"}/>
+          {isNew&&(
+            <label className="nl-check-wrap">
+              <input type="checkbox" checked={nlChecked} onChange={e=>setNlChecked(e.target.checked)}/>
+              <span className="nl-check-box">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </span>
+              <span className="nl-check-label">Send me monthly credit card benefit reminders and tips</span>
+            </label>
+          )}
           <button className="auth-submit" type="submit" disabled={loading}>
             {loading?'…':isNew?'Create Account':'Sign In'}
           </button>
@@ -3019,6 +3061,17 @@ function App(){
           });
         }
       }catch(e){ console.warn('Firestore load failed:',e.message); }
+      // Link standalone newsletter subscription to this account (Task 3 dedup)
+      try{
+        if(fb.query&&fb.collection){
+          const nlQ=fb.query(fb.collection(fb.db,'newsletter_subscribers'),fb.where('email','==',u.email));
+          const nlSnap=await fb.getDocs(nlQ);
+          if(!nlSnap.empty){
+            const nlDoc=nlSnap.docs[0];
+            if(!nlDoc.data().uid) await fb.setDoc(nlDoc.ref,{uid:u.uid},{merge:true});
+          }
+        }
+      }catch(e){console.warn('Newsletter link failed:',e.message);}
       mountedRef.current=true;
     });
     return unsub;
@@ -3074,6 +3127,7 @@ function App(){
         {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={setMyCards}/>}
       </div>
       {stratModal&&<StratModal stratId={stratModal} myCards={myCards} onClose={()=>setStratModal(null)}/>}
+      <NewsletterSubscribe/>
       <div style={{padding:"32px 24px 28px",background:"var(--s3)",marginTop:24}}>
         <div style={{display:"flex",flexWrap:"wrap",justifyContent:"space-between",gap:"6px 16px",marginBottom:10,maxWidth:1000,margin:"0 auto 10px"}}>
           <a href={"mailto:cardsage.co@gmail.com?subject=CardSage%20Data%20Error%20Report&body=Card%20name%3A%20%0AWhat%27s%20wrong%3A%20%0AWhat%20it%20should%20say%3A%20"}
