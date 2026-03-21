@@ -7,7 +7,7 @@
 const CS_CONFIG = {
 
   // ── Versioning ──────────────────────────────────────────────────────────────
-  CACHE_VERSION: 'v33',
+  CACHE_VERSION: 'v34',
 
   // ── Site Metadata ───────────────────────────────────────────────────────────
   SITE_NAME: 'CardSage',

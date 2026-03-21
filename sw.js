@@ -9,7 +9,11 @@ const CACHE = 'cardsage-' + CACHE_VERSION;
 const LOCAL_ASSETS = [
   './index.html',
   './config.js',
+  './styles.css',
+  './firebase-auth.js',
   './cards-data.js',
+  './components.js',
+  './sw-register.js',
   './version.json',
   './manifest.json',
   './icon-192.png',
@@ -59,9 +63,8 @@ self.addEventListener('fetch', e => {
   const isNetworkFirst = isLocal && (
     path === '/' ||
     path.endsWith('.html') ||
-    path.endsWith('cards-data.js') ||
-    path.endsWith('config.js') ||
-    path.endsWith('version.json')
+    path.endsWith('.css') ||
+    path.endsWith('.js')
   );
 
   if (isNetworkFirst) {
