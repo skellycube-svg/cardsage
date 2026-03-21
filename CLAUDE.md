@@ -84,6 +84,8 @@ CardSage/
 }
 ```
 
+**BENEFITS DATA RULE**: Every recurring benefit must be stored as ONE entry with the correct `reset` field (`monthly` / `quarterly` / `semi-annual` / `annual`). NEVER split a recurring benefit into multiple entries (e.g. "1st half" and "2nd half"). The UI renders multiple checkboxes from a single entry based on the `reset` field. Duplicating entries causes the benefit to appear multiple times in the list.
+
 ### `STRATS` — object keyed by strategy ID
 ```js
 {
