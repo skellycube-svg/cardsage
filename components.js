@@ -1859,6 +1859,7 @@ function PlanTab({myCards}){
 function UsecardTab({myCards}){
   const [mode,setMode]=useState("basic");
   const [selCat,setSelCat]=useState(null);
+  const [showNote,setShowNote]=useState(null);
   const [merchant,setMerchant]=useState("");
   const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
 
@@ -1941,7 +1942,7 @@ function UsecardTab({myCards}){
             {BASIC_CATS.map(cat=>(
               <div key={cat.id} className={"cat-tile"+(selCat===cat.id?" sel":"")}
                 style={{borderColor:selCat===cat.id?cat.color:"var(--br)"}}
-                onClick={()=>setSelCat(selCat===cat.id?null:cat.id)}>
+                onClick={()=>{setSelCat(selCat===cat.id?null:cat.id);setShowNote(null);}}>
                 <Icon name={SPEND_CAT_ICON[cat.id]||"credit-card"} size={22} color={cat.color}/>
                 <div style={{fontSize:11,fontWeight:700,color:"var(--tx)",textAlign:"center"}}>{cat.label}</div>
                 <div style={{fontSize:9,color:"var(--tx3)",textAlign:"center"}}>{cat.sub}</div>
@@ -1951,31 +1952,98 @@ function UsecardTab({myCards}){
           {selCat&&(()=>{
             const cat=BASIC_CATS.find(c=>c.id===selCat);
             const results=getBestForCat(selCat);
+            // Find cards in wallet with portal earn data for this category
+            const portalCards=selCat==="t"?results.filter(({card})=>card.portalEarn):[];
             return (
               <div className="surf fu" style={{borderColor:cat.color+"44"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
                   <span style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>Best card for</span>
                   <CatChip cat={SPEND_CAT_COLOR[selCat]||"other"} label={cat.label}/>
+                  {cat.note&&(
+                    <button className="cat-info-btn" onClick={e=>{e.stopPropagation();setShowNote(showNote===selCat?null:selCat);}}
+                      title="What counts for this category?">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={showNote===selCat?"var(--acc)":"#9ca3af"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                      </svg>
+                    </button>
+                  )}
                 </div>
+                {showNote===selCat&&cat.note&&(
+                  <div className="cat-note">{cat.note}</div>
+                )}
+                <div style={{marginTop:10}}>
                 {!results.length?(
                   <div style={{color:"var(--tx3)",fontSize:13}}>No matching cards in wallet for this category.</div>
                 ):(
-                  results.map(({card,rate},i)=>(
-                    <div key={card.id} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 0",borderBottom:i<results.length-1?"1px solid var(--br)":"none"}}>
-                      <div style={{width:30,height:30,borderRadius:9,background:`linear-gradient(135deg,${card.c1},${card.c2})`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"rgba(255,255,255,.8)"}}>#{i+1}</div>
-                      <div style={{flex:1}}>
-                        <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          <span style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{card.short}{card.confidence==="estimated"&&<span style={{fontSize:9,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:3}}>(unverified)</span>}</span>
+                  <>
+                  {results.map(({card,rate},i)=>(
+                    <div key={card.id}>
+                      <div style={{display:"flex",alignItems:"center",gap:12,padding:"8px 0",borderBottom:i<results.length-1&&!card.portalEarn?"1px solid var(--br)":"none"}}>
+                        <div style={{width:30,height:30,borderRadius:9,background:`linear-gradient(135deg,${card.c1},${card.c2})`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"rgba(255,255,255,.8)"}}>#{i+1}</div>
+                        <div style={{flex:1}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <span style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{card.short}{card.confidence==="estimated"&&<span style={{fontSize:9,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:3}}>(unverified)</span>}</span>
+                          </div>
+                          <div style={{fontSize:11,color:"var(--tx3)"}}>{card.cur}</div>
                         </div>
-                        <div style={{fontSize:11,color:"var(--tx3)"}}>{card.cur}</div>
+                        <div style={{display:"flex",alignItems:"center",gap:6}}>
+                          <span style={{fontSize:19,fontWeight:800,color:i===0?"var(--gld2)":"var(--tx2)"}}>{rate}</span>
+                          <CatChip cat={SPEND_CAT_COLOR[selCat]||"other"} label={cat.label}/>
+                        </div>
                       </div>
-                      <div style={{display:"flex",alignItems:"center",gap:6}}>
-                        <span style={{fontSize:19,fontWeight:800,color:i===0?"var(--gld2)":"var(--tx2)"}}>{rate}</span>
-                        <CatChip cat={SPEND_CAT_COLOR[selCat]||"other"} label={cat.label}/>
-                      </div>
+                      {/* Portal earn breakdown for travel category */}
+                      {selCat==="t"&&card.portalEarn&&(
+                        <div style={{marginLeft:42,marginBottom:8}}>
+                          <div className="portal-row">
+                            <span className="portal-badge">Portal</span>
+                            <span style={{fontSize:11,color:"var(--tx2)",flex:1}}>
+                              Via {card.portalEarn.portal}
+                            </span>
+                            <span style={{fontSize:15,fontWeight:800,color:"var(--acc)"}}>
+                              {card.portalEarn.rates.f&&card.portalEarn.rates.h
+                                ?`${card.portalEarn.rates.h} hotels / ${card.portalEarn.rates.f} flights`
+                                :card.portalEarn.rates.f||card.portalEarn.rates.h||rate}
+                            </span>
+                          </div>
+                          <div className="portal-note">{card.portalEarn.note}</div>
+                          {i<results.length-1&&<div style={{borderBottom:"1px solid var(--br)",marginTop:8}}/>}
+                        </div>
+                      )}
                     </div>
-                  ))
+                  ))}
+
+                  {/* Best without portal callout */}
+                  {selCat==="t"&&portalCards.length>0&&(
+                    <div className="portal-section">
+                      <div className="portal-section-label">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        BEST WITHOUT A PORTAL
+                      </div>
+                      <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.5,marginBottom:8}}>
+                        Prefer to book direct for elite status, upgrades, or flexibility?
+                      </div>
+                      {(()=>{
+                        // Find the best direct-booking travel rate from user's wallet
+                        const directRanked=cards.filter(c=>c.earn&&c.earn.t)
+                          .map(c=>({card:c,directRate:c.earn.t}))
+                          .sort((a,b)=>parseFloat(b.directRate)-parseFloat(a.directRate))
+                          .slice(0,2);
+                        return directRanked.map(({card,directRate})=>(
+                          <div key={card.id} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0"}}>
+                            <div style={{width:24,height:24,borderRadius:7,background:`linear-gradient(135deg,${card.c1},${card.c2})`,flexShrink:0}}/>
+                            <span style={{fontSize:12,fontWeight:600,color:"var(--tx)",flex:1}}>{card.short}</span>
+                            <span style={{fontSize:15,fontWeight:800,color:"var(--tx2)"}}>{directRate}</span>
+                            <span style={{fontSize:10,color:"var(--tx3)"}}>direct</span>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  )}
+                  </>
                 )}
+                </div>
               </div>
             );
           })()}
