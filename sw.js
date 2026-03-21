@@ -40,6 +40,8 @@ const LOCAL_ASSETS = [
   './terms.html',
   './affiliate-disclosure.html',
   './fo-verify.html',
+  './robots.txt',
+  './sitemap.xml',
 ];
 
 // External resources (React library, fonts) — these are cached the first time
