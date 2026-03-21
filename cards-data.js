@@ -842,3 +842,191 @@ const EARN_PRIORITY={
 // Calculates how many days remain until a given date. Used for benefit reset countdowns
 // (e.g., '15 days until your monthly Uber credit resets').
 function daysUntil(d){if(!d)return 999;const dt=new Date(d),n=new Date();n.setHours(0,0,0,0);dt.setHours(0,0,0,0);return Math.ceil((dt-n)/86400000);}
+
+/* ── TRIP PLANNER DESTINATION DATA ──────────────────────────────────────────
+   Maps destination regions to relevant airlines, hotel programs, point estimates,
+   and keywords for matching user input. Used by the PlanTab component. */
+const DEST_REGIONS={
+  japan:{
+    name:"Japan",display:"Tokyo / Japan",
+    airlines:["ANA","JAL","United","Singapore Airlines"],
+    hotelPrograms:["Hyatt","Marriott","Hilton","IHG"],
+    transferPartners:["ANA","Virgin Atlantic","United","Air France/KLM Flying Blue","Singapore Airlines"],
+    keywords:["japan","tokyo","osaka","kyoto","okinawa","sapporo","narita","haneda"],
+    estimates:{
+      economy:{pts:"50–70k",partner:"United / ANA",cash:"$800–1,200"},
+      business:{pts:"75–110k",partner:"ANA via Virgin Atlantic / JAL",cash:"$4,000–8,000"},
+      first:{pts:"110–180k",partner:"ANA via Virgin Atlantic",cash:"$15,000–25,000"},
+      hotel5:{pts:"75–150k",partner:"Hyatt / Marriott",cash:"$1,000–3,500"}
+    },
+    notes:"ANA First Class via Virgin Atlantic at 75k–110k is one of the best redemptions in the hobby. Park Hyatt Tokyo at 25k/night is iconic."
+  },
+  europe:{
+    name:"Europe",display:"Paris / Europe",
+    airlines:["Air France","British Airways","Lufthansa","Aer Lingus","Iberia","Turkish Airlines"],
+    hotelPrograms:["Marriott","Hilton","Hyatt","IHG"],
+    transferPartners:["Air France/KLM Flying Blue","British Airways","Virgin Atlantic","Turkish Miles&Smiles","Avianca LifeMiles","Iberia"],
+    keywords:["europe","paris","london","rome","italy","france","spain","germany","amsterdam","barcelona","lisbon","portugal","greece","athens","santorini","dublin","ireland","switzerland","vienna","prague","berlin","munich","copenhagen","stockholm"],
+    estimates:{
+      economy:{pts:"30–60k",partner:"Flying Blue / British Airways",cash:"$400–800"},
+      business:{pts:"55–100k",partner:"Aer Lingus Avios / Flying Blue",cash:"$2,500–6,000"},
+      first:{pts:"100–180k",partner:"Lufthansa / British Airways",cash:"$6,000–12,000"},
+      hotel5:{pts:"80–200k",partner:"Marriott / Hyatt",cash:"$1,000–4,000"}
+    },
+    notes:"Flying Blue Promo Awards on the 1st of each month offer 25–50% off. Aer Lingus via Chase Avios at 45k for transatlantic business is a sweet spot."
+  },
+  uk:{
+    name:"United Kingdom",display:"London / UK",
+    airlines:["British Airways","Virgin Atlantic","American Airlines"],
+    hotelPrograms:["Marriott","Hilton","Hyatt","IHG"],
+    transferPartners:["British Airways","Virgin Atlantic","American Airlines"],
+    keywords:["uk","england","london","scotland","edinburgh","manchester","heathrow"],
+    estimates:{
+      economy:{pts:"26–50k",partner:"British Airways Avios",cash:"$400–700"},
+      business:{pts:"55–77k",partner:"Virgin Atlantic / British Airways",cash:"$3,000–6,000"},
+      first:{pts:"100–150k",partner:"British Airways / Virgin Atlantic",cash:"$6,000–10,000"},
+      hotel5:{pts:"100–250k",partner:"Marriott / Hilton",cash:"$1,500–5,000"}
+    },
+    notes:"Virgin Atlantic charges low surcharges on its own metal. British Airways Avios are great for short hops within Europe from London."
+  },
+  caribbean:{
+    name:"Caribbean",display:"Caribbean / Islands",
+    airlines:["American Airlines","JetBlue","Delta","United","Southwest"],
+    hotelPrograms:["Marriott","Hilton","Hyatt","IHG"],
+    transferPartners:["American Airlines","British Airways","Delta","United"],
+    keywords:["caribbean","bahamas","jamaica","aruba","turks","caicos","barbados","st lucia","punta cana","dominican","puerto rico","cancun","cabo","virgin islands","bermuda","antigua","curacao"],
+    estimates:{
+      economy:{pts:"15–35k",partner:"American / JetBlue",cash:"$250–500"},
+      business:{pts:"40–60k",partner:"American / Delta",cash:"$800–2,000"},
+      first:{pts:"N/A",partner:"—",cash:"—"},
+      hotel5:{pts:"100–250k",partner:"Marriott / Hilton",cash:"$1,500–5,000"}
+    },
+    notes:"Southwest Companion Pass doubles your value for Caribbean destinations. Hyatt all-inclusives (Ziva/Zilara) are excellent point redemptions."
+  },
+  mexico:{
+    name:"Mexico",display:"Mexico / Central America",
+    airlines:["American Airlines","United","Delta","Southwest","Aeromexico"],
+    hotelPrograms:["Marriott","Hilton","Hyatt","IHG"],
+    transferPartners:["American Airlines","United","Delta","Avianca LifeMiles"],
+    keywords:["mexico","cancun","cabo","tulum","mexico city","playa del carmen","oaxaca","riviera maya","costa rica","belize","guatemala","panama"],
+    estimates:{
+      economy:{pts:"10–25k",partner:"Southwest / United",cash:"$200–500"},
+      business:{pts:"30–55k",partner:"American / Aeromexico",cash:"$600–1,500"},
+      first:{pts:"N/A",partner:"—",cash:"—"},
+      hotel5:{pts:"60–150k",partner:"Hyatt / Marriott",cash:"$700–3,000"}
+    },
+    notes:"Hyatt Ziva/Zilara all-inclusives in Mexico are among the best hotel point redemptions available. Southwest Companion Pass is ideal for short-haul Mexico flights."
+  },
+  hawaii:{
+    name:"Hawaii",display:"Hawaii",
+    airlines:["Hawaiian Airlines","United","Delta","American Airlines","Southwest","Alaska Airlines"],
+    hotelPrograms:["Marriott","Hilton","Hyatt"],
+    transferPartners:["United","American Airlines","Delta","British Airways"],
+    keywords:["hawaii","maui","oahu","honolulu","waikiki","kauai","big island","kona","hilo"],
+    estimates:{
+      economy:{pts:"20–40k",partner:"Southwest / United",cash:"$300–600"},
+      business:{pts:"50–80k",partner:"Hawaiian / United",cash:"$1,200–2,500"},
+      first:{pts:"80–120k",partner:"United / Hawaiian",cash:"$2,500–5,000"},
+      hotel5:{pts:"100–250k",partner:"Marriott / Hyatt",cash:"$1,500–5,000"}
+    },
+    notes:"Southwest Companion Pass works to Hawaii. Andaz Maui (Hyatt) at 25–30k points/night is a standout hotel redemption."
+  },
+  southeast_asia:{
+    name:"Southeast Asia",display:"Southeast Asia",
+    airlines:["Singapore Airlines","Cathay Pacific","ANA","Thai Airways","EVA Air"],
+    hotelPrograms:["Hyatt","Marriott","Hilton","IHG"],
+    transferPartners:["Singapore Airlines","Cathay Pacific","ANA","Turkish Miles&Smiles","Virgin Atlantic"],
+    keywords:["thailand","bangkok","bali","indonesia","vietnam","singapore","malaysia","philippines","cambodia","laos","myanmar","phuket","chiang mai","hanoi","ho chi minh","saigon","kuala lumpur"],
+    estimates:{
+      economy:{pts:"35–60k",partner:"Singapore / Cathay",cash:"$600–1,000"},
+      business:{pts:"70–120k",partner:"Singapore Airlines / Cathay Pacific",cash:"$3,000–7,000"},
+      first:{pts:"90–180k",partner:"Singapore Suites / Cathay",cash:"$8,000–18,000"},
+      hotel5:{pts:"40–100k",partner:"Hyatt / Marriott",cash:"$500–2,000"}
+    },
+    notes:"Singapore Airlines Suites are bookable with KrisFlyer miles (Amex/Citi/Chase transfer). Hotels in SEA are incredibly cheap on points."
+  },
+  middle_east:{
+    name:"Middle East",display:"Dubai / Middle East",
+    airlines:["Emirates","Qatar Airways","Etihad","Turkish Airlines"],
+    hotelPrograms:["Marriott","Hilton","Hyatt","IHG"],
+    transferPartners:["Emirates","Qatar Airways","Turkish Miles&Smiles"],
+    keywords:["dubai","abu dhabi","qatar","doha","uae","jordan","amman","israel","tel aviv","oman","saudi","riyadh","bahrain","maldives","male"],
+    estimates:{
+      economy:{pts:"40–65k",partner:"Emirates / Turkish",cash:"$500–900"},
+      business:{pts:"70–115k",partner:"Qatar Q-Suite / Emirates",cash:"$3,000–7,000"},
+      first:{pts:"115–180k",partner:"Emirates First / Etihad",cash:"$8,000–20,000"},
+      hotel5:{pts:"100–250k",partner:"Hyatt / Marriott",cash:"$1,500–5,000"}
+    },
+    notes:"Qatar Q-Suite via Citi ThankYou Points is a Citi-exclusive sweet spot. Emirates First Class Suites with shower are bookable via Emirates Skywards."
+  },
+  south_pacific:{
+    name:"South Pacific",display:"Australia / South Pacific",
+    airlines:["Qantas","Air New Zealand","United","Cathay Pacific","ANA"],
+    hotelPrograms:["Marriott","Hilton","Hyatt","IHG"],
+    transferPartners:["Cathay Pacific","ANA","Singapore Airlines","United","Virgin Atlantic"],
+    keywords:["australia","sydney","melbourne","new zealand","auckland","queenstown","fiji","tahiti","bora bora","french polynesia"],
+    estimates:{
+      economy:{pts:"40–70k",partner:"United / ANA",cash:"$800–1,400"},
+      business:{pts:"80–140k",partner:"Cathay / ANA / Qantas",cash:"$4,000–9,000"},
+      first:{pts:"110–200k",partner:"ANA via Virgin Atlantic",cash:"$10,000–20,000"},
+      hotel5:{pts:"100–200k",partner:"Marriott / Hilton",cash:"$1,000–3,000"}
+    },
+    notes:"ANA free stopovers via Atmos let you add Tokyo on the way to Australia at no extra award cost."
+  },
+  south_america:{
+    name:"South America",display:"South America",
+    airlines:["LATAM","Avianca","American Airlines","Delta","United"],
+    hotelPrograms:["Marriott","Hilton","Hyatt","IHG"],
+    transferPartners:["Avianca LifeMiles","American Airlines","Delta","United"],
+    keywords:["brazil","rio","sao paulo","argentina","buenos aires","colombia","bogota","cartagena","peru","lima","machu picchu","chile","santiago","ecuador","galapagos","patagonia","uruguay"],
+    estimates:{
+      economy:{pts:"25–50k",partner:"Avianca LifeMiles / United",cash:"$400–800"},
+      business:{pts:"55–90k",partner:"LifeMiles / American",cash:"$2,000–5,000"},
+      first:{pts:"N/A",partner:"—",cash:"—"},
+      hotel5:{pts:"60–150k",partner:"Marriott / Hyatt",cash:"$500–2,000"}
+    },
+    notes:"Avianca LifeMiles frequently runs transfer bonuses from Amex/Citi, making South American business class very affordable."
+  },
+  africa:{
+    name:"Africa",display:"Africa",
+    airlines:["Ethiopian Airlines","South African Airways","Emirates","Turkish Airlines","Qatar Airways"],
+    hotelPrograms:["Marriott","Hilton","IHG"],
+    transferPartners:["Turkish Miles&Smiles","Emirates","Qatar Airways","United"],
+    keywords:["africa","south africa","cape town","johannesburg","kenya","nairobi","safari","tanzania","kilimanjaro","morocco","marrakech","egypt","cairo","ghana","nigeria","ethiopia"],
+    estimates:{
+      economy:{pts:"40–70k",partner:"Turkish / Ethiopian",cash:"$600–1,200"},
+      business:{pts:"80–130k",partner:"Turkish / Qatar / Emirates",cash:"$3,000–7,000"},
+      first:{pts:"120–180k",partner:"Emirates",cash:"$8,000–15,000"},
+      hotel5:{pts:"80–200k",partner:"Marriott / Hilton",cash:"$600–2,500"}
+    },
+    notes:"Turkish Miles&Smiles via Citi offers excellent pricing to Africa via Istanbul. Emirates connects to dozens of African cities through Dubai."
+  },
+  india:{
+    name:"India",display:"India / South Asia",
+    airlines:["Air India","Singapore Airlines","Cathay Pacific","Emirates","Turkish Airlines","Qatar Airways"],
+    hotelPrograms:["Marriott","Hyatt","Hilton","IHG"],
+    transferPartners:["Singapore Airlines","Emirates","Turkish Miles&Smiles","Qatar Airways","Air France/KLM Flying Blue"],
+    keywords:["india","delhi","mumbai","goa","jaipur","bangalore","hyderabad","chennai","kolkata","sri lanka","nepal","kathmandu"],
+    estimates:{
+      economy:{pts:"35–60k",partner:"Turkish / Air India",cash:"$500–1,000"},
+      business:{pts:"70–120k",partner:"Singapore / Qatar / Emirates",cash:"$3,000–7,000"},
+      first:{pts:"100–180k",partner:"Singapore Suites / Emirates",cash:"$7,000–15,000"},
+      hotel5:{pts:"50–120k",partner:"Marriott / Hyatt",cash:"$500–1,500"}
+    },
+    notes:"Singapore Airlines and Qatar Airways offer the best premium cabin products for India routes."
+  },
+  korea:{
+    name:"South Korea",display:"Seoul / South Korea",
+    airlines:["Korean Air","Asiana","United","Delta","ANA"],
+    hotelPrograms:["Marriott","Hyatt","Hilton","IHG"],
+    transferPartners:["ANA","United","Delta","Singapore Airlines","Turkish Miles&Smiles"],
+    keywords:["korea","seoul","busan","incheon","jeju"],
+    estimates:{
+      economy:{pts:"35–60k",partner:"United / Korean Air",cash:"$600–1,000"},
+      business:{pts:"70–110k",partner:"ANA / Korean Air",cash:"$3,000–6,000"},
+      first:{pts:"100–160k",partner:"Korean Air / ANA",cash:"$6,000–12,000"},
+      hotel5:{pts:"60–120k",partner:"Marriott / Hyatt",cash:"$600–1,500"}
+    },
+    notes:"Grand Hyatt Seoul and Park Hyatt Seoul are both excellent redemptions at 15–25k points/night."
+  }
+};

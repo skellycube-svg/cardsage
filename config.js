@@ -12,7 +12,7 @@ const CS_CONFIG = {
   // ── Versioning ──────────────────────────────────────────────────────────────
   // The current app version. Incrementing this forces all users' browsers to
   // download fresh files instead of using old cached copies.
-  CACHE_VERSION: 'v43',
+  CACHE_VERSION: 'v44',
 
   // ── Site Metadata ───────────────────────────────────────────────────────────
   // Basic info about the site — name, URL, contact email, and descriptions
@@ -104,7 +104,8 @@ const CS_CONFIG = {
     checkDates: 'cs_benefit_check_dates',
     appVersion: 'cs_app_version',
     iosDismissed: 'cs_ios_dismissed',
-    skipped: 'cs_skipped'
+    skipped: 'cs_skipped',
+    savedTrips: 'cs_saved_trips'
   }
 };
 

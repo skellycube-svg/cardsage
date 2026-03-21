@@ -1279,6 +1279,559 @@ function TipsTab({myCards}){
   );
 }
 
+/* ── PLAN TAB (Trip Planner) ──────────────────────────────────────────────── */
+// PlanTab is a trip planning assistant. Users enter a destination and preferences,
+// and the app generates wallet-aware point strategy recommendations.
+// It matches destinations to regions, cross-references the user's card portfolio,
+// and surfaces relevant transfer partners, point estimates, and card recommendations.
+const HOTEL_BRANDS=["Any","Hyatt","Marriott","Hilton","IHG"];
+const TRAVEL_CLASSES=["Economy","Business","First"];
+
+function PlanTab({myCards}){
+  const [savedTrips,setSavedTrips]=useLS(CS_CONFIG.LS_KEYS.savedTrips,[]);
+  const [destination,setDestination]=useState("");
+  const [tripType,setTripType]=useState("both");
+  const [travelClass,setTravelClass]=useState("Business");
+  const [hotelBrand,setHotelBrand]=useState("Any");
+  const [travelers,setTravelers]=useState(1);
+  const [results,setResults]=useState(null);
+  const [openStrat,setOpenStrat]=useState(null);
+
+  const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
+
+  // Collect all transfer partners from user's wallet
+  const walletPartners=useMemo(()=>{
+    const s=new Set();
+    cards.forEach(c=>{if(c.partners)c.partners.forEach(p=>s.add(p));});
+    return s;
+  },[cards]);
+
+  // Match destination input to a region
+  function matchRegion(input){
+    const q=input.toLowerCase().trim();
+    if(!q) return null;
+    for(const[key,region] of Object.entries(DEST_REGIONS)){
+      if(region.keywords.some(kw=>q.includes(kw))) return {...region,key};
+    }
+    // Fuzzy: check if any keyword starts with the query or vice-versa
+    for(const[key,region] of Object.entries(DEST_REGIONS)){
+      if(region.keywords.some(kw=>kw.startsWith(q)||q.startsWith(kw))) return {...region,key};
+    }
+    return null;
+  }
+
+  // Generate strategies from user's cards for a matched region
+  function generateStrategies(region){
+    const strategies=[];
+    // Find which wallet cards have transfer partners relevant to this destination
+    cards.forEach(card=>{
+      if(!card.partners||!card.partners.length) return;
+      const relevantPartners=card.partners.filter(p=>
+        region.transferPartners.some(tp=>p.toLowerCase().includes(tp.toLowerCase())||tp.toLowerCase().includes(p.toLowerCase()))
+      );
+      if(!relevantPartners.length) return;
+
+      // Build strategy per card with relevant partners
+      const classKey=travelClass.toLowerCase();
+      const est=region.estimates[classKey]||region.estimates.economy;
+      const partnerMatch=relevantPartners.find(p=>est.partner.toLowerCase().includes(p.split(" ")[0].toLowerCase()));
+
+      strategies.push({
+        cardId:card.id,cardName:card.short||card.name,issuer:card.issuer,
+        currency:card.cur,
+        partners:relevantPartners,
+        bestPartner:partnerMatch||relevantPartners[0],
+        estimate:est,
+        description:buildStratDescription(card,relevantPartners,region,travelClass)
+      });
+    });
+
+    // Deduplicate by currency (group cards of same program)
+    const byCurrency={};
+    strategies.forEach(s=>{
+      if(!byCurrency[s.currency]||s.partners.length>byCurrency[s.currency].partners.length){
+        byCurrency[s.currency]=s;
+      }
+    });
+    return Object.values(byCurrency);
+  }
+
+  function buildStratDescription(card,partners,region,cls){
+    const partnerStr=partners.slice(0,3).join(", ");
+    const classLabel=cls==="First"?"first class":cls==="Business"?"business class":"economy";
+    if(tripType==="flights"||tripType==="both"){
+      return `Transfer ${card.cur} to ${partnerStr} for ${classLabel} flights to ${region.name}. ${region.notes.split(".")[0]}.`;
+    }
+    return `Use ${card.cur} with ${partnerStr} for hotels in ${region.name}.`;
+  }
+
+  // Find card recommendations the user doesn't have
+  function getRecommendations(region){
+    const recs=[];
+    // Cards with strong travel partners for this destination that user doesn't own
+    const travelCards=CARDS.filter(c=>
+      !myCards.includes(c.id)&&c.partners&&c.partners.length>0&&
+      c.partners.some(p=>region.transferPartners.some(tp=>p.toLowerCase().includes(tp.toLowerCase())||tp.toLowerCase().includes(p.toLowerCase())))
+    );
+    // Score by relevance
+    const scored=travelCards.map(c=>{
+      const matchCount=c.partners.filter(p=>region.transferPartners.some(tp=>p.toLowerCase().includes(tp.toLowerCase())||tp.toLowerCase().includes(p.toLowerCase()))).length;
+      let score=matchCount*10;
+      // Boost premium cards for business/first
+      if((travelClass==="Business"||travelClass==="First")&&c.fee>=450) score+=15;
+      // Boost co-branded hotel cards if hotel preference matches
+      if(hotelBrand!=="Any"&&c.name.toLowerCase().includes(hotelBrand.toLowerCase())) score+=20;
+      return {...c,score,matchCount};
+    }).sort((a,b)=>b.score-a.score);
+
+    return scored.slice(0,3).map(c=>{
+      const matchedPartners=c.partners.filter(p=>region.transferPartners.some(tp=>p.toLowerCase().includes(tp.toLowerCase())||tp.toLowerCase().includes(p.toLowerCase())));
+      let why="";
+      if(matchedPartners.length>0){
+        why=`Transfers to ${matchedPartners.slice(0,2).join(" and ")} for ${region.name} routes.`;
+      }
+      if(c.fee===0) why+=" No annual fee.";
+      else if(c.fee>=450) why+=" Premium lounge access and travel credits offset the fee.";
+      return {card:c,why,matchedPartners};
+    });
+  }
+
+  // Find relevant TIPS_DB entries
+  function findRelevantTips(region){
+    return TIPS_DB.filter(t=>{
+      const body=(t.body+" "+t.title).toLowerCase();
+      return region.keywords.some(kw=>body.includes(kw))||
+        region.airlines.some(a=>body.includes(a.toLowerCase()))||
+        (hotelBrand!=="Any"&&body.includes(hotelBrand.toLowerCase()));
+    }).slice(0,4);
+  }
+
+  function handleSubmit(e){
+    if(e) e.preventDefault();
+    const region=matchRegion(destination);
+    if(!region){
+      setResults({region:null,strategies:[],recommendations:[],tips:[],estimates:null,fallback:true});
+      return;
+    }
+    const strategies=generateStrategies(region);
+    const recommendations=getRecommendations(region);
+    const tips=findRelevantTips(region);
+    setResults({region,strategies,recommendations,tips,estimates:region.estimates,fallback:false});
+
+    // Save trip (max 3)
+    const trip={destination,tripType,travelClass,hotelBrand,travelers};
+    const key=JSON.stringify(trip);
+    setSavedTrips(prev=>{
+      const filtered=prev.filter(t=>JSON.stringify(t)!==key);
+      return [trip,...filtered].slice(0,3);
+    });
+  }
+
+  function loadTrip(trip){
+    setDestination(trip.destination);
+    setTripType(trip.tripType);
+    setTravelClass(trip.travelClass);
+    setHotelBrand(trip.hotelBrand);
+    setTravelers(trip.travelers);
+    // Auto-run after state settles
+    setTimeout(()=>{
+      const region=matchRegion(trip.destination);
+      if(!region){setResults({region:null,strategies:[],recommendations:[],tips:[],estimates:null,fallback:true});return;}
+      const strategies=[];
+      const walletCards=myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
+      walletCards.forEach(card=>{
+        if(!card.partners||!card.partners.length) return;
+        const relevantPartners=card.partners.filter(p=>
+          region.transferPartners.some(tp=>p.toLowerCase().includes(tp.toLowerCase())||tp.toLowerCase().includes(p.toLowerCase()))
+        );
+        if(!relevantPartners.length) return;
+        const classKey=trip.travelClass.toLowerCase();
+        const est=region.estimates[classKey]||region.estimates.economy;
+        const partnerMatch=relevantPartners.find(p=>est.partner.toLowerCase().includes(p.split(" ")[0].toLowerCase()));
+        strategies.push({
+          cardId:card.id,cardName:card.short||card.name,issuer:card.issuer,
+          currency:card.cur,partners:relevantPartners,bestPartner:partnerMatch||relevantPartners[0],
+          estimate:est,description:`Transfer ${card.cur} to ${relevantPartners.slice(0,3).join(", ")} for ${trip.travelClass.toLowerCase()} flights to ${region.name}.`
+        });
+      });
+      const byCurrency={};
+      strategies.forEach(s=>{if(!byCurrency[s.currency]||s.partners.length>byCurrency[s.currency].partners.length) byCurrency[s.currency]=s;});
+      const recs=CARDS.filter(c=>!myCards.includes(c.id)&&c.partners&&c.partners.length>0&&
+        c.partners.some(p=>region.transferPartners.some(tp=>p.toLowerCase().includes(tp.toLowerCase())||tp.toLowerCase().includes(p.toLowerCase())))
+      ).slice(0,3).map(c=>({card:c,why:`Transfers to partners for ${region.name} routes.`,matchedPartners:c.partners.filter(p=>region.transferPartners.some(tp=>p.toLowerCase().includes(tp.toLowerCase())))}));
+      const tips=TIPS_DB.filter(t=>{const b=(t.body+" "+t.title).toLowerCase();return region.keywords.some(kw=>b.includes(kw));}).slice(0,4);
+      setResults({region,strategies:Object.values(byCurrency),recommendations:recs,tips,estimates:region.estimates,fallback:false});
+    },50);
+  }
+
+  function removeTrip(idx,e){
+    e.stopPropagation();
+    setSavedTrips(prev=>prev.filter((_,i)=>i!==idx));
+  }
+
+  // SVG icons used in the form
+  const FlightIcon=({size=16,color="currentColor"})=>(
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.8 19.2L16 11l3.5-3.5C20.3 6.7 21 5.5 21 5c0-1-1-2-2-2-.5 0-1.7.7-2.5 1.5L13 8 4.8 6.2c-.5-.1-1 .1-1.3.5L2 9l6.5 3L6 14.5 3.5 14 2 15.5 4.5 17l1.5 2.5L7.5 18 7 15.5 9.5 13l3 6.5 2.3-1.5c.4-.3.6-.8.5-1.3z"/>
+    </svg>
+  );
+  const HotelIcon=({size=16,color="currentColor"})=>(
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 21V7a2 2 0 012-2h14a2 2 0 012 2v14"/><path d="M3 11h18"/><path d="M9 21V15h6v6"/>
+    </svg>
+  );
+
+  // ── RENDER ──────────────────────────────────────────────────────────────────
+  return (
+    <div style={{padding:"16px 16px 0",maxWidth:720,margin:"0 auto"}}>
+      {/* Page header */}
+      <div style={{textAlign:"center",marginBottom:28}}>
+        <h2 className="page-title" style={{textAlign:"center"}}>Plan Your Trip</h2>
+        <p style={{fontFamily:"'Inter',sans-serif",fontSize:14,color:"#6b7280",margin:"8px 0 0",lineHeight:1.5}}>Enter your destination and we'll show you how to get there with points</p>
+      </div>
+
+      {/* Saved trips */}
+      {savedTrips.length>0&&!results&&(
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"var(--tx3)",textTransform:"uppercase",marginBottom:8,fontFamily:"'Inter',sans-serif"}}>RECENT TRIPS</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {savedTrips.map((trip,i)=>(
+              <button key={i} onClick={()=>loadTrip(trip)}
+                style={{display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,
+                  background:"var(--gld3)",border:"1px solid rgba(184,134,11,.2)",cursor:"pointer",
+                  fontFamily:"'Inter',sans-serif",fontSize:12,fontWeight:600,color:"var(--tx)"}}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 6-9 12-9 12S3 16 3 10a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                {trip.destination}
+                <span style={{color:"var(--tx3)",fontWeight:400}}>{trip.travelClass}</span>
+                <span onClick={e=>removeTrip(i,e)} style={{marginLeft:2,color:"var(--tx3)",cursor:"pointer",lineHeight:1}} title="Remove">&times;</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── FORM ── */}
+      <form onSubmit={handleSubmit}>
+        <div className="surf fu" style={{padding:20,marginBottom:16}}>
+          {/* Destination */}
+          <div style={{marginBottom:16}}>
+            <label style={{fontFamily:"'Inter',sans-serif",fontSize:12,fontWeight:600,color:"var(--tx)",display:"block",marginBottom:6}}>Destination</label>
+            <input type="text" value={destination} onChange={e=>setDestination(e.target.value)}
+              placeholder="City, country, or region (e.g. Tokyo, Amalfi Coast)"
+              required
+              style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--br2)",
+                fontFamily:"'Inter',sans-serif",fontSize:14,color:"var(--tx)",background:"var(--bg)",
+                outline:"none",boxSizing:"border-box",transition:"border-color .2s"}}
+              onFocus={e=>e.target.style.borderColor="var(--acc)"}
+              onBlur={e=>e.target.style.borderColor="var(--br2)"}/>
+          </div>
+
+          {/* Trip type pills */}
+          <div style={{marginBottom:16}}>
+            <label style={{fontFamily:"'Inter',sans-serif",fontSize:12,fontWeight:600,color:"var(--tx)",display:"block",marginBottom:6}}>Trip Type</label>
+            <div style={{display:"flex",gap:6}}>
+              {[{id:"flights",label:"Flights",Ic:FlightIcon},{id:"hotels",label:"Hotels",Ic:HotelIcon},{id:"both",label:"Both",Ic:null}].map(opt=>(
+                <button key={opt.id} type="button" onClick={()=>setTripType(opt.id)}
+                  style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:5,
+                    padding:"8px 12px",borderRadius:10,border:tripType===opt.id?"1.5px solid var(--acc)":"1.5px solid var(--br2)",
+                    background:tripType===opt.id?"var(--gld3)":"var(--bg)",cursor:"pointer",
+                    fontFamily:"'Inter',sans-serif",fontSize:13,fontWeight:tripType===opt.id?600:400,
+                    color:tripType===opt.id?"var(--acc)":"var(--tx2)",transition:"all .15s"}}>
+                  {opt.Ic&&<opt.Ic size={14} color={tripType===opt.id?"var(--acc)":"var(--tx3)"}/>}
+                  {opt.id==="both"&&<><FlightIcon size={14} color={tripType===opt.id?"var(--acc)":"var(--tx3)"}/><span style={{margin:"0 -2px"}}>+</span><HotelIcon size={14} color={tripType===opt.id?"var(--acc)":"var(--tx3)"}/></>}
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Travel class (shown for flights/both) */}
+          {(tripType==="flights"||tripType==="both")&&(
+            <div style={{marginBottom:16}}>
+              <label style={{fontFamily:"'Inter',sans-serif",fontSize:12,fontWeight:600,color:"var(--tx)",display:"block",marginBottom:6}}>Travel Class</label>
+              <div style={{display:"flex",gap:6}}>
+                {TRAVEL_CLASSES.map(cls=>(
+                  <button key={cls} type="button" onClick={()=>setTravelClass(cls)}
+                    style={{flex:1,padding:"8px 12px",borderRadius:10,
+                      border:travelClass===cls?"1.5px solid var(--acc)":"1.5px solid var(--br2)",
+                      background:travelClass===cls?"var(--gld3)":"var(--bg)",cursor:"pointer",
+                      fontFamily:"'Inter',sans-serif",fontSize:13,fontWeight:travelClass===cls?600:400,
+                      color:travelClass===cls?"var(--acc)":"var(--tx2)",transition:"all .15s"}}>
+                    {cls}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Hotel brand (shown for hotels/both) */}
+          {(tripType==="hotels"||tripType==="both")&&(
+            <div style={{marginBottom:16}}>
+              <label style={{fontFamily:"'Inter',sans-serif",fontSize:12,fontWeight:600,color:"var(--tx)",display:"block",marginBottom:6}}>Preferred Hotel Brand</label>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {HOTEL_BRANDS.map(brand=>(
+                  <button key={brand} type="button" onClick={()=>setHotelBrand(brand)}
+                    style={{padding:"6px 14px",borderRadius:10,
+                      border:hotelBrand===brand?"1.5px solid var(--acc)":"1.5px solid var(--br2)",
+                      background:hotelBrand===brand?"var(--gld3)":"var(--bg)",cursor:"pointer",
+                      fontFamily:"'Inter',sans-serif",fontSize:12,fontWeight:hotelBrand===brand?600:400,
+                      color:hotelBrand===brand?"var(--acc)":"var(--tx2)",transition:"all .15s"}}>
+                    {brand}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Travelers stepper */}
+          <div style={{marginBottom:16}}>
+            <label style={{fontFamily:"'Inter',sans-serif",fontSize:12,fontWeight:600,color:"var(--tx)",display:"block",marginBottom:6}}>Travelers</label>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <button type="button" onClick={()=>setTravelers(Math.max(1,travelers-1))}
+                style={{width:34,height:34,borderRadius:10,border:"1.5px solid var(--br2)",background:"var(--bg)",
+                  cursor:"pointer",fontSize:18,color:"var(--tx2)",display:"flex",alignItems:"center",justifyContent:"center",
+                  fontFamily:"'Inter',sans-serif",transition:"all .15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--acc)";e.currentTarget.style.color="var(--acc)";}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--br2)";e.currentTarget.style.color="var(--tx2)";}}>
+                -
+              </button>
+              <span style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:22,fontWeight:700,color:"var(--tx)",minWidth:24,textAlign:"center"}}>{travelers}</span>
+              <button type="button" onClick={()=>setTravelers(Math.min(6,travelers+1))}
+                style={{width:34,height:34,borderRadius:10,border:"1.5px solid var(--br2)",background:"var(--bg)",
+                  cursor:"pointer",fontSize:18,color:"var(--tx2)",display:"flex",alignItems:"center",justifyContent:"center",
+                  fontFamily:"'Inter',sans-serif",transition:"all .15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--acc)";e.currentTarget.style.color="var(--acc)";}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--br2)";e.currentTarget.style.color="var(--tx2)";}}>
+                +
+              </button>
+              {travelers>1&&<span style={{fontFamily:"'Inter',sans-serif",fontSize:11,color:"var(--tx3)"}}>Point estimates multiply by {travelers}</span>}
+            </div>
+          </div>
+
+          {/* Submit */}
+          <button type="submit"
+            style={{width:"100%",padding:"12px 24px",borderRadius:12,border:"none",
+              background:"linear-gradient(135deg,var(--acc),var(--gld2))",color:"#fff",
+              fontFamily:"'Inter',sans-serif",fontSize:15,fontWeight:700,cursor:"pointer",
+              letterSpacing:.3,transition:"all .2s",boxShadow:"0 2px 8px rgba(184,134,11,.25)"}}
+            onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(184,134,11,.35)"}
+            onMouseLeave={e=>e.currentTarget.style.boxShadow="0 2px 8px rgba(184,134,11,.25)"}>
+            Find Strategies
+          </button>
+        </div>
+      </form>
+
+      {/* ── RESULTS ── */}
+      {results&&(
+        <div style={{marginTop:8}}>
+          {/* Back / edit button */}
+          <button onClick={()=>setResults(null)}
+            style={{display:"inline-flex",alignItems:"center",gap:5,marginBottom:16,padding:"6px 12px",
+              borderRadius:8,border:"1px solid var(--br2)",background:"var(--bg)",cursor:"pointer",
+              fontFamily:"'Inter',sans-serif",fontSize:12,fontWeight:600,color:"var(--tx2)"}}>
+            <Icon name="chevron-right" size={12} color="var(--tx3)" style={{transform:"rotate(180deg)"}}/> Edit Trip
+          </button>
+
+          {results.fallback?(
+            <div className="surf fu" style={{padding:24,textAlign:"center"}}>
+              <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:18,fontWeight:600,color:"var(--tx)",marginBottom:8}}>Region Not Found</div>
+              <p style={{fontFamily:"'Inter',sans-serif",fontSize:13,color:"var(--tx2)",lineHeight:1.6,margin:0}}>
+                We couldn't match "{destination}" to a specific region. Try a city name like "Tokyo", "Paris", or "Cancun".
+                <br/><br/>Supported regions: Japan, Europe, UK, Caribbean, Mexico, Hawaii, Southeast Asia, Middle East, South Pacific, South America, Africa, India, South Korea.
+              </p>
+            </div>
+          ):(
+            <>
+              {/* Region header */}
+              <div style={{marginBottom:20,padding:"16px 20px",borderRadius:14,
+                background:"linear-gradient(135deg,rgba(184,134,11,.06),rgba(184,134,11,.02))",
+                border:"1px solid rgba(184,134,11,.12)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 6-9 12-9 12S3 16 3 10a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:20,fontWeight:700,color:"var(--tx)"}}>{results.region.display}</span>
+                </div>
+                <p style={{fontFamily:"'Inter',sans-serif",fontSize:12,color:"var(--tx2)",margin:0,lineHeight:1.5}}>{results.region.notes}</p>
+              </div>
+
+              {/* Section 1 — With Your Cards */}
+              {results.strategies.length>0?(
+                <div style={{marginBottom:24}}>
+                  <div style={{fontFamily:"'Inter',sans-serif",fontSize:11,fontWeight:700,letterSpacing:1,color:"var(--grn2)",textTransform:"uppercase",marginBottom:12,display:"flex",alignItems:"center",gap:6}}>
+                    <Icon name="check" size={12} color="var(--grn2)"/> WITH YOUR CARDS
+                  </div>
+                  {results.strategies.map((strat,i)=>{
+                    const isOpen=openStrat===strat.cardId;
+                    const palette=getIssuerPalette(strat.issuer);
+                    return (
+                      <div key={strat.cardId} className="surf fu"
+                        style={{marginBottom:10,padding:16,borderLeft:`3px solid ${palette.text}`,cursor:"pointer"}}
+                        onClick={()=>setOpenStrat(isOpen?null:strat.cardId)}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                          <div style={{flex:1}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                              <span style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:15,fontWeight:700,color:"var(--tx)"}}>{strat.currency}</span>
+                              <span style={{padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:700,
+                                background:palette.tint,color:palette.text}}>{strat.issuer}</span>
+                            </div>
+                            <p style={{fontFamily:"'Inter',sans-serif",fontSize:13,color:"var(--tx2)",margin:0,lineHeight:1.5}}>{strat.description}</p>
+                          </div>
+                          <span style={{flexShrink:0,transition:"transform .15s",transform:isOpen?"rotate(90deg)":"none",marginTop:4,display:"inline-flex"}}>
+                            <Icon name="chevron-right" size={14} color="var(--tx3)"/>
+                          </span>
+                        </div>
+
+                        {/* Points estimate */}
+                        <div style={{display:"flex",gap:12,marginTop:10,flexWrap:"wrap"}}>
+                          <span style={{fontFamily:"'Inter',sans-serif",fontSize:11,color:"var(--acc)",fontWeight:700}}>
+                            ~{strat.estimate.pts} pts{travelers>1?` × ${travelers}`:""}</span>
+                          <span style={{fontFamily:"'Inter',sans-serif",fontSize:11,color:"var(--tx3)"}}>
+                            via {strat.bestPartner}</span>
+                          <span style={{fontFamily:"'Inter',sans-serif",fontSize:11,color:"var(--grn2)",fontWeight:600}}>
+                            ~{strat.estimate.cash} saved vs cash</span>
+                        </div>
+
+                        {isOpen&&(
+                          <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid var(--br)"}}>
+                            <div style={{fontFamily:"'Inter',sans-serif",fontSize:11,fontWeight:700,color:"var(--tx3)",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>HOW TO DO THIS</div>
+                            <ol style={{fontFamily:"'Inter',sans-serif",fontSize:13,color:"var(--tx2)",lineHeight:1.7,margin:0,paddingLeft:18}}>
+                              <li>Search for award availability on the airline's website for your dates</li>
+                              <li>Transfer {strat.currency} to <strong>{strat.bestPartner}</strong> (usually 1:1 ratio, instant or 1-2 days)</li>
+                              <li>Book through {strat.bestPartner}'s website or call center</li>
+                              {travelers>1&&<li>Transfer additional points for {travelers-1} more traveler(s) — {strat.estimate.pts} each</li>}
+                              <li>Use remaining {strat.issuer} cards for trip purchases to earn bonus points</li>
+                            </ol>
+                            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:10}}>
+                              {strat.partners.map(p=>(
+                                <span key={p} style={{fontFamily:"'Inter',sans-serif",fontSize:10,fontWeight:600,padding:"3px 9px",borderRadius:99,
+                                  background:"rgba(184,134,11,.08)",color:"var(--acc)",border:"1px solid rgba(184,134,11,.15)"}}>{p}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ):(
+                <div className="surf fu" style={{padding:20,marginBottom:24,textAlign:"center"}}>
+                  <div style={{fontFamily:"'Inter',sans-serif",fontSize:13,color:"var(--tx3)"}}>
+                    {myCards.length===0?"Add cards to your wallet to see personalized strategies.":"Your current cards don't have direct transfer partners for this destination. See card recommendations below."}
+                  </div>
+                </div>
+              )}
+
+              {/* Section 2 — Unlock With These Cards */}
+              {results.recommendations.length>0&&(
+                <div style={{marginBottom:24}}>
+                  <div style={{fontFamily:"'Inter',sans-serif",fontSize:11,fontWeight:700,letterSpacing:1,color:"var(--acc)",textTransform:"uppercase",marginBottom:12,display:"flex",alignItems:"center",gap:6}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg> UNLOCK WITH THESE CARDS
+                  </div>
+                  {results.recommendations.map(rec=>{
+                    const palette=getIssuerPalette(rec.card.issuer);
+                    return (
+                      <div key={rec.card.id} className="surf fu" style={{marginBottom:10,padding:14}}>
+                        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                          <CreditCardDisplay card={rec.card} size="xs"/>
+                          <div style={{flex:1}}>
+                            <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:14,fontWeight:600,color:palette.text}}>{rec.card.short||rec.card.name}</div>
+                            <div style={{fontFamily:"'Inter',sans-serif",fontSize:11,color:"var(--tx3)"}}>{rec.card.issuer} · ${rec.card.fee}/yr</div>
+                          </div>
+                        </div>
+                        <p style={{fontFamily:"'Inter',sans-serif",fontSize:12,color:"var(--tx2)",margin:"0 0 8px",lineHeight:1.5}}>{rec.why}</p>
+                        <a href={APPLY_URLS[rec.card.id]||"#apply-"+rec.card.id} target="_blank" rel="noopener noreferrer"
+                          onClick={e=>e.stopPropagation()}
+                          style={{fontFamily:"'Inter',sans-serif",display:"inline-block",fontSize:11,fontWeight:700,color:"var(--acc)",
+                            background:"rgba(184,134,11,.08)",padding:"5px 14px",borderRadius:8,
+                            border:"1px solid rgba(184,134,11,.2)",textDecoration:"none"}}>
+                          Apply for {rec.card.short} →
+                        </a>
+                        <div className="apply-disclose">Affiliate link — we may earn a commission at no cost to you.</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Section 3 — Point Estimates */}
+              {results.estimates&&(
+                <div style={{marginBottom:24}}>
+                  <div style={{fontFamily:"'Inter',sans-serif",fontSize:11,fontWeight:700,letterSpacing:1,color:"var(--tx3)",textTransform:"uppercase",marginBottom:12}}>POINT ESTIMATES</div>
+                  <div className="surf fu" style={{padding:0,overflow:"hidden"}}>
+                    <table style={{width:"100%",borderCollapse:"collapse",fontFamily:"'Inter',sans-serif",fontSize:12}}>
+                      <thead>
+                        <tr style={{background:"var(--s3)"}}>
+                          <th style={{textAlign:"left",padding:"10px 14px",fontWeight:700,color:"var(--tx)",fontSize:11}}>Option</th>
+                          <th style={{textAlign:"left",padding:"10px 14px",fontWeight:700,color:"var(--tx)",fontSize:11}}>Points{travelers>1?` (×${travelers})`:""}</th>
+                          <th style={{textAlign:"left",padding:"10px 14px",fontWeight:700,color:"var(--tx)",fontSize:11}}>Via</th>
+                          <th style={{textAlign:"left",padding:"10px 14px",fontWeight:700,color:"var(--tx)",fontSize:11}}>Cash Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(tripType==="flights"||tripType==="both")&&(
+                          <>
+                            <tr style={{borderTop:"1px solid var(--br)"}}>
+                              <td style={{padding:"8px 14px",color:"var(--tx2)"}}>Economy RT</td>
+                              <td style={{padding:"8px 14px",color:"var(--acc)",fontWeight:600}}>{results.estimates.economy.pts}</td>
+                              <td style={{padding:"8px 14px",color:"var(--tx3)"}}>{results.estimates.economy.partner}</td>
+                              <td style={{padding:"8px 14px",color:"var(--grn2)",fontWeight:600}}>~{results.estimates.economy.cash}</td>
+                            </tr>
+                            <tr style={{borderTop:"1px solid var(--br)"}}>
+                              <td style={{padding:"8px 14px",color:"var(--tx2)"}}>Business RT</td>
+                              <td style={{padding:"8px 14px",color:"var(--acc)",fontWeight:600}}>{results.estimates.business.pts}</td>
+                              <td style={{padding:"8px 14px",color:"var(--tx3)"}}>{results.estimates.business.partner}</td>
+                              <td style={{padding:"8px 14px",color:"var(--grn2)",fontWeight:600}}>~{results.estimates.business.cash}</td>
+                            </tr>
+                            {results.estimates.first.pts!=="N/A"&&(
+                              <tr style={{borderTop:"1px solid var(--br)"}}>
+                                <td style={{padding:"8px 14px",color:"var(--tx2)"}}>First RT</td>
+                                <td style={{padding:"8px 14px",color:"var(--acc)",fontWeight:600}}>{results.estimates.first.pts}</td>
+                                <td style={{padding:"8px 14px",color:"var(--tx3)"}}>{results.estimates.first.partner}</td>
+                                <td style={{padding:"8px 14px",color:"var(--grn2)",fontWeight:600}}>~{results.estimates.first.cash}</td>
+                              </tr>
+                            )}
+                          </>
+                        )}
+                        {(tripType==="hotels"||tripType==="both")&&(
+                          <tr style={{borderTop:"1px solid var(--br)"}}>
+                            <td style={{padding:"8px 14px",color:"var(--tx2)"}}>Hotel (5 nights)</td>
+                            <td style={{padding:"8px 14px",color:"var(--acc)",fontWeight:600}}>{results.estimates.hotel5.pts}</td>
+                            <td style={{padding:"8px 14px",color:"var(--tx3)"}}>{results.estimates.hotel5.partner}</td>
+                            <td style={{padding:"8px 14px",color:"var(--grn2)",fontWeight:600}}>~{results.estimates.hotel5.cash}</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                    <div style={{padding:"8px 14px",fontSize:10,color:"var(--tx3)",fontStyle:"italic",borderTop:"1px solid var(--br)"}}>
+                      Estimates are approximate one-way per person for flights. Actual costs vary by date and availability.
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Related tips */}
+              {results.tips.length>0&&(
+                <div style={{marginBottom:24}}>
+                  <div style={{fontFamily:"'Inter',sans-serif",fontSize:11,fontWeight:700,letterSpacing:1,color:"var(--tx3)",textTransform:"uppercase",marginBottom:12}}>RELATED TIPS</div>
+                  {results.tips.map(tip=>(
+                    <div key={tip.id} className="surf fu" style={{marginBottom:8,padding:14}}>
+                      <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:14,fontWeight:600,color:"var(--tx)",marginBottom:4}}>{tip.title}</div>
+                      <div style={{fontFamily:"'Inter',sans-serif",fontSize:12,color:"var(--tx2)",lineHeight:1.5,
+                        display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}
+                        dangerouslySetInnerHTML={{__html:tip.body}}/>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── USE CARD TAB ─────────────────────────────────────────────────────────── */
 // The 'which card to use' guide. For each spending category (dining, groceries, gas, etc.),
 // shows which of your cards earns the most points, ranked from best to worst.
@@ -2761,6 +3314,7 @@ const NAV_TABS=[
   {id:"home",   label:"Home",     sub:"Your Overview"},
   {id:"benefits",label:"Benefits",sub:"Track & Redeem"},
   {id:"tips",   label:"Tips",     sub:"Pro Strategies"},
+  {id:"plan",   label:"Plan",     sub:"Trip Planner"},
   {id:"usecard",label:"Use Card", sub:"Category Guide"},
   {id:"offers", label:"Offers",   sub:"Explore Deals"},
   {id:"wallet", label:"Wallet",   sub:"My Cards"},
@@ -2773,6 +3327,7 @@ function NavIcon({name,size=18}){
     home:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>,
     benefits:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8V21M3 12h18M7.5 8C7.5 8 7.5 3 12 3s4.5 5 4.5 5"/><path d="M16.5 8C16.5 8 16.5 3 12 3"/></svg>,
     tips:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 2a7 7 0 015 11.9V16a1 1 0 01-1 1H8a1 1 0 01-1-1v-2.1A7 7 0 0112 2z"/></svg>,
+    plan:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 6-9 12-9 12S3 16 3 10a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>,
     usecard:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>,
     offers:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.5"/></svg>,
     wallet:<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 6V4a2 2 0 012-2h16a2 2 0 012 2v2"/><circle cx="17" cy="13" r="1.5"/></svg>
@@ -3074,6 +3629,7 @@ function App(){
         {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal}/>}
         {tab==="benefits"&&<BenefitsTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits}/>}
         {tab==="tips"&&    <TipsTab myCards={myCards}/>}
+        {tab==="plan"&&    <PlanTab myCards={myCards}/>}
         {tab==="usecard"&& <UsecardTab myCards={myCards}/>}
         {tab==="offers"&&  <OffersTab myCards={myCards}/>}
         {tab==="quiz"&&    <QuizTab myCards={myCards}/>}
