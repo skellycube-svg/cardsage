@@ -1431,18 +1431,29 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   const p2Resolved=useMemo(()=>householdSetup?p2Cards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean):[],[p2Cards,householdSetup]);
   const allCards=useMemo(()=>[...cards,...p2Resolved],[cards,p2Resolved]);
   const p2Set=useMemo(()=>new Set(p2Cards),[p2Cards]);
-  const feeCards=useMemo(()=>allCards.filter(c=>c.fee>0),[allCards]);
+  // Build fee card entries with owner context — composite key "cardId:p1" / "cardId:p2"
+  const feeCardEntries=useMemo(()=>{
+    const entries=[];
+    cards.filter(c=>c.fee>0).forEach(c=>entries.push({card:c,owner:"p1",key:c.id+":p1"}));
+    if(householdSetup) p2Resolved.filter(c=>c.fee>0).forEach(c=>entries.push({card:c,owner:"p2",key:c.id+":p2"}));
+    return entries;
+  },[cards,p2Resolved,householdSetup]);
+  const feeCards=useMemo(()=>feeCardEntries.map(e=>e.card),[feeCardEntries]);
 
   // Default to nearest-renewal card (prefer cards with anniversary dates set)
-  const [selectedId,setSelectedId]=useState(()=>{
-    if(!feeCards.length) return null;
-    let best=feeCards[0], bestDays=9999;
-    feeCards.forEach(card=>{
-      const days=getRenewalDays(card.id,anniversaryDates);
-      if(days!=null&&days<bestDays){bestDays=days;best=card;}
+  const [selectedKey,setSelectedKey]=useState(()=>{
+    if(!feeCardEntries.length) return null;
+    let best=feeCardEntries[0], bestDays=9999;
+    feeCardEntries.forEach(entry=>{
+      const days=getRenewalDays(entry.card.id,anniversaryDates);
+      if(days!=null&&days<bestDays){bestDays=days;best=entry;}
     });
-    return best.id;
+    return best.key;
   });
+  // Derive card and owner from selectedKey
+  const selectedEntry=useMemo(()=>feeCardEntries.find(e=>e.key===selectedKey)||feeCardEntries[0]||null,[feeCardEntries,selectedKey]);
+  const selectedId=selectedEntry?selectedEntry.card.id:null;
+  const selectedOwner=selectedEntry?selectedEntry.owner:"p1";
 
   const [openBen,setOpenBen]=useState(null);
   const [showRetention,setShowRetention]=useState(false);
@@ -1463,14 +1474,14 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
 
   const card=useMemo(()=>CARDS.find(c=>c.id===selectedId),[selectedId]);
 
-  // Reset collapsible sections when card changes
+  // Reset collapsible sections when card selection changes
   useEffect(()=>{
     setShowRetention(false);setShowCancel(false);setShowHiddenValue(false);
     setShowSynergies(false);setShowPaths(false);setShowAllPaths(false);
     setShowDowngrades(false);setShowReplacement(false);setShowBenefits(true);setOpenBen(null);
     setExpandedHiddenPerk(null);setExpandedSynergy(null);
     setShowQuiz(false);setQuizStep(0);setQuizAnswers({});setQuizResult(null);
-  },[selectedId]);
+  },[selectedKey]);
 
   // Benefits for this card
   const allBenefits=useMemo(()=>{
@@ -1674,25 +1685,25 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
       <div style={{marginBottom:20}}>
         <label style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"var(--tx3)",textTransform:"uppercase",marginBottom:6,display:"block"}}>Analyze Card</label>
         <div className="ra-selector">
-          <select value={selectedId||""} onChange={e=>setSelectedId(e.target.value)}
+          <select value={selectedKey||""} onChange={e=>setSelectedKey(e.target.value)}
             style={{width:"100%",padding:"14px 16px",fontSize:15,fontWeight:600,color:"var(--tx)",
               background:"var(--bg)",border:`2px solid ${palette.text}20`,borderRadius:14,
               appearance:"none",cursor:"pointer",fontFamily:"'Inter',sans-serif"}}>
-            {householdSetup&&feeCards.some(c=>p2Set.has(c.id))?(
+            {householdSetup&&feeCardEntries.some(e=>e.owner==="p2")?(
               <>
                 <optgroup label="Your Cards">
-                  {feeCards.filter(c=>!p2Set.has(c.id)).map(c=>
-                    <option key={c.id} value={c.id}>{c.short||c.name} — ${c.fee}/yr</option>
+                  {feeCardEntries.filter(e=>e.owner==="p1").map(e=>
+                    <option key={e.key} value={e.key}>{e.card.short||e.card.name} — ${e.card.fee}/yr</option>
                   )}
                 </optgroup>
                 <optgroup label={(p2Name||"Partner")+"'s Cards"}>
-                  {feeCards.filter(c=>p2Set.has(c.id)).map(c=>
-                    <option key={c.id} value={c.id}>{c.short||c.name} — ${c.fee}/yr</option>
+                  {feeCardEntries.filter(e=>e.owner==="p2").map(e=>
+                    <option key={e.key} value={e.key}>{e.card.short||e.card.name} — ${e.card.fee}/yr</option>
                   )}
                 </optgroup>
               </>
             ):(
-              feeCards.map(c=><option key={c.id} value={c.id}>{c.short||c.name} — ${c.fee}/yr</option>)
+              feeCardEntries.map(e=><option key={e.key} value={e.key}>{e.card.short||e.card.name} — ${e.card.fee}/yr</option>)
             )}
           </select>
           <div style={{position:"absolute",right:16,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}>
@@ -1708,7 +1719,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           <div style={{flex:1}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontFamily:"'Inter',sans-serif",fontSize:20,fontWeight:700,color:palette.text}}>{card.short||card.name}</span>
-              {householdSetup&&<span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:99,background:p2Set.has(card.id)?"rgba(154,110,26,.1)":"rgba(13,115,119,.1)",color:p2Set.has(card.id)?"var(--gold)":"var(--acc)",letterSpacing:.3,textTransform:"uppercase",whiteSpace:"nowrap"}}>{p2Set.has(card.id)?(p2Name||"Partner"):"You"}</span>}
+              {householdSetup&&<span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:99,background:selectedOwner==="p2"?"rgba(154,110,26,.1)":"rgba(13,115,119,.1)",color:selectedOwner==="p2"?"var(--gold)":"var(--acc)",letterSpacing:.3,textTransform:"uppercase",whiteSpace:"nowrap"}}>{selectedOwner==="p2"?(p2Name||"Partner"):"You"}</span>}
             </div>
             <div style={{fontSize:12,color:"var(--tx3)"}}>{card.issuer} · {card.network}</div>
           </div>
