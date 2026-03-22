@@ -771,7 +771,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
             <div className="home-hero-eyebrow">ANNUAL FEE RENEWAL ENGINE</div>
             <h1 className="home-hero-title">Is the fee<br/>worth it?</h1>
             <p className="home-hero-subtitle">Know exactly which cards to keep, cancel, or downgrade — before renewal day.</p>
-            <button className="btn" onClick={()=>setTab("wallet")}>Get Started Free →</button>
+            <button className="btn" onClick={()=>setTab("benefits")}>Run Your Free Fee Check →</button>
           </div>
           <div className="home-hero-card">
             <div className="hero-card-mockup">
@@ -6370,7 +6370,7 @@ function AuthButton({user,onSignIn,fbReady}){
 // Each entry has an id (used for routing), a short label, and a subtitle.
 const NAV_TABS=[
   {id:"home",     label:"Dashboard",       sub:"Your Overview"},
-  {id:"benefits", label:"Renewal Advisor",  sub:"Keep or Cancel"},
+  {id:"benefits", label:"Fee Check",  sub:"Keep or Cancel"},
   {id:"household",label:"Household",        sub:"Couples Optimizer"},
   {id:"wallet",   label:"Wallet",           sub:"My Cards"},
   // REMOVED IN FEEWORTH PIVOT — preserved for reference
