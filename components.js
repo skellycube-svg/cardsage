@@ -2657,13 +2657,13 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
         const hhUnlockerCount=isUnlocker&&ecoData?ecoData.unlockers.filter(u=>CARDS.some(c=>allHHIds.includes(c.id)&&c.name===u)).length:0;
         const isOnlyUnlocker=isUnlocker&&hhUnlockerCount===1;
         const onlyCardInEco=ecoName?allHHIds.filter(id=>{const c=CARDS.find(x=>x.id===id);return c&&(ecoData.earners.includes(c.name)||ecoData.unlockers.includes(c.name));}).length===1:false;
+        const psr=ecoName?POINT_SHARING_RULES[ecoName]:null;
         const canShareHH=psr&&psr.canShareHousehold;
         const synergies=CARD_SYNERGIES[card.name]||[];
         const earnCats=Object.entries(card.earn||{}).filter(([k,v])=>k!=="o"&&parseFloat(String(v).replace(/[^0-9.]/g,""))>1);
         const hasTravelBens=(()=>{const allBens=[...card.annual,...card.monthly];return allBens.some(b=>{const n=(b.n||"").toLowerCase();return n.includes("lounge")||n.includes("travel credit")||n.includes("airline")||n.includes("global entry")||n.includes("tsa")||n.includes("hotel credit")||n.includes("trip");});})();
         const isBrandedCard=(()=>{const n=card.name.toLowerCase();return n.includes("marriott")||n.includes("hilton")||n.includes("hyatt")||n.includes("delta")||n.includes("united")||n.includes("southwest")||n.includes("ihg")||n.includes("alaska");})();
         const brandName=(()=>{const n=card.name.toLowerCase();if(n.includes("marriott"))return"Marriott";if(n.includes("hilton"))return"Hilton";if(n.includes("hyatt"))return"Hyatt";if(n.includes("delta"))return"Delta";if(n.includes("united"))return"United";if(n.includes("southwest"))return"Southwest";if(n.includes("ihg"))return"IHG";if(n.includes("alaska"))return"Alaska";return null;})();
-        const psr=ecoName?POINT_SHARING_RULES[ecoName]:null;
         const hasHHOverlap=householdSetup&&p2Resolved.length>0&&(()=>{const myBens=[...card.annual,...card.monthly].map(b=>(b.n||"").toLowerCase());return p2Resolved.some(pc=>[...pc.annual,...pc.monthly].some(b=>myBens.includes((b.n||"").toLowerCase())));})();
         const catLabels={d:"dining",g:"groceries",gas:"gas",t:"travel",s:"streaming",a:"Amazon",tr:"rideshare",p:"pharmacy"};
 
