@@ -1642,6 +1642,55 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   const perkBens=allBenefits.filter(b=>b.type==="perk"&&!skippedSet.has(b.key));
   const skippedBens=allBenefits.filter(b=>skippedSet.has(b.key));
 
+  // ── Coverage overlap detection for "If You Cancel" ──
+  // Maps benefit name patterns to coverage categories so we can cross-reference
+  // whether other wallet cards provide the same protection.
+  const COVERAGE_CATS=[
+    {cat:"primary-rental",match:/Primary.*(?:Car|Rental|CDW)/i,label:"Primary rental car insurance",detail:b=>{const m=b.d.match(/\$[\d,]+/);return m?m[0]+" coverage":null}},
+    {cat:"secondary-rental",match:/(?:Secondary.*(?:Car|Rental)|Auto Rental CDW)/i,label:"Rental car insurance (secondary)",detail:b=>{const m=b.d.match(/\$[\d,]+/);return m?m[0]+" coverage":null}},
+    {cat:"trip-delay",match:/Trip Delay/i,label:"Trip delay reimbursement",detail:b=>{const hrs=b.d.match(/(\d+)-hour/i);const amt=b.d.match(/\$[\d,]+/);return (amt?amt[0]:"")+((hrs?" / "+hrs[1]+"-hr trigger":""))}},
+    {cat:"trip-cancel",match:/Trip Cancel/i,label:"Trip cancellation/interruption",detail:b=>{const m=b.d.match(/\$[\d,]+/);return m?m[0]+" per person":null}},
+    {cat:"baggage",match:/Baggage|Lost Luggage/i,label:"Baggage coverage",detail:b=>{const m=b.d.match(/\$[\d,]+/);return m?m[0]:null}},
+    {cat:"purchase-prot",match:/Purchase Protection/i,label:"Purchase protection",detail:b=>{const days=b.d.match(/(\d+) days/i);return days?days[1]+"-day window":null}},
+    {cat:"ext-warranty",match:/Extended Warranty/i,label:"Extended warranty",detail:b=>{const yrs=b.d.match(/(\d+) extra year/i);const cap=b.d.match(/(\d+) years or less/i);return (yrs?"+"+yrs[1]+" year":"")+(cap?" (warranties ≤"+cap[1]+"yr)":"")}},
+    {cat:"return-prot",match:/Return Protection/i,label:"Return protection",detail:b=>{const m=b.d.match(/\$[\d,]+\/item/i);return m?m[0]:null}},
+    {cat:"cell-phone",match:/Cell Phone/i,label:"Cell phone protection",detail:b=>{const m=b.d.match(/\$[\d,]+/);const ded=b.d.match(/\$\d+ deductible/i);return (m?m[0]:"")+(ded?" ("+ded[0]+")":"")}},
+    {cat:"priority-pass",match:/Priority Pass/i,label:"Priority Pass lounge access",detail:null},
+    {cat:"lounge",match:/(?:Centurion|Capital One Lounge|Lounge Access|Sky Club)/i,label:"Airport lounge access",detail:null},
+    {cat:"hotel-status",match:/(?:Elite|Discoverist|Diamond|Gold Status|Platinum Status|Silver Elite|15 Elite Night)/i,label:"Hotel elite status",detail:b=>b.n},
+    {cat:"concierge",match:/Concierge/i,label:"Concierge service",detail:null}
+  ];
+
+  // Build other-wallet-cards (excluding the card being analyzed)
+  const otherWalletCards=useMemo(()=>{
+    const allIds=[...myCards,...p2Cards].filter(id=>id!==(card&&card.id));
+    return allIds.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
+  },[myCards,p2Cards,card]);
+
+  // For a benefit name, find matching coverage category and overlapping cards
+  function findCoverage(ben){
+    for(const cc of COVERAGE_CATS){
+      if(!cc.match.test(ben.n))continue;
+      const matches=[];
+      for(const oc of otherWalletCards){
+        const allOcBens=[...oc.annual,...oc.monthly];
+        const hit=allOcBens.find(ob=>cc.match.test(ob.n));
+        if(hit){
+          const myDetail=cc.detail?cc.detail(ben):null;
+          const theirDetail=cc.detail?cc.detail(hit):null;
+          matches.push({card:oc,ben:hit,myDetail,theirDetail});
+        }
+      }
+      return {cat:cc.cat,label:cc.label,matches};
+    }
+    // Special: check transfer partner access
+    if(ben.n&&/transfer/i.test(ben.n)){
+      const partnerCards=otherWalletCards.filter(oc=>oc.partners&&oc.partners.length>0&&oc.cur===card.cur);
+      if(partnerCards.length>0) return {cat:"transfer",label:"Transfer partner access",matches:partnerCards.map(oc=>({card:oc,ben:null,myDetail:null,theirDetail:null}))};
+    }
+    return null;
+  }
+
   return (
     <div style={{padding:"16px 16px 0"}}>
       {/* ── CARD SELECTOR ── */}
@@ -2074,28 +2123,74 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
         </button>
         {showCancel&&(
           <div style={{marginTop:16}}>
-            {/* Lost benefits */}
+            {/* Lost benefits with coverage overlap detection */}
             <div style={{fontSize:11,fontWeight:700,letterSpacing:.8,color:"var(--tx3)",textTransform:"uppercase",marginBottom:8}}>Benefits you'll lose</div>
             <div style={{marginBottom:14}}>
-              {allBenefits.filter(b=>!skippedSet.has(b.key)).map((b,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:6}}>
-                  <Icon name="x" size={12} color="var(--red2)" style={{marginTop:2,flexShrink:0}}/>
-                  <span style={{fontSize:12,color:"var(--tx2)"}}>{b.n}{b.v?" ($"+annualBenValue(b)+"/yr)":""}</span>
-                </div>
-              ))}
+              {allBenefits.filter(b=>!skippedSet.has(b.key)).map((b,i)=>{
+                const cov=findCoverage(b);
+                const hasCoverage=cov&&cov.matches.length>0;
+                return (
+                  <div key={i} style={{marginBottom:hasCoverage?10:6}}>
+                    <div style={{display:"flex",alignItems:"flex-start",gap:8}}>
+                      <Icon name="x" size={12} color="var(--red2)" style={{marginTop:2,flexShrink:0}}/>
+                      <span style={{fontSize:12,color:"var(--tx2)"}}>{b.n}{b.v?" ($"+annualBenValue(b)+"/yr)":""}</span>
+                    </div>
+                    {cov&&hasCoverage?(
+                      <div style={{marginLeft:20,marginTop:3}}>
+                        {cov.matches.slice(0,2).map((m,j)=>{
+                          let note="";
+                          if(m.myDetail&&m.theirDetail&&m.myDetail!==m.theirDetail) note=" ("+m.theirDetail+" vs. your "+m.myDetail+")";
+                          return (
+                            <div key={j} style={{fontSize:11,color:"var(--grn2)",fontWeight:600,lineHeight:1.6}}>
+                              ✅ Still covered — your {m.card.short||m.card.name} also has this{note}
+                            </div>
+                          );
+                        })}
+                        {cov.matches.length>2&&<div style={{fontSize:10,color:"var(--tx3)",marginTop:1}}>+{cov.matches.length-2} more card{cov.matches.length-2>1?"s":""}</div>}
+                      </div>
+                    ):cov&&!hasCoverage?(
+                      <div style={{marginLeft:20,marginTop:3,fontSize:11,color:"var(--red2)",fontWeight:600,lineHeight:1.6}}>
+                        ⚠️ No other card in your wallet covers this
+                      </div>
+                    ):null}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Transfer partners */}
-            {card.partners&&card.partners.length>0&&(
-              <div style={{marginBottom:14}}>
-                <div style={{fontSize:11,fontWeight:700,letterSpacing:.8,color:"var(--tx3)",textTransform:"uppercase",marginBottom:8}}>Transfer partners lost</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                  {card.partners.map(p=>(
-                    <span key={p} style={{fontSize:11,padding:"3px 10px",borderRadius:99,background:"rgba(220,38,38,.06)",color:"var(--red2)",fontWeight:600,border:"1px solid rgba(220,38,38,.12)"}}>{p}</span>
-                  ))}
+            {/* Transfer partners — cross-referenced with wallet */}
+            {card.partners&&card.partners.length>0&&(()=>{
+              // For each partner, check if any other wallet card also has that partner
+              const partnerCoverage=card.partners.map(p=>{
+                const coveringCards=otherWalletCards.filter(oc=>oc.partners&&oc.partners.some(op=>op.toLowerCase().includes(p.toLowerCase().split(" ")[0])||p.toLowerCase().includes(op.toLowerCase().split(" ")[0])));
+                return {partner:p,covered:coveringCards};
+              });
+              const coveredCount=partnerCoverage.filter(pc=>pc.covered.length>0).length;
+              return (
+                <div style={{marginBottom:14}}>
+                  <div style={{fontSize:11,fontWeight:700,letterSpacing:.8,color:"var(--tx3)",textTransform:"uppercase",marginBottom:8}}>Transfer partners lost</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                    {partnerCoverage.map(pc=>(
+                      <div key={pc.partner} style={{display:"flex",alignItems:"center",gap:6}}>
+                        <span style={{fontSize:11,padding:"3px 10px",borderRadius:99,
+                          background:pc.covered.length>0?"rgba(22,163,74,.06)":"rgba(220,38,38,.06)",
+                          color:pc.covered.length>0?"var(--grn2)":"var(--red2)",
+                          fontWeight:600,border:pc.covered.length>0?"1px solid rgba(22,163,74,.12)":"1px solid rgba(220,38,38,.12)"}}>
+                          {pc.covered.length>0?"✓":"✗"} {pc.partner}
+                        </span>
+                        {pc.covered.length>0&&<span style={{fontSize:10,color:"var(--grn2)",fontWeight:500}}>via {pc.covered[0].short||pc.covered[0].name}</span>}
+                      </div>
+                    ))}
+                  </div>
+                  {coveredCount>0&&coveredCount===card.partners.length&&(
+                    <div style={{marginTop:8,fontSize:11,color:"var(--grn2)",fontWeight:600}}>✅ All transfer partners still accessible through other cards</div>
+                  )}
+                  {coveredCount>0&&coveredCount<card.partners.length&&(
+                    <div style={{marginTop:8,fontSize:11,color:"var(--tx2)",fontWeight:600}}>⚠️ {card.partners.length-coveredCount} partner{card.partners.length-coveredCount>1?"s":""} would become inaccessible</div>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Points on cancel */}
             {pointsInfo&&(
