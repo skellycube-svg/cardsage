@@ -2727,6 +2727,13 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
       return perkNames.some(n=>keywords.some(kw=>n.toLowerCase().includes(kw.toLowerCase())));
     }
 
+    // Grammar helpers for "You" vs partner name
+    const pn=p2Name||"Partner";
+    function pos(owner){return owner==="You"?"your":owner+"'s";}  // possessive: "your" or "Alex's"
+    function has(owner){return owner==="You"?"have":"has";}        // verb: "have" or "has"
+    function their(owner){return owner==="You"?"your":"their";}    // pronoun: "your" or "their"
+    function they(owner){return owner==="You"?"you":"they";}       // subject: "you" or "they"
+
     // ── A. Ecosystem detection ──
     const handledEco=new Set();
     Object.entries(ECOSYSTEM_MAP).forEach(([currency,eco])=>{
@@ -2737,17 +2744,13 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
       if(p1InEco.length===0||p2InEco.length===0){
         // Only one side has cards — check for preservation warning if canShareHousehold:false
         const solo=p1InEco.length>0?p1InEco:p2InEco;
-        const soloOwner=p1InEco.length>0?"You":(p2Name||"Partner");
+        const soloOwner=p1InEco.length>0?"You":pn;
         if(!rule.canShareHousehold&&solo.length>0){
           const ecoName=currency.split(" ")[0];
-          const hasBackup=solo.length>1||solo.some(c=>{
-            const dg=c.downgradePaths||[];
-            return dg.some(d=>d.annualFee===0);
-          });
           results.push({
             color:"gold",icon:"⚠️",
             headline:`${ecoName} Points Locked to ${soloOwner}`,
-            detail:`${ecoName} doesn't allow direct point transfers between household members. ${soloOwner}'s ${currency} points are locked to ${soloOwner==="You"?"your":"their"} account. If ${soloOwner==="You"?"you cancel your":"they cancel their"} only ${ecoName} card without downgrading to a free ${ecoName} card${eco.warning?" (like "+eco.cheapestUnlocker+")":""}, ${soloOwner==="You"?"you lose":"they lose"} ALL ${soloOwner==="You"?"your":"their"} ${ecoName} points.`,
+            detail:`${ecoName} doesn't allow direct point transfers between household members. ${pos(soloOwner)} ${currency} points are locked to ${their(soloOwner)} account. If ${they(soloOwner)} cancel ${their(soloOwner)} only ${ecoName} card without downgrading to a free ${ecoName} card${eco.warning?" (like "+eco.cheapestUnlocker+")":""}, ${they(soloOwner)} lose ALL ${their(soloOwner)} ${ecoName} points.`,
             cards:solo
           });
         }
@@ -2770,24 +2773,31 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
             const dg=c.downgradePaths&&c.downgradePaths[0];
             return s+(dg?c.fee-dg.annualFee:c.fee);
           },0);
+          // Build specific downgrade suggestion
+          const expCard=expensive[0];
+          const expOwner=p1Unlockers.includes(expCard)?"You":pn;
+          const dg=expCard&&expCard.downgradePaths&&expCard.downgradePaths[0];
+          const dgDetail=dg?` ${expOwner==="You"?"You":"They"} can downgrade the ${expCard.short||expCard.name} to ${dg.cardName} ($${dg.annualFee}/yr) and save $${expCard.fee-dg.annualFee}/yr — ${they(expOwner)}'ll still have full transfer partner access for both.`
+            :` The other can downgrade and still access transfers via point ${rule.method.toLowerCase().includes("combine")?"combining":"sharing"}.`;
+          const combineWord=rule.method.toLowerCase().includes("combine")?"combine":"share";
           results.push({
             color:"red",icon:"🔴",
             headline:`Both Unlock ${ecoName} Transfers`,
-            detail:`You both have ${ecoName} transfer-unlocking cards. Since ${ecoName} lets household members ${rule.method.toLowerCase().includes("combine")?"combine":"share"} points, only one of you needs an unlocker. The other can downgrade and still access transfers via point ${rule.method.toLowerCase().includes("combine")?"combining":"sharing"}.`,
+            detail:`You both have ${ecoName} transfer-unlocking cards. Since ${ecoName} lets household members ${combineWord} points, only one of you needs an unlocker.${dgDetail}`,
             savings:savings>0?savings:null,
             cards:allCards
           });
         } else if((p1Unlockers.length>0&&p2Earners.length>0)||(p2Unlockers.length>0&&p1Earners.length>0)){
           // Smart combo — one unlocks, other earns
-          const unlockerOwner=p1Unlockers.length>0?"You":(p2Name||"Partner");
-          const earnerOwner=p1Earners.length>0?"You":(p2Name||"Partner");
+          const unlockerOwner=p1Unlockers.length>0?"You":pn;
+          const earnerOwner=p1Earners.length>0?"You":pn;
           const unlockerCard=p1Unlockers.length>0?p1Unlockers[0]:p2Unlockers[0];
           const earnerCards=p1Earners.length>0?p1Earners:p2Earners;
           const earnerNames=earnerCards.map(c=>c.short||c.name).join(" and ");
           results.push({
             color:"teal",icon:"✅",
             headline:`${ecoName} Ecosystem — Smart Combo`,
-            detail:`${earnerOwner}'s ${earnerNames} earn${earnerCards.length===1?"s":""} ${ecoName} points, and since ${ecoName} lets household members ${rule.method.toLowerCase().includes("combine")?"combine":"share"} points, those points flow to ${unlockerOwner}'s ${unlockerCard.short||unlockerCard.name} for transfer partner access. Together you're maximizing the ${ecoName} ecosystem. If either of you is considering canceling, keep the ${unlockerCard.short||unlockerCard.name} — it's the key that unlocks transfers for both.`,
+            detail:`${pos(earnerOwner)} ${earnerNames} earn${earnerCards.length===1?"s":""} ${ecoName} points, and since ${ecoName} lets household members ${rule.method.toLowerCase().includes("combine")?"combine":"share"} points, those points flow to ${pos(unlockerOwner)} ${unlockerCard.short||unlockerCard.name} for transfer partner access. Together you're maximizing the ${ecoName} ecosystem. If either of you is considering canceling, keep the ${unlockerCard.short||unlockerCard.name} — it's the key that unlocks transfers for both.`,
             cards:[...p1InEco,...p2InEco]
           });
         }
@@ -2838,9 +2848,9 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
       const p1Status=findStatus(p1Cards);
       const p2Status=findStatus(p2Resolved);
       if(p1Status.status&&p2Status.status){
-        const higherOwner=p1Status.tier>=p2Status.tier?"You":(p2Name||"Partner");
+        const higherOwner=p1Status.tier>=p2Status.tier?"You":pn;
         const higherStatus=p1Status.tier>=p2Status.tier?p1Status.status:p2Status.status;
-        const lowerOwner=p1Status.tier>=p2Status.tier?(p2Name||"Partner"):"You";
+        const lowerOwner=p1Status.tier>=p2Status.tier?pn:"You";
         const lowerStatus=p1Status.tier>=p2Status.tier?p2Status.status:p1Status.status;
         const higherCard=p1Status.tier>=p2Status.tier?p1Status.card:p2Status.card;
         const lowerCard=p1Status.tier>=p2Status.tier?p2Status.card:p1Status.card;
@@ -2849,8 +2859,8 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
           color:"teal",icon:"✅",
           headline:`${chain} Status Stacking`,
           detail:sameLevel
-            ?`You both have ${chain} ${higherStatus} — yours from the ${p1Status.card.short||p1Status.card.name}, ${p2Name||"Partner"}'s from the ${p2Status.card.short||p2Status.card.name}. Book ${chain} stays under either name for full perks. ${cfg.sharing}`
-            :`${higherOwner} has ${chain} ${higherStatus} (${higherCard.short||higherCard.name}), ${lowerOwner} has ${chain} ${lowerStatus} (${lowerCard.short||lowerCard.name}). Book ${chain} stays under ${higherOwner==="You"?"your":higherOwner+"'s"} name when traveling together for the higher-tier perks. ${cfg.sharing}`,
+            ?`You both have ${chain} ${higherStatus} — yours from the ${p1Status.card.short||p1Status.card.name}, ${pn}'s from the ${p2Status.card.short||p2Status.card.name}. Book ${chain} stays under either name for full perks. ${cfg.sharing}`
+            :`${higherOwner} ${has(higherOwner)} ${chain} ${higherStatus} (${higherCard.short||higherCard.name}), ${lowerOwner} ${has(lowerOwner)} ${chain} ${lowerStatus} (${lowerCard.short||lowerCard.name}). Book ${chain} stays under ${pos(higherOwner)} name when traveling together for the higher-tier perks. ${cfg.sharing}`,
           cards:[p1Status.card,p2Status.card].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i)
         });
       }
@@ -2879,12 +2889,12 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
         const p1CardNames=p1Lounges.map(l=>l.card.short||l.card.name).join(", ");
         const p2CardNames=p2Lounges.map(l=>l.card.short||l.card.name).join(", ");
         let extra="";
-        if(p1Only.length>0) extra+=` You also get ${p1Only.join(", ")} which ${p2Name||"Partner"} doesn't have.`;
-        if(p2Only.length>0) extra+=` ${p2Name||"Partner"} also gets ${p2Only.join(", ")} which you don't have.`;
+        if(p1Only.length>0) extra+=` You also get ${p1Only.join(", ")} which ${pn} doesn't have.`;
+        if(p2Only.length>0) extra+=` ${pn} also gets ${p2Only.join(", ")} which you don't have.`;
         results.push({
           color:"gold",icon:"ℹ️",
           headline:"Overlapping Lounge Access",
-          detail:`You both have ${shared.join(" and ")} access — yours through ${p1CardNames}, ${p2Name||"Partner"}'s through ${p2CardNames}. This is actually useful when you travel separately.${extra} No action needed.`,
+          detail:`You both have ${shared.join(" and ")} access — yours through ${p1CardNames}, ${pn}'s through ${p2CardNames}. This is actually useful when you travel separately.${extra} No action needed.`,
           cards:[...p1Lounges.map(l=>l.card),...p2Lounges.map(l=>l.card)].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i)
         });
       }
