@@ -728,50 +728,45 @@ function SharePortfolioModal({netValue,totalFees,totalCredits,numCards,activeStr
 // sorted by nearest renewal date with ROI progress bars and verdict badges,
 // and a collapsed section for no-annual-fee cards.
 // Props: myCards, setMyCards, checkedSet, setTab, setStratModal.
-function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversaryDates,user}){
+function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversaryDates,user,p2Cards=[],p2Name="",householdSetup=false}){
   const [showShare,setShowShare]=useState(false);
   const [showFreeCards,setShowFreeCards]=useState(false);
+  const [showP2Free,setShowP2Free]=useState(false);
   const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
+  const p2Resolved=useMemo(()=>householdSetup?p2Cards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean):[],[p2Cards,householdSetup]);
 
-  const totalFees=useMemo(()=>cards.reduce((s,c)=>s+c.fee,0),[cards]);
-  const totalCredits=useMemo(()=>cards.reduce((s,c)=>{
-    const ann=c.annual.reduce((a,b)=>{
-      if(!b.v)return a;
-      if(b.reset==="quarterly")return a+b.v*4;
-      if(b.reset==="semi-annual")return a+b.v*2;
-      return a+b.v;
-    },0);
-    const mon=c.monthly.reduce((a,b)=>a+((b.v||0)*12),0);
-    return s+ann+mon;
-  },0),[cards]);
+  // Helper to compute annual credit value for a card
+  const cardCreditVal=c=>{
+    const ann=c.annual.reduce((a,b)=>{if(!b.v)return a;if(b.reset==="quarterly")return a+b.v*4;if(b.reset==="semi-annual")return a+b.v*2;return a+b.v;},0);
+    return ann+c.monthly.reduce((a,b)=>a+((b.v||0)*12),0);
+  };
+
+  const allHouseCards=useMemo(()=>[...cards,...p2Resolved],[cards,p2Resolved]);
+  const totalFees=useMemo(()=>allHouseCards.reduce((s,c)=>s+c.fee,0),[allHouseCards]);
+  const totalCredits=useMemo(()=>allHouseCards.reduce((s,c)=>s+cardCreditVal(c),0),[allHouseCards]);
   const netROI=totalCredits-totalFees;
 
-  // Calculate per-card credit values (how much of their fee they've "earned back")
-  const cardStats=useMemo(()=>cards.map(card=>{
-    const annVal=card.annual.reduce((a,b)=>{
-      if(!b.v)return a;
-      if(b.reset==="quarterly")return a+b.v*4;
-      if(b.reset==="semi-annual")return a+b.v*2;
-      return a+b.v;
-    },0);
-    const monVal=card.monthly.reduce((a,b)=>a+((b.v||0)*12),0);
-    const totalVal=annVal+monVal;
-    // Calculate renewal days from user-set anniversary month
-    let renewDays=card.fee>0?getRenewalDays(card.id,anniversaryDates):null;
-    const roiPct=card.fee>0?Math.round((totalVal/card.fee)*100):null;
-    const verdict=card.fee===0?null:roiPct>=100?"worth-it":roiPct>=50?"on-track":"at-risk";
-    return {card,totalVal,renewDays,roiPct,verdict};
-  }),[cards,anniversaryDates]);
+  const p2Set=useMemo(()=>new Set(p2Cards),[p2Cards]);
+
+  // Calculate per-card credit values
+  function buildCardStats(cardList,owner){
+    return cardList.map(card=>{
+      const totalVal=cardCreditVal(card);
+      let renewDays=card.fee>0?getRenewalDays(card.id,anniversaryDates):null;
+      const roiPct=card.fee>0?Math.round((totalVal/card.fee)*100):null;
+      const verdict=card.fee===0?null:roiPct>=100?"worth-it":roiPct>=50?"on-track":"at-risk";
+      return {card,totalVal,renewDays,roiPct,verdict,owner};
+    });
+  }
+  const cardStats=useMemo(()=>buildCardStats(cards,"you"),[cards,anniversaryDates]);
+  const p2CardStats=useMemo(()=>buildCardStats(p2Resolved,p2Name||"Partner"),[p2Resolved,anniversaryDates,p2Name]);
 
   // Split into fee cards (sorted by nearest renewal) and free cards
-  const feeCards=useMemo(()=>
-    cardStats.filter(cs=>cs.card.fee>0).sort((a,b)=>{
-      const aD=a.renewDays!=null?a.renewDays:9999;
-      const bD=b.renewDays!=null?b.renewDays:9999;
-      return aD-bD;
-    })
-  ,[cardStats]);
+  const allStats=useMemo(()=>[...cardStats,...p2CardStats],[cardStats,p2CardStats]);
+  const sortByRenewal=(a,b)=>{const aD=a.renewDays!=null?a.renewDays:9999;const bD=b.renewDays!=null?b.renewDays:9999;return aD-bD;};
+  const feeCards=useMemo(()=>allStats.filter(cs=>cs.card.fee>0).sort(sortByRenewal),[allStats]);
   const freeCards=useMemo(()=>cardStats.filter(cs=>cs.card.fee===0),[cardStats]);
+  const p2FreeCards=useMemo(()=>p2CardStats.filter(cs=>cs.card.fee===0),[p2CardStats]);
 
   // Write upcoming renewals to Firestore for newsletter reminders
   useEffect(()=>{
@@ -854,18 +849,18 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
       {/* Dashboard header */}
       <div style={{marginBottom:20}}>
         <h2 className="page-title" style={{fontSize:36}}>Fee Dashboard</h2>
-        <p className="page-subtitle">{cards.length} card{cards.length!==1?'s':''} · {feeCards.length} with annual fees</p>
+        <p className="page-subtitle">{allHouseCards.length} card{allHouseCards.length!==1?'s':''}{householdSetup?" (household)":""} · {feeCards.length} with annual fees</p>
       </div>
 
       {/* Renewal notification banners */}
-      {feeCards.filter(({card,renewDays})=>renewDays!=null&&renewDays<=60).map(({card,renewDays})=>(
-        <div key={card.id+"banner"} onClick={()=>setTab("benefits")}
+      {feeCards.filter(({renewDays})=>renewDays!=null&&renewDays<=60).map(({card,renewDays,owner})=>(
+        <div key={card.id+owner+"banner"} onClick={()=>setTab("benefits")}
           style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",marginBottom:8,borderRadius:12,cursor:"pointer",
             background:renewDays<=7?"rgba(220,38,38,.08)":renewDays<=30?"rgba(13,115,119,.08)":"rgba(13,115,119,.06)",
             border:renewDays<=7?"1px solid rgba(220,38,38,.2)":renewDays<=30?"1px solid rgba(13,115,119,.2)":"1px solid rgba(13,115,119,.15)"}}>
           <Icon name="alert-triangle" size={16} color={renewDays<=7?"var(--red2)":renewDays<=30?"#d97706":"var(--acc)"}/>
           <div style={{flex:1,fontSize:12,fontWeight:600,color:"var(--tx)",lineHeight:1.4}}>
-            Your <strong>{card.short||card.name}</strong> annual fee hits in {renewDays} day{renewDays!==1?"s":""}. <span style={{color:"var(--acc)",fontWeight:700}}>Review your ROI →</span>
+            {householdSetup&&owner!=="you"?<span style={{color:"var(--acc)"}}>{owner}&rsquo;s </span>:"Your "}<strong>{card.short||card.name}</strong> annual fee hits in {renewDays} day{renewDays!==1?"s":""}. <span style={{color:"var(--acc)",fontWeight:700}}>Review ROI →</span>
           </div>
         </div>
       ))}
@@ -907,7 +902,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
           <div className="section-hdr" style={{marginBottom:12}}>
             <div className="section-title"><Icon name="calendar" size={14} color="var(--acc)"/> RENEWAL TIMELINE</div>
           </div>
-          {feeCards.map(({card,totalVal,renewDays,roiPct,verdict})=>{
+          {feeCards.map(({card,totalVal,renewDays,roiPct,verdict,owner})=>{
             const palette=getIssuerPalette(card.issuer);
             const verdictLabel=verdict==="worth-it"?"Worth It":verdict==="on-track"?"On Track":"At Risk";
             const verdictColor=verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--gold)":"var(--red2)";
@@ -915,11 +910,14 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
             const barPct=Math.min(roiPct||0,100);
             const barColor=verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--gold)":"var(--red2)";
             return(
-              <div key={card.id} className="surf fu" style={{marginBottom:8,cursor:"pointer",borderLeft:`4px solid ${palette.grad[0]}`,padding:"14px 16px"}}
+              <div key={card.id+owner} className="surf fu" style={{marginBottom:8,cursor:"pointer",borderLeft:`4px solid ${palette.grad[0]}`,padding:"14px 16px"}}
                 onClick={()=>setTab("benefits")}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:14,fontWeight:700,color:"var(--tx)",lineHeight:1.2}}>{card.short||card.name}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <span style={{fontSize:14,fontWeight:700,color:"var(--tx)",lineHeight:1.2}}>{card.short||card.name}</span>
+                      {householdSetup&&<span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:99,background:owner==="you"?"rgba(13,115,119,.1)":"rgba(154,110,26,.1)",color:owner==="you"?"var(--acc)":"var(--gold)",letterSpacing:.3,textTransform:"uppercase",whiteSpace:"nowrap"}}>{owner==="you"?"You":owner}</span>}
+                    </div>
                     <div style={{fontSize:11,color:"var(--tx3)",marginTop:2}}>{card.issuer} · ${card.fee}/yr</div>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
@@ -957,13 +955,13 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
 
       {/* No Annual Fee cards — collapsed section */}
       {freeCards.length>0&&(
-        <div style={{marginBottom:16}}>
+        <div style={{marginBottom:householdSetup&&p2FreeCards.length>0?8:16}}>
           <button onClick={()=>setShowFreeCards(!showFreeCards)}
             style={{display:"flex",alignItems:"center",gap:8,width:"100%",background:"none",border:"none",
               cursor:"pointer",padding:"10px 0",borderTop:"1px solid var(--br2)"}}>
             <Icon name={showFreeCards?"chevron-down":"chevron-right"} size={14} color="var(--tx3)"/>
             <span style={{fontSize:12,fontWeight:600,color:"var(--tx3)",letterSpacing:.5,textTransform:"uppercase"}}>
-              No Annual Fee ({freeCards.length})
+              {householdSetup?"Your ":""}No Annual Fee ({freeCards.length})
             </span>
           </button>
           {showFreeCards&&(
@@ -972,6 +970,31 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
                 const palette=getIssuerPalette(card.issuer);
                 return(
                   <div key={card.id} className="surf" style={{marginBottom:6,borderLeft:`4px solid ${palette.grad[0]}`,padding:"10px 14px",opacity:.7}}>
+                    <div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{card.short||card.name}</div>
+                    <div style={{fontSize:11,color:"var(--tx3)",marginTop:1}}>{card.issuer} · $0/yr · No renewal decision needed</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+      {householdSetup&&p2FreeCards.length>0&&(
+        <div style={{marginBottom:16}}>
+          <button onClick={()=>setShowP2Free(!showP2Free)}
+            style={{display:"flex",alignItems:"center",gap:8,width:"100%",background:"none",border:"none",
+              cursor:"pointer",padding:"10px 0",borderTop:"1px solid var(--br2)"}}>
+            <Icon name={showP2Free?"chevron-down":"chevron-right"} size={14} color="var(--tx3)"/>
+            <span style={{fontSize:12,fontWeight:600,color:"var(--tx3)",letterSpacing:.5,textTransform:"uppercase"}}>
+              {p2Name||"Partner"}&rsquo;s No Annual Fee ({p2FreeCards.length})
+            </span>
+          </button>
+          {showP2Free&&(
+            <div style={{paddingLeft:4}}>
+              {p2FreeCards.map(({card})=>{
+                const palette=getIssuerPalette(card.issuer);
+                return(
+                  <div key={card.id+"p2"} className="surf" style={{marginBottom:6,borderLeft:`4px solid ${palette.grad[0]}`,padding:"10px 14px",opacity:.7}}>
                     <div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{card.short||card.name}</div>
                     <div style={{fontSize:11,color:"var(--tx3)",marginTop:1}}>{card.issuer} · $0/yr · No renewal decision needed</div>
                   </div>
@@ -1435,9 +1458,12 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
 // The core FeeWorth feature — a deep-dive decision page for a single card.
 // Lets users pick a card, see benefit tracker, ROI verdict, retention scripts,
 // downgrade paths, cancellation consequences, and replacement suggestions.
-function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckDates,resetBadges=new Set(),skippedSet=new Set(),setSkippedBenefits,anniversaryDates={},setAnniversaryDates}){
+function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckDates,resetBadges=new Set(),skippedSet=new Set(),setSkippedBenefits,anniversaryDates={},setAnniversaryDates,p2Cards=[],p2Name="",householdSetup=false}){
   const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
-  const feeCards=useMemo(()=>cards.filter(c=>c.fee>0),[cards]);
+  const p2Resolved=useMemo(()=>householdSetup?p2Cards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean):[],[p2Cards,householdSetup]);
+  const allCards=useMemo(()=>[...cards,...p2Resolved],[cards,p2Resolved]);
+  const p2Set=useMemo(()=>new Set(p2Cards),[p2Cards]);
+  const feeCards=useMemo(()=>allCards.filter(c=>c.fee>0),[allCards]);
 
   // Default to nearest-renewal card (prefer cards with anniversary dates set)
   const [selectedId,setSelectedId]=useState(()=>{
@@ -1541,7 +1567,8 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   const replacement=useMemo(()=>{
     if(!card||card.fee===0)return null;
     const topCats=Object.entries(card.earn||{}).filter(([k,v])=>k!=="o"&&parseFloat(String(v).replace(/[^0-9.]/g,""))>1).map(([k])=>k);
-    const candidates=CARDS.filter(c=>c.id!==card.id&&!myCards.includes(c.id)&&c.isBiz===card.isBiz)
+    const allOwnedIds=[...myCards,...p2Cards];
+    const candidates=CARDS.filter(c=>c.id!==card.id&&!allOwnedIds.includes(c.id)&&c.isBiz===card.isBiz)
       .map(c=>{
         const bens=[...c.annual,...c.monthly];
         const credits=bens.filter(b=>b.v!=null).reduce((s,b)=>s+annualBenValue(b),0);
@@ -1557,13 +1584,13 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
       .filter(c=>c.net>0||c.earnBoost>0)
       .sort((a,b)=>b.score-a.score);
     return candidates[0]||null;
-  },[card,myCards]);
+  },[card,myCards,p2Cards]);
 
   if(!feeCards.length){
     return (
       <div style={{padding:40,textAlign:"center",color:"var(--tx3)"}}>
         <Icon name="shield-check" size={36} color="var(--tx4)"/>
-        <div style={{marginTop:12,fontSize:15,fontWeight:600,color:"var(--tx2)"}}>No annual-fee cards in your wallet</div>
+        <div style={{marginTop:12,fontSize:15,fontWeight:600,color:"var(--tx2)"}}>No annual-fee cards {householdSetup?"in your household":"in your wallet"}</div>
         <div style={{marginTop:4,fontSize:12}}>Add cards with annual fees to get renewal analysis.</div>
       </div>
     );
@@ -1611,10 +1638,22 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             style={{width:"100%",padding:"14px 16px",fontSize:15,fontWeight:600,color:"var(--tx)",
               background:"var(--bg)",border:`2px solid ${palette.text}20`,borderRadius:14,
               appearance:"none",cursor:"pointer",fontFamily:"'Inter',sans-serif"}}>
-            {feeCards.map(c=>{
-              const p=getIssuerPalette(c.issuer);
-              return <option key={c.id} value={c.id}>{c.short||c.name} — ${c.fee}/yr</option>;
-            })}
+            {householdSetup&&feeCards.some(c=>p2Set.has(c.id))?(
+              <>
+                <optgroup label="Your Cards">
+                  {feeCards.filter(c=>!p2Set.has(c.id)).map(c=>
+                    <option key={c.id} value={c.id}>{c.short||c.name} — ${c.fee}/yr</option>
+                  )}
+                </optgroup>
+                <optgroup label={(p2Name||"Partner")+"'s Cards"}>
+                  {feeCards.filter(c=>p2Set.has(c.id)).map(c=>
+                    <option key={c.id} value={c.id}>{c.short||c.name} — ${c.fee}/yr</option>
+                  )}
+                </optgroup>
+              </>
+            ):(
+              feeCards.map(c=><option key={c.id} value={c.id}>{c.short||c.name} — ${c.fee}/yr</option>)
+            )}
           </select>
           <div style={{position:"absolute",right:16,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}>
             <Icon name="chevron-right" size={16} color="var(--tx3)" style={{transform:"rotate(90deg)"}}/>
@@ -1627,7 +1666,10 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
         <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
           <CreditCardDisplay card={card} size="sm"/>
           <div style={{flex:1}}>
-            <div style={{fontFamily:"'Inter',sans-serif",fontSize:20,fontWeight:700,color:palette.text}}>{card.short||card.name}</div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontFamily:"'Inter',sans-serif",fontSize:20,fontWeight:700,color:palette.text}}>{card.short||card.name}</span>
+              {householdSetup&&<span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:99,background:p2Set.has(card.id)?"rgba(154,110,26,.1)":"rgba(13,115,119,.1)",color:p2Set.has(card.id)?"var(--gold)":"var(--acc)",letterSpacing:.3,textTransform:"uppercase",whiteSpace:"nowrap"}}>{p2Set.has(card.id)?(p2Name||"Partner"):"You"}</span>}
+            </div>
             <div style={{fontSize:12,color:"var(--tx3)"}}>{card.issuer} · {card.network}</div>
           </div>
         </div>
@@ -5276,9 +5318,10 @@ function App(){
     const newDates={...checkDates};
     const badgeKeys=new Set();
 
-    // Build flat benefit map for wallet cards (includes period keys for multi-period benefits)
+    // Build flat benefit map for wallet cards + partner cards (includes period keys for multi-period benefits)
     const benefitMap={};
-    myCards.forEach(cardId=>{
+    const allWalletIds=[...myCards,...p2Cards];
+    allWalletIds.forEach(cardId=>{
       const card=CARDS.find(c=>c.id===cardId);
       if(!card) return;
       card.annual.forEach(b=>{
@@ -5443,8 +5486,8 @@ function App(){
         </div>
       )}
       <div className="tab-content-wrap" style={{paddingTop:8}}>
-        {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user}/>}
-        {tab==="benefits"&&<RenewalAdvisorTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits} anniversaryDates={anniversaryDates} setAnniversaryDates={setAnniversaryDates}/>}
+        {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup}/>}
+        {tab==="benefits"&&<RenewalAdvisorTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits} anniversaryDates={anniversaryDates} setAnniversaryDates={setAnniversaryDates} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup}/>}
         {tab==="household"&&<HouseholdTab myCards={myCards} p2Cards={p2Cards} setP2Cards={setP2Cards} p2Name={p2Name} setP2Name={setP2Name} householdSetup={householdSetup} setHouseholdSetup={setHouseholdSetup} checkedSet={checkedSet} user={user} onAuthClick={()=>setAuthModal(true)} setTab={setTab}/>}
         {/* REMOVED IN FEEWORTH PIVOT — preserved for reference */}
         {/* {tab==="tips"&&    <TipsTab myCards={myCards}/>} */}
