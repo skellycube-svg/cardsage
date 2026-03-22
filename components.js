@@ -1568,10 +1568,24 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   if(!card) return null;
 
   const palette=getIssuerPalette(card.issuer);
+  const allChecked=totalSlots>0&&checkedCount>=totalSlots;
+  const worthItDesc=allChecked
+    ?"You've made the most of this card. The fee pays for itself."
+    :"The fee already pays for itself — and you still have unclaimed benefits.";
+  const onTrackDesc=allChecked
+    ?"You've used every benefit, but the direct value ($"+usedValue.toLocaleString()+") still falls short of the $"+card.fee.toLocaleString()+" fee. Consider the intangible perks below, or explore downgrade options."
+    :usedRoiPct>=50
+      ?"You've captured over half the fee in benefits. Check off a few more to make it worth it."
+      :"You've got benefits left to use. Check them off as you redeem them.";
+  const atRiskDesc=allChecked
+    ?"You've used every benefit, but the direct value ($"+usedValue.toLocaleString()+") still falls short of the $"+card.fee.toLocaleString()+" fee. Consider the intangible perks below, or explore downgrade options."
+    :potentialRoiPct>=100
+      ?"This card can pay for itself — you just haven't used enough benefits yet. Check off what you've redeemed below."
+      :"You're not getting enough value from this card. Consider downgrading or calling for a retention offer.";
   const verdictConfig={
-    "worth-it":{label:"Worth It",icon:"check",bg:"rgba(22,163,74,.06)",border:"rgba(22,163,74,.2)",color:"var(--grn2)",desc:"You've already redeemed more value than the annual fee. This card is paying for itself."},
-    "on-track":{label:"On Track",icon:"zap",bg:"rgba(13,115,119,.06)",border:"rgba(13,115,119,.2)",color:"var(--acc)",desc:"You've captured over half the fee in benefits. Check off a few more to make it worth it."},
-    "at-risk":{label:"At Risk",icon:"alert-triangle",bg:"rgba(220,38,38,.06)",border:"rgba(220,38,38,.2)",color:"var(--red2)",desc:potentialRoiPct>=100?"This card can pay for itself — you just haven't used enough benefits yet. Check off what you've redeemed below.":"You're not getting enough value from this card. Consider downgrading or calling for a retention offer."}
+    "worth-it":{label:"Worth It",icon:"check",bg:"rgba(22,163,74,.06)",border:"rgba(22,163,74,.2)",color:"var(--grn2)",desc:worthItDesc},
+    "on-track":{label:"On Track",icon:"zap",bg:"rgba(13,115,119,.06)",border:"rgba(13,115,119,.2)",color:"var(--acc)",desc:onTrackDesc},
+    "at-risk":{label:"At Risk",icon:"alert-triangle",bg:"rgba(220,38,38,.06)",border:"rgba(220,38,38,.2)",color:"var(--red2)",desc:atRiskDesc}
   };
   const vc=verdictConfig[verdict];
 
