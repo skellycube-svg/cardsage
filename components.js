@@ -1459,6 +1459,10 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   const [showAllPaths,setShowAllPaths]=useState(false);
   const [showDowngrades,setShowDowngrades]=useState(false);
   const [showReplacement,setShowReplacement]=useState(false);
+  const [showQuiz,setShowQuiz]=useState(false);
+  const [quizStep,setQuizStep]=useState(0);
+  const [quizAnswers,setQuizAnswers]=useState({});
+  const [quizResult,setQuizResult]=useState(null);
 
   const card=useMemo(()=>CARDS.find(c=>c.id===selectedId),[selectedId]);
 
@@ -1468,6 +1472,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
     setShowSynergies(false);setShowPaths(false);setShowAllPaths(false);
     setShowDowngrades(false);setShowReplacement(false);setShowBenefits(true);setOpenBen(null);
     setExpandedHiddenPerk(null);setExpandedSynergy(null);
+    setShowQuiz(false);setQuizStep(0);setQuizAnswers({});setQuizResult(null);
   },[selectedId]);
 
   // Benefits for this card
@@ -2615,6 +2620,518 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
               <span style={{transition:"transform .2s",transform:showSynergies?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
             </button>
             {showSynergies&&<div style={{marginTop:16}}>{sectionContent}</div>}
+          </div>
+        );
+      })()}
+
+      {/* ── STILL UNSURE? GUIDED DECISION QUIZ ── */}
+      {card&&card.fee>0&&(()=>{
+        // ── Build adaptive question bank ──
+        const hv=HIDDEN_VALUES[card.name]||null;
+        const tpd=card.cur?TRANSFER_PARTNER_DATA[card.cur]:null;
+        const hasTransfer=!!(tpd||(hv&&hv.transferEcosystem));
+        const eco=Object.entries(ECOSYSTEM_MAP).find(([,d])=>d.unlockers.includes(card.name)||d.earners.includes(card.name));
+        const ecoName=eco?eco[0]:null;
+        const ecoData=eco?eco[1]:null;
+        const isUnlocker=ecoData?ecoData.unlockers.includes(card.name):false;
+        const allHHIds=[...myCards,...(householdSetup?p2Cards:[])];
+        const isOnlyUnlocker=isUnlocker&&ecoData?ecoData.unlockers.filter(u=>CARDS.some(c=>allHHIds.includes(c.id)&&c.name===u)).length===1:false;
+        const onlyCardInEco=ecoName?allHHIds.filter(id=>{const c=CARDS.find(x=>x.id===id);return c&&(ecoData.earners.includes(c.name)||ecoData.unlockers.includes(c.name));}).length===1:false;
+        const synergies=CARD_SYNERGIES[card.name]||[];
+        const earnCats=Object.entries(card.earn||{}).filter(([k,v])=>k!=="o"&&parseFloat(String(v).replace(/[^0-9.]/g,""))>1);
+        const hasTravelBens=(()=>{const allBens=[...card.annual,...card.monthly];return allBens.some(b=>{const n=(b.n||"").toLowerCase();return n.includes("lounge")||n.includes("travel credit")||n.includes("airline")||n.includes("global entry")||n.includes("tsa")||n.includes("hotel credit")||n.includes("trip");});})();
+        const isBrandedCard=(()=>{const n=card.name.toLowerCase();return n.includes("marriott")||n.includes("hilton")||n.includes("hyatt")||n.includes("delta")||n.includes("united")||n.includes("southwest")||n.includes("ihg")||n.includes("alaska");})();
+        const brandName=(()=>{const n=card.name.toLowerCase();if(n.includes("marriott"))return"Marriott";if(n.includes("hilton"))return"Hilton";if(n.includes("hyatt"))return"Hyatt";if(n.includes("delta"))return"Delta";if(n.includes("united"))return"United";if(n.includes("southwest"))return"Southwest";if(n.includes("ihg"))return"IHG";if(n.includes("alaska"))return"Alaska";return null;})();
+        const psr=ecoName?POINT_SHARING_RULES[ecoName]:null;
+        const hasHHOverlap=householdSetup&&p2Resolved.length>0&&(()=>{const myBens=[...card.annual,...card.monthly].map(b=>(b.n||"").toLowerCase());return p2Resolved.some(pc=>[...pc.annual,...pc.monthly].some(b=>myBens.includes((b.n||"").toLowerCase())));})();
+        const catLabels={d:"dining",g:"groceries",gas:"gas",t:"travel",s:"streaming",a:"Amazon",tr:"rideshare",p:"pharmacy"};
+
+        // Pre-populate Q3 from existing benefit tracker checked state
+        const benefitOptions=useMemo(()=>{
+          const bens=[...card.annual,...card.monthly].filter(b=>b.v!=null).map(b=>({name:b.n,value:annualBenValue(b),checked:checkedSet.has(benKey(card.id,b,!!b.reset&&b.reset==="monthly"))}));
+          const hvPerks=(hv&&hv.hiddenPerks||[]).map(hp=>{
+            const valMatch=(hp.estimatedValue||"").match(/\$(\d+)/);
+            return {name:hp.perk,value:valMatch?parseInt(valMatch[1]):0,checked:false,isHidden:true};
+          });
+          return [...bens,...hvPerks];
+        },[card,checkedSet,hv]);
+
+        const questions=useMemo(()=>{
+          const qs=[];
+          // Q1: Spending patterns
+          if(earnCats.length>0){
+            const catStr=earnCats.map(([k,v])=>(catLabels[k]||k)+" ("+v+"x)").join(", ");
+            qs.push({id:"spending",title:"How much do you spend monthly in this card's bonus categories?",subtitle:card.short+"'s bonus categories: "+catStr,
+              type:"single",options:[
+                {label:"Less than $200/mo",value:"low"},
+                {label:"$200 - $500/mo",value:"med"},
+                {label:"$500 - $1,000/mo",value:"high"},
+                {label:"Over $1,000/mo",value:"vhigh"}
+              ]});
+          }
+          // Q2: Transfer partner usage
+          if(hasTransfer){
+            qs.push({id:"transfer",title:"Do you transfer points to airline/hotel partners for flights or stays?",
+              type:"single",options:[
+                {label:"Yes, regularly (3+ times/year)",value:"regular"},
+                {label:"Sometimes (1-2 times/year)",value:"sometimes"},
+                {label:"Rarely or never",value:"rarely"},
+                {label:"I didn't know I could do that",value:"didnt_know"}
+              ]});
+          }
+          // Q3: Benefit usage (multi-select)
+          if(benefitOptions.length>0){
+            qs.push({id:"benefits",title:"Which of these card benefits do you actually use?",subtitle:"Check all that apply. Pre-checked items reflect your benefit tracker above.",
+              type:"multi",options:benefitOptions.map(b=>({label:b.name+(b.value?" ($"+b.value+"/yr)":"")+(b.isHidden?" (hidden perk)":""),value:b.name,checked:b.checked}))
+            });
+          }
+          // Q4: Household redundancy
+          if(householdSetup&&hasHHOverlap){
+            const overlaps=[];
+            const myBens=[...card.annual,...card.monthly];
+            p2Resolved.forEach(pc=>{
+              const pcBens=[...pc.annual,...pc.monthly];
+              myBens.forEach(b=>{
+                if(pcBens.some(pb=>(pb.n||"").toLowerCase()===(b.n||"").toLowerCase())){
+                  overlaps.push((pc.short||pc.name)+" also has "+b.n);
+                }
+              });
+            });
+            const overlapStr=overlaps.slice(0,3).join("; ");
+            qs.push({id:"household",title:(p2Name||"Your partner")+"'s cards overlap with some benefits. Would you still need this card if you relied on theirs?",
+              subtitle:overlapStr,
+              type:"single",options:[
+                {label:"Yes - I need my own coverage (we travel separately)",value:"need_own"},
+                {label:"Probably not - we're always together",value:"dont_need"},
+                {label:"Not sure",value:"unsure"}
+              ]});
+          }
+          // Q5: Travel frequency
+          if(hasTravelBens){
+            qs.push({id:"travel",title:"How often do you travel?",
+              type:"single",options:[
+                {label:"Frequently (6+ trips/year)",value:"frequent"},
+                {label:"A few times (2-5 trips/year)",value:"sometimes"},
+                {label:"Rarely (0-1 trips/year)",value:"rarely"}
+              ]});
+          }
+          // Q6: Brand loyalty
+          if(isBrandedCard&&brandName){
+            qs.push({id:"loyalty",title:"How important is your "+brandName+" loyalty status to you?",
+              type:"single",options:[
+                {label:"Very - I always stay/fly with "+brandName,value:"very"},
+                {label:"Somewhat - I use them when convenient",value:"somewhat"},
+                {label:"Not much - I go wherever is cheapest",value:"notmuch"}
+              ]});
+          }
+          // Q7: Points balance risk
+          if(onlyCardInEco&&ecoName){
+            qs.push({id:"balance",title:"Do you have a significant "+ecoName+" points balance?",
+              type:"single",options:[
+                {label:"Yes, over 50,000 points",value:"large"},
+                {label:"Some, under 50,000",value:"some"},
+                {label:"Very few / already used them",value:"few"}
+              ]});
+          }
+          // Q8: Retention willingness
+          qs.push({id:"retention",title:"Would you call "+card.issuer+" to ask for a retention offer before deciding?",
+            type:"single",options:[
+              {label:"Yes, I'd definitely call",value:"yes"},
+              {label:"Maybe, if it's worth it",value:"maybe"},
+              {label:"No, I'd rather just decide now",value:"no"}
+            ]});
+          // Q9: Fee sensitivity
+          qs.push({id:"fee_sense",title:"How do you feel about this card's $"+card.fee+"/yr annual fee?",
+            type:"single",options:[
+              {label:"Fine if I'm getting the value",value:"fine"},
+              {label:"It's a stretch - I'd prefer to pay less",value:"stretch"},
+              {label:"I really want to eliminate it",value:"eliminate"}
+            ]});
+          return qs;
+        },[card,earnCats,hasTransfer,benefitOptions,householdSetup,hasHHOverlap,hasTravelBens,isBrandedCard,brandName,onlyCardInEco,ecoName,p2Name]);
+
+        // ── Recommendation engine ──
+        function computeRecommendation(answers){
+          let totalValue=0;
+          const reasons=[];
+          const warnings=[];
+          const tips=[];
+
+          // Checked benefit value from tracker
+          const trackerVal=usedValue;
+          if(trackerVal>0){totalValue+=trackerVal;reasons.push("You've captured $"+trackerVal+" in direct benefits from your tracker");}
+
+          // Q3: Additional benefits checked in quiz
+          if(answers.benefits){
+            let quizBenVal=0;
+            benefitOptions.forEach(bo=>{
+              if(answers.benefits.includes(bo.name)&&!bo.checked) quizBenVal+=bo.value;
+            });
+            if(quizBenVal>0){totalValue+=quizBenVal;reasons.push("You use an additional $"+quizBenVal+" in benefits not tracked above");}
+          }
+
+          // Q1: Spending value
+          if(answers.spending&&earnCats.length>0){
+            const spendMap={low:150,med:350,high:750,vhigh:1500};
+            const monthlySpend=spendMap[answers.spending]||0;
+            const avgRate=earnCats.reduce((s,[,v])=>s+parseFloat(String(v).replace(/[^0-9.]/g,"")),0)/earnCats.length;
+            const cpp=tpd?tpd.transferValue/100:0.01;
+            const annualEarnValue=Math.round(monthlySpend*12*avgRate*cpp);
+            if(annualEarnValue>0){totalValue+=annualEarnValue;reasons.push("Your spending earns ~$"+annualEarnValue+"/yr in points value ("+avgRate.toFixed(1)+"x avg at "+(tpd?tpd.transferValue:1)+"c/point)");}
+          }
+
+          // Q2: Transfer partner multiplier
+          if(answers.transfer){
+            const transferBonus=answers.transfer==="regular"?150:answers.transfer==="sometimes"?75:0;
+            if(transferBonus>0){totalValue+=transferBonus;reasons.push("Transfer partner usage adds ~$"+transferBonus+"/yr in extra value vs cash back");}
+            if(answers.transfer==="didnt_know"&&tpd){
+              tips.push("If you started transferring to partners, your points could be worth "+tpd.transferValue+"c each instead of "+tpd.cashValue+"c. This alone could change the math.");
+            }
+            if(answers.transfer==="rarely"&&tpd){
+              tips.push("Transferring to partners could boost your point value from "+tpd.cashValue+"c to "+tpd.transferValue+"c each. Consider trying before deciding.");
+            }
+          }
+
+          // Q4: Household redundancy discount
+          if(answers.household==="dont_need"){
+            const discount=Math.round(totalValue*0.3);
+            totalValue-=discount;
+            reasons.push("Partner covers overlapping benefits (-$"+discount+" household redundancy)");
+          }
+
+          // Q5: Travel frequency scaling
+          if(answers.travel){
+            const travelBenTotal=[...card.annual,...card.monthly].filter(b=>{const n=(b.n||"").toLowerCase();return b.v&&(n.includes("lounge")||n.includes("travel")||n.includes("airline")||n.includes("global entry")||n.includes("tsa")||n.includes("hotel credit")||n.includes("trip"));}).reduce((s,b)=>s+annualBenValue(b),0);
+            if(travelBenTotal>0){
+              const scale=answers.travel==="frequent"?1:answers.travel==="sometimes"?0.6:0.2;
+              const travelVal=Math.round(travelBenTotal*scale);
+              const alreadyCounted=Math.min(travelBenTotal,trackerVal);
+              const extra=Math.max(0,travelVal-alreadyCounted);
+              if(extra>0){totalValue+=extra;reasons.push("Travel benefits worth ~$"+travelVal+"/yr at your travel frequency");}
+            }
+          }
+
+          // Q6: Loyalty status scaling
+          if(answers.loyalty&&isBrandedCard){
+            const loyaltyBens=[...card.annual,...card.monthly].filter(b=>{const n=(b.n||"").toLowerCase();return b.v&&(n.includes("free night")||n.includes("status")||n.includes("certificate")||n.includes("companion"));});
+            const loyaltyTotal=loyaltyBens.reduce((s,b)=>s+annualBenValue(b),0);
+            if(loyaltyTotal>0){
+              const weight=answers.loyalty==="very"?1:answers.loyalty==="somewhat"?0.5:0.3;
+              const loyaltyVal=Math.round(loyaltyTotal*weight);
+              reasons.push(brandName+" loyalty perks worth ~$"+loyaltyVal+"/yr based on your usage");
+            }
+          }
+
+          // Q8: Retention offer value
+          if(answers.retention==="yes"&&retentionOffers.length>0){
+            const offerMatch=(retentionOffers[0]||"").match(/\$(\d+)/);
+            const retVal=offerMatch?parseInt(offerMatch[1]):75;
+            totalValue+=retVal;
+            reasons.push("Likely retention offer adds ~$"+retVal+" (typical: "+retentionOffers[0]+")");
+          } else if(answers.retention==="maybe"&&retentionOffers.length>0){
+            const offerMatch=(retentionOffers[0]||"").match(/\$(\d+)/);
+            const retVal=offerMatch?Math.round(parseInt(offerMatch[1])*0.5):40;
+            totalValue+=retVal;
+            reasons.push("Possible retention offer could add ~$"+retVal);
+          }
+
+          // Synergy value
+          if(synergies.length>0){
+            const ownedSyns=synergies.filter(s=>{const pc=CARDS.find(c=>c.name===s.pairWith);return pc&&allHHIds.includes(pc.id);});
+            if(ownedSyns.length>0){
+              const synMatch=(ownedSyns[0].estimatedUplift||"").match(/\$(\d+)/);
+              const synVal=synMatch?parseInt(synMatch[1]):100;
+              totalValue+=synVal;
+              reasons.push("Strategy synergy with "+ownedSyns[0].pairWith.replace(/[^a-zA-Z0-9 ]/g,"").trim()+" adds ~$"+synVal+"/yr");
+            }
+          }
+
+          // Only-unlocker ecosystem bonus
+          if(isOnlyUnlocker&&ecoName){
+            totalValue+=200;
+            reasons.push("This is your household's only "+ecoName.split(" ")[0]+" transfer unlocker (+$200 strategic value)");
+            warnings.push("Canceling drops ALL household "+ecoName+" points to cash value");
+          }
+
+          // Q7: Point balance risk
+          if(answers.balance==="large"&&onlyCardInEco){
+            warnings.push("You have 50k+ points and this is your only "+ecoName+" card. Canceling could forfeit them.");
+          }
+
+          // Q9: Fee sensitivity adjustment
+          if(answers.fee_sense==="eliminate") totalValue-=50;
+          if(answers.fee_sense==="stretch") totalValue-=25;
+
+          const netValue=totalValue-card.fee;
+          const bestDowngrade=downgrades.length>0?downgrades[0]:null;
+          const isAmexMR=card.cur==="Amex Membership Rewards";
+
+          let recommendation,recColor,recIcon,recLabel;
+          if(netValue>50){
+            recommendation="renew";recColor="var(--grn2)";recIcon="check-circle";recLabel="RENEW";
+          } else if(netValue>=-50){
+            recommendation="borderline";recColor="var(--acc)";recIcon="help-circle";recLabel="BORDERLINE";
+          } else if(bestDowngrade){
+            recommendation="downgrade";recColor="#2563eb";recIcon="arrow-down";recLabel="DOWNGRADE";
+          } else {
+            recommendation="cancel";recColor="var(--red2)";recIcon="x-circle";recLabel="CANCEL";
+          }
+
+          // Override: never recommend outright cancel if large balance + only card
+          if(recommendation==="cancel"&&answers.balance==="large"&&onlyCardInEco&&bestDowngrade){
+            recommendation="downgrade";recColor="#2563eb";recIcon="arrow-down";recLabel="DOWNGRADE";
+            warnings.push("Downgrade first to preserve your points, then cancel later if you want");
+          }
+
+          // Amex MR safety net
+          if((recommendation==="cancel"||recommendation==="downgrade")&&isAmexMR&&onlyCardInEco){
+            tips.push("Since this is your only Amex MR card, always downgrade to EveryDay ($0/yr) first to preserve your Membership Rewards points.");
+          }
+
+          return {recommendation,recColor,recIcon,recLabel,totalValue,netValue,reasons,warnings,tips,bestDowngrade};
+        }
+
+        const currentQ=questions[quizStep];
+        const isLastStep=quizStep===questions.length-1;
+        const hasAnswer=currentQ?(currentQ.type==="multi"?true:!!quizAnswers[currentQ.id]):false;
+
+        function handleAnswer(qId,value,type){
+          if(type==="multi"){
+            setQuizAnswers(prev=>{
+              const existing=prev[qId]||benefitOptions.filter(b=>b.checked).map(b=>b.name);
+              const next=existing.includes(value)?existing.filter(v=>v!==value):[...existing,value];
+              return {...prev,[qId]:next};
+            });
+          } else {
+            setQuizAnswers(prev=>({...prev,[qId]:value}));
+          }
+        }
+
+        function finishQuiz(){
+          // Pre-populate multi-select defaults if user didn't touch Q3
+          const finalAnswers={...quizAnswers};
+          if(!finalAnswers.benefits){
+            finalAnswers.benefits=benefitOptions.filter(b=>b.checked).map(b=>b.name);
+          }
+          setQuizResult(computeRecommendation(finalAnswers));
+        }
+
+        function retakeQuiz(){
+          setQuizStep(0);setQuizAnswers({});setQuizResult(null);
+        }
+
+        return (
+          <div style={{marginBottom:16,borderLeft:"4px solid var(--acc)",borderRadius:12,overflow:"hidden"}}>
+            <button onClick={()=>setShowQuiz(!showQuiz)}
+              style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"rgba(13,115,119,.03)",border:"none",cursor:"pointer",padding:"16px",textAlign:"left"}}>
+              <div style={{width:40,height:40,borderRadius:10,background:"rgba(13,115,119,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:20}}>
+                {"🤔"}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Still unsure? Let us help you decide.</div>
+                <div style={{fontSize:11,color:"var(--tx3)"}}>Answer a few quick questions for a personalized recommendation.</div>
+              </div>
+              <span style={{transition:"transform .2s",transform:showQuiz?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
+            </button>
+
+            {showQuiz&&(
+              <div style={{padding:"0 16px 16px",background:"rgba(13,115,119,.02)"}}>
+                {!quizResult?(
+                  <div>
+                    {/* Progress */}
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,paddingTop:4}}>
+                      <span style={{fontSize:11,fontWeight:600,color:"var(--tx3)"}}>Question {quizStep+1} of {questions.length}</span>
+                      <div style={{display:"flex",gap:3}}>
+                        {questions.map((_,i)=>(
+                          <div key={i} style={{width:i===quizStep?16:8,height:4,borderRadius:2,background:i<quizStep?"var(--acc)":i===quizStep?"var(--acc)":"var(--br2)",transition:"all .2s"}}/>
+                        ))}
+                      </div>
+                    </div>
+
+                    {currentQ&&(
+                      <div>
+                        <div style={{fontSize:15,fontWeight:700,color:"var(--tx)",lineHeight:1.4,marginBottom:4}}>{currentQ.title}</div>
+                        {currentQ.subtitle&&<div style={{fontSize:12,color:"var(--tx3)",marginBottom:12,lineHeight:1.4}}>{currentQ.subtitle}</div>}
+
+                        {currentQ.type==="single"&&(
+                          <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:16}}>
+                            {currentQ.options.map(opt=>{
+                              const selected=quizAnswers[currentQ.id]===opt.value;
+                              return(
+                                <button key={opt.value} onClick={()=>handleAnswer(currentQ.id,opt.value,"single")}
+                                  style={{display:"block",width:"100%",padding:"12px 14px",borderRadius:10,border:selected?"2px solid var(--acc)":"2px solid var(--br2)",
+                                    background:selected?"rgba(13,115,119,.06)":"var(--bg)",cursor:"pointer",textAlign:"left",
+                                    fontSize:13,fontWeight:selected?600:500,color:selected?"var(--acc)":"var(--tx)",transition:"all .15s",
+                                    fontFamily:"'Inter',sans-serif"}}>
+                                  {opt.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {currentQ.type==="multi"&&(
+                          <div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:16,maxHeight:260,overflowY:"auto"}}>
+                            {currentQ.options.map(opt=>{
+                              const checked=(quizAnswers[currentQ.id]||benefitOptions.filter(b=>b.checked).map(b=>b.name)).includes(opt.value);
+                              return(
+                                <button key={opt.value} onClick={()=>handleAnswer(currentQ.id,opt.value,"multi")}
+                                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",borderRadius:8,
+                                    border:checked?"2px solid var(--acc)":"2px solid var(--br2)",background:checked?"rgba(13,115,119,.06)":"var(--bg)",
+                                    cursor:"pointer",textAlign:"left",fontSize:12,fontWeight:checked?600:500,
+                                    color:checked?"var(--acc)":"var(--tx)",transition:"all .15s",fontFamily:"'Inter',sans-serif"}}>
+                                  <span style={{width:18,height:18,borderRadius:4,border:checked?"2px solid var(--acc)":"2px solid var(--br3)",
+                                    background:checked?"var(--acc)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                                    {checked&&<span style={{color:"#fff",fontSize:12,fontWeight:700}}>{"✓"}</span>}
+                                  </span>
+                                  {opt.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Navigation */}
+                        <div style={{display:"flex",gap:8}}>
+                          {quizStep>0&&(
+                            <button onClick={()=>setQuizStep(s=>s-1)}
+                              style={{flex:1,padding:"12px",borderRadius:10,border:"1.5px solid var(--br2)",background:"var(--bg)",
+                                cursor:"pointer",fontSize:13,fontWeight:600,color:"var(--tx2)",fontFamily:"'Inter',sans-serif"}}>
+                              Back
+                            </button>
+                          )}
+                          {isLastStep?(
+                            <button onClick={finishQuiz} disabled={!hasAnswer}
+                              style={{flex:2,padding:"12px",borderRadius:10,border:"none",
+                                background:hasAnswer?"linear-gradient(135deg,var(--acc),var(--gld2))":"var(--br2)",
+                                cursor:hasAnswer?"pointer":"default",fontSize:13,fontWeight:700,color:hasAnswer?"#fff":"var(--tx4)",
+                                fontFamily:"'Inter',sans-serif",transition:"all .2s"}}>
+                              Get My Recommendation
+                            </button>
+                          ):(
+                            <button onClick={()=>setQuizStep(s=>s+1)} disabled={!hasAnswer}
+                              style={{flex:2,padding:"12px",borderRadius:10,border:"none",
+                                background:hasAnswer?"var(--acc)":"var(--br2)",
+                                cursor:hasAnswer?"pointer":"default",fontSize:13,fontWeight:700,color:hasAnswer?"#fff":"var(--tx4)",
+                                fontFamily:"'Inter',sans-serif",transition:"all .2s"}}>
+                              Next
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ):(
+                  /* ── RECOMMENDATION RESULT ── */
+                  <div style={{paddingTop:8}}>
+                    <div className="surf" style={{border:`2px solid ${quizResult.recColor}`,borderRadius:14,padding:"20px 16px",marginBottom:12,
+                      background:quizResult.recommendation==="renew"?"rgba(22,163,74,.04)":quizResult.recommendation==="downgrade"?"rgba(37,99,235,.04)":quizResult.recommendation==="cancel"?"rgba(220,38,38,.04)":"rgba(13,115,119,.04)"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                        <Icon name={quizResult.recIcon} size={22} color={quizResult.recColor}/>
+                        <div>
+                          <div style={{fontSize:12,fontWeight:600,color:"var(--tx3)",letterSpacing:.5}}>Our Recommendation</div>
+                          <div style={{fontSize:20,fontWeight:800,color:quizResult.recColor,fontFamily:"'Inter',sans-serif"}}>{quizResult.recLabel}</div>
+                        </div>
+                      </div>
+
+                      <p style={{fontSize:13,color:"var(--tx)",lineHeight:1.6,margin:"0 0 14px"}}>
+                        {quizResult.recommendation==="renew"
+                          ?"Based on your answers, this card delivers ~$"+quizResult.totalValue+" in annual value against the $"+card.fee+" fee."
+                          :quizResult.recommendation==="borderline"
+                          ?"This is a close call. The card delivers ~$"+quizResult.totalValue+" against the $"+card.fee+" fee. Consider these factors:"
+                          :quizResult.recommendation==="downgrade"&&quizResult.bestDowngrade
+                          ?"Consider downgrading to "+quizResult.bestDowngrade.cardName+" ($"+quizResult.bestDowngrade.annualFee+"/yr)."
+                          :"This card doesn't deliver enough value for your usage pattern."}
+                      </p>
+
+                      {/* Reasons */}
+                      <div style={{marginBottom:12}}>
+                        <div style={{fontSize:11,fontWeight:700,letterSpacing:.8,color:"var(--tx3)",textTransform:"uppercase",marginBottom:6}}>Why</div>
+                        {quizResult.reasons.map((r,i)=>(
+                          <div key={i} style={{display:"flex",gap:8,marginBottom:4,fontSize:12,color:"var(--tx2)",lineHeight:1.5}}>
+                            <span style={{color:"var(--grn2)",flexShrink:0}}>{"+"}</span>
+                            <span>{r}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Warnings */}
+                      {quizResult.warnings.length>0&&(
+                        <div style={{marginBottom:12}}>
+                          {quizResult.warnings.map((w,i)=>(
+                            <div key={i} style={{display:"flex",gap:8,marginBottom:4,fontSize:12,color:"var(--red2)",lineHeight:1.5,fontWeight:500}}>
+                              <span style={{flexShrink:0}}>{"⚠️"}</span>
+                              <span>{w}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Downgrade details */}
+                      {quizResult.recommendation==="downgrade"&&quizResult.bestDowngrade&&(
+                        <div style={{padding:"10px 12px",borderRadius:8,background:"rgba(37,99,235,.06)",border:"1px solid rgba(37,99,235,.12)",marginBottom:12}}>
+                          <div style={{fontSize:12,fontWeight:700,color:"#2563eb",marginBottom:4}}>Downgrade to {quizResult.bestDowngrade.cardName} (${quizResult.bestDowngrade.annualFee}/yr)</div>
+                          {quizResult.bestDowngrade.whatYouKeep&&<div style={{fontSize:11,color:"var(--tx2)",marginBottom:2,lineHeight:1.4}}>Keep: {quizResult.bestDowngrade.whatYouKeep.split(",").slice(0,3).join(", ")}</div>}
+                          {quizResult.bestDowngrade.whatYouLose&&<div style={{fontSize:11,color:"var(--red2)",lineHeight:1.4}}>Lose: {quizResult.bestDowngrade.whatYouLose.split(",").slice(0,3).join(", ")}</div>}
+                          {quizResult.bestDowngrade.note&&<div style={{fontSize:11,color:"var(--tx3)",marginTop:4,fontStyle:"italic"}}>{quizResult.bestDowngrade.note}</div>}
+                        </div>
+                      )}
+
+                      {/* Tips */}
+                      {quizResult.tips.length>0&&(
+                        <div style={{marginBottom:12}}>
+                          {quizResult.tips.map((t,i)=>(
+                            <div key={i} style={{display:"flex",gap:8,marginBottom:4,fontSize:12,color:"var(--acc)",lineHeight:1.5,fontWeight:500}}>
+                              <span style={{flexShrink:0}}>{"💡"}</span>
+                              <span>{t}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Retention reminder */}
+                      {quizResult.recommendation!=="renew"&&issuerPhone&&(
+                        <div style={{padding:"10px 12px",borderRadius:8,background:"rgba(13,115,119,.05)",border:"1px solid rgba(13,115,119,.1)",marginBottom:12}}>
+                          <div style={{fontSize:12,color:"var(--tx)",lineHeight:1.5}}>
+                            {"📞 "}But first: Call {card.issuer} at <strong>{issuerPhone}</strong> to ask for a retention offer. Many cardholders get $150+ in credits just by asking.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action buttons */}
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={retakeQuiz}
+                        style={{flex:1,padding:"11px",borderRadius:10,border:"1.5px solid var(--br2)",background:"var(--bg)",
+                          cursor:"pointer",fontSize:12,fontWeight:600,color:"var(--tx2)",fontFamily:"'Inter',sans-serif"}}>
+                        Retake Quiz
+                      </button>
+                      {quizResult.recommendation==="downgrade"&&downgrades.length>0&&(
+                        <button onClick={()=>{setShowDowngrades(true);document.querySelector(".ra-selector")?.scrollIntoView({behavior:"smooth"});}}
+                          style={{flex:1,padding:"11px",borderRadius:10,border:"none",background:"#2563eb",
+                            cursor:"pointer",fontSize:12,fontWeight:700,color:"#fff",fontFamily:"'Inter',sans-serif"}}>
+                          View Downgrade Options
+                        </button>
+                      )}
+                      {quizResult.recommendation==="cancel"&&(
+                        <button onClick={()=>{setShowCancel(true);document.querySelector(".ra-selector")?.scrollIntoView({behavior:"smooth"});}}
+                          style={{flex:1,padding:"11px",borderRadius:10,border:"none",background:"var(--red2)",
+                            cursor:"pointer",fontSize:12,fontWeight:700,color:"#fff",fontFamily:"'Inter',sans-serif"}}>
+                          View If You Cancel
+                        </button>
+                      )}
+                      {quizResult.recommendation==="renew"&&issuerPhone&&(
+                        <button onClick={()=>{setShowRetention(true);document.querySelector(".ra-selector")?.scrollIntoView({behavior:"smooth"});}}
+                          style={{flex:1,padding:"11px",borderRadius:10,border:"none",background:"var(--acc)",
+                            cursor:"pointer",fontSize:12,fontWeight:700,color:"#fff",fontFamily:"'Inter',sans-serif"}}>
+                          View Retention Offers
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
       })()}
