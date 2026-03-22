@@ -608,7 +608,7 @@ function NewsletterPopup(){
 // sorted by nearest renewal date with ROI progress bars and verdict badges,
 // and a collapsed section for no-annual-fee cards.
 // Props: myCards, setMyCards, checkedSet, setTab, setStratModal.
-function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversaryDates,user,p2Cards=[],p2Name="",householdSetup=false,firstYearCards=[]}){
+function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversaryDates,user,onAuthClick,p2Cards=[],p2Name="",householdSetup=false,firstYearCards=[]}){
   const [showFreeCards,setShowFreeCards]=useState(false);
   const [showP2Free,setShowP2Free]=useState(false);
   const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
@@ -762,7 +762,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
       .catch(e=>console.warn('Renewal sync failed:',e.message));
   },[feeCards,user]);
 
-  if(!myCards.length){
+  if(!user||!myCards.length){
     return (
       <div style={{padding:"0 16px"}}>
         {/* Hero Section */}
@@ -771,7 +771,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
             <div className="home-hero-eyebrow">ANNUAL FEE RENEWAL ENGINE</div>
             <h1 className="home-hero-title">Is the fee<br/>worth it?</h1>
             <p className="home-hero-subtitle">Know exactly which cards to keep, cancel, or downgrade — before renewal day.</p>
-            <button className="btn" onClick={()=>setTab("benefits")}>Run Your Free Fee Check →</button>
+            <button className="btn" onClick={()=>{if(user)setTab("benefits");else if(onAuthClick)onAuthClick();}}>Run Your Free Fee Check →</button>
           </div>
           <div className="home-hero-card">
             <div className="hero-card-mockup">
@@ -6715,16 +6715,18 @@ function App(){
         </div>
       )}
       <div className="tab-content-wrap" style={{paddingTop:8}}>
-        {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>}
-        {tab==="benefits"&&<RenewalAdvisorTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits} anniversaryDates={anniversaryDates} setAnniversaryDates={setAnniversaryDates} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards} setFirstYearCards={setFirstYearCards}/>}
-        {tab==="household"&&<HouseholdTab myCards={myCards} p2Cards={p2Cards} setP2Cards={setP2Cards} p2Name={p2Name} setP2Name={setP2Name} householdSetup={householdSetup} setHouseholdSetup={setHouseholdSetup} checkedSet={checkedSet} user={user} onAuthClick={()=>setAuthModal(true)} setTab={setTab} firstYearCards={firstYearCards}/>}
-        {/* REMOVED IN FEEWORTH PIVOT — preserved for reference */}
-        {/* {tab==="tips"&&    <TipsTab myCards={myCards}/>} */}
-        {/* {tab==="plan"&&    <PlanTab myCards={myCards}/>} */}
-        {/* {tab==="usecard"&& <UsecardTab myCards={myCards}/>} */}
-        {/* {tab==="offers"&&  <OffersTab myCards={myCards}/>} */}
-        {tab==="quiz"&&    <QuizTab myCards={myCards}/>}
-        {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={setMyCards} anniversaryDates={anniversaryDates} setAnniversaryDates={setAnniversaryDates}/>}
+        {/* When not authenticated, always show HomeTab (which renders the landing page) */}
+        {!user?(
+          <HomeTab myCards={[]} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} onAuthClick={()=>setAuthModal(true)} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>
+        ):(
+          <>
+            {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} onAuthClick={()=>setAuthModal(true)} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>}
+            {tab==="benefits"&&<RenewalAdvisorTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits} anniversaryDates={anniversaryDates} setAnniversaryDates={setAnniversaryDates} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards} setFirstYearCards={setFirstYearCards}/>}
+            {tab==="household"&&<HouseholdTab myCards={myCards} p2Cards={p2Cards} setP2Cards={setP2Cards} p2Name={p2Name} setP2Name={setP2Name} householdSetup={householdSetup} setHouseholdSetup={setHouseholdSetup} checkedSet={checkedSet} user={user} onAuthClick={()=>setAuthModal(true)} setTab={setTab} firstYearCards={firstYearCards}/>}
+            {tab==="quiz"&&    <QuizTab myCards={myCards}/>}
+            {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={setMyCards} anniversaryDates={anniversaryDates} setAnniversaryDates={setAnniversaryDates}/>}
+          </>
+        )}
       </div>
       {stratModal&&<StratModal stratId={stratModal} myCards={myCards} onClose={()=>setStratModal(null)}/>}
       <NewsletterPopup/>
