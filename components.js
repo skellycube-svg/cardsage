@@ -2877,8 +2877,8 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             reasons.push("Possible retention offer could add ~$"+retVal);
           }
 
-          // Synergy value
-          if(synergies.length>0){
+          // Synergy value — skip if partner covers same ecosystem unlocker (synergy works through their card)
+          if(synergies.length>0&&!(partnerHasUnlocker&&canShareHH&&isUnlocker)){
             const ownedSyns=synergies.filter(s=>{const pc=CARDS.find(c=>c.name===s.pairWith);return pc&&allHHIds.includes(pc.id);});
             if(ownedSyns.length>0){
               const synMatch=(ownedSyns[0].estimatedUplift||"").match(/\$(\d+)/);
@@ -2891,14 +2891,19 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           // Ecosystem unlocker analysis — household-aware
           if(isUnlocker&&ecoName&&householdSetup){
             if(partnerHasUnlocker&&canShareHH){
-              // Partner ALSO has an unlocker AND points can be shared — this card's transfer role is redundant
+              // Partner ALSO has an unlocker AND points can be shared
+              // This card's ENTIRE transfer-unlocking value is redundant
               const freeEarner=ecoData.earners.find(e=>!ecoData.unlockers.includes(e));
               const freeEarnerName=freeEarner?freeEarner.replace(/[®℠]/g,"").replace(/ Credit Card/,"").trim():"a free earner card";
               const bestDg=downgrades.find(d=>d.annualFee===0)||downgrades[0];
               const dgName=bestDg?bestDg.cardName:freeEarnerName;
               const dgFee=bestDg?bestDg.annualFee:0;
               const savings=card.fee-dgFee;
+              // Aggressively reduce — fee is wasted + redundancy penalty
               totalValue-=card.fee;
+              totalValue-=200;
+              // Cap any remaining value low — non-transfer perks don't justify the fee
+              if(totalValue>0) totalValue=Math.min(totalValue,Math.round(card.fee*0.3));
               reasons.push((p2Name||"Partner")+"'s "+(partnerUnlockerCard.short||partnerUnlockerCard.name)+" already unlocks "+ecoName.split(" ")[0]+" transfer partners");
               reasons.push(ecoName.split(" ")[0]+" allows household point combining — your points flow to "+(p2Name||"partner")+"'s account for the same transfer access");
               if(savings>0) reasons.push("Downgrade to "+dgName+" ($"+dgFee+"/yr) and save $"+savings+"/yr with zero loss in transfer access");
@@ -2934,7 +2939,10 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           const isAmexMR=card.cur==="Amex Membership Rewards";
 
           let recommendation,recColor,recIcon,recLabel;
-          if(netValue>50){
+          // Override: force DOWNGRADE when partner has same ecosystem unlocker + sharing
+          if(partnerHasUnlocker&&canShareHH&&isUnlocker&&bestDowngrade){
+            recommendation="downgrade";recColor="#2563eb";recIcon="arrow-down";recLabel="DOWNGRADE";
+          } else if(netValue>50){
             recommendation="renew";recColor="var(--grn2)";recIcon="check-circle";recLabel="RENEW";
           } else if(netValue>=-50){
             recommendation="borderline";recColor="var(--acc)";recIcon="help-circle";recLabel="BORDERLINE";
