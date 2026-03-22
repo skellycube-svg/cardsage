@@ -601,128 +601,6 @@ function NewsletterPopup(){
   );
 }
 
-/* ── SHARE PORTFOLIO MODAL ─────────────────────────────────────────────────── */
-// Generates a shareable card image showing portfolio stats using html2canvas,
-// then offers copy-to-clipboard, share-to-X/Twitter, and download-as-PNG options.
-function SharePortfolioModal({netValue,totalFees,totalCredits,numCards,activeStrats,onClose}){
-  const cardRef=useRef(null);
-  const [imgBlob,setImgBlob]=useState(null);
-  const [imgUrl,setImgUrl]=useState(null);
-  const [copied,setCopied]=useState(false);
-  const [rendering,setRendering]=useState(true);
-
-  useEffect(()=>{
-    if(!cardRef.current) return;
-    const timer=setTimeout(()=>{
-      html2canvas(cardRef.current,{
-        scale:2,backgroundColor:null,useCORS:true,logging:false
-      }).then(canvas=>{
-        canvas.toBlob(blob=>{
-          setImgBlob(blob);
-          setImgUrl(URL.createObjectURL(blob));
-          setRendering(false);
-        },'image/png');
-      }).catch(()=>setRendering(false));
-    },100);
-    return ()=>clearTimeout(timer);
-  },[]);
-
-  const copyImage=async()=>{
-    if(!imgBlob) return;
-    try{
-      await navigator.clipboard.write([new ClipboardItem({'image/png':imgBlob})]);
-      setCopied(true);
-      setTimeout(()=>setCopied(false),2000);
-    }catch{
-      // Fallback: download instead
-      downloadPng();
-    }
-  };
-
-  const downloadPng=()=>{
-    if(!imgUrl) return;
-    const a=document.createElement('a');
-    a.href=imgUrl;
-    a.download='cardsage-portfolio.png';
-    a.click();
-  };
-
-  const shareToX=()=>{
-    const val=netValue>=0?'+$'+netValue:'−$'+Math.abs(netValue);
-    const text=encodeURIComponent(
-      "I'm getting "+val+"/year in value from my credit cards — check yours at feeworth.co"
-    );
-    window.open('https://x.com/intent/tweet?text='+text,'_blank','noopener');
-  };
-
-  return(
-    <div className="sheet-overlay" onClick={onClose}>
-      <div className="share-modal" onClick={e=>e.stopPropagation()}>
-        <button className="nl-popup-close" onClick={onClose} aria-label="Close">×</button>
-        <h3 className="share-modal-title">Share Your Portfolio</h3>
-
-        {/* Hidden render target for html2canvas */}
-        <div style={{position:'absolute',left:'-9999px',top:0}}>
-          <div ref={cardRef} className="share-card-render">
-            <div className="share-card-inner">
-              <div className="share-card-logo">FeeWorth</div>
-              <div className="share-card-headline">Annual Fee ROI</div>
-              <div className="share-card-divider"/>
-              <div className="share-card-stats">
-                <div className="share-card-stat">
-                  <div className="share-card-stat-val" style={{color:netValue>=0?'#16a34a':'#dc2626'}}>
-                    {netValue>=0?'+':'−'}${Math.abs(netValue)}
-                  </div>
-                  <div className="share-card-stat-lbl">Net ROI / Year</div>
-                </div>
-                <div className="share-card-stat">
-                  <div className="share-card-stat-val" style={{color:'#16a34a'}}>{activeStrats}</div>
-                  <div className="share-card-stat-lbl">{activeStrats===1?'Card':'Cards'} Worth It</div>
-                </div>
-              </div>
-              <div className="share-card-details">
-                <span>{numCards} card{numCards!==1?'s':''}</span>
-                <span>·</span>
-                <span>${totalCredits} in credits</span>
-                <span>·</span>
-                <span>${totalFees} in fees</span>
-              </div>
-              <div className="share-card-footer">Built with feeworth.co</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Preview */}
-        <div className="share-preview-wrap">
-          {rendering?(
-            <div className="share-preview-loading">
-              <div className="share-spinner"/>
-              Generating image…
-            </div>
-          ):imgUrl?(
-            <img src={imgUrl} alt="Portfolio card" className="share-preview-img"/>
-          ):null}
-        </div>
-
-        {/* Action buttons */}
-        <div className="share-actions">
-          <button className="share-action-btn share-action-copy" onClick={copyImage} disabled={!imgBlob}>
-            <Icon name="clipboard" size={16} color="currentColor"/>
-            {copied?'Copied!':'Copy Image'}
-          </button>
-          <button className="share-action-btn share-action-x" onClick={shareToX}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-            Share to X
-          </button>
-          <button className="share-action-btn share-action-dl" onClick={downloadPng} disabled={!imgBlob}>
-            <Icon name="download" size={16} color="currentColor"/>
-            Download PNG
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ── HOME TAB (FeeWorth Dashboard) ────────────────────────────────────────── */
 // The FeeWorth dashboard — focused on annual fee ROI and renewal decisions.
@@ -731,7 +609,6 @@ function SharePortfolioModal({netValue,totalFees,totalCredits,numCards,activeStr
 // and a collapsed section for no-annual-fee cards.
 // Props: myCards, setMyCards, checkedSet, setTab, setStratModal.
 function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversaryDates,user,p2Cards=[],p2Name="",householdSetup=false,firstYearCards=[]}){
-  const [showShare,setShowShare]=useState(false);
   const [showFreeCards,setShowFreeCards]=useState(false);
   const [showP2Free,setShowP2Free]=useState(false);
   const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
@@ -902,18 +779,6 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
         </div>
       </div>
 
-      {/* Share portfolio button */}
-      <div className="share-portfolio-row fu">
-        <button className="share-portfolio-btn" onClick={()=>setShowShare(true)}>
-          <Icon name="share" size={14} color="currentColor"/>
-          Share My Portfolio
-        </button>
-      </div>
-
-      {showShare&&<SharePortfolioModal
-        netValue={netROI} totalFees={totalFees} totalCredits={totalCredits}
-        numCards={cards.length} activeStrats={feeCards.filter(c=>c.verdict==="worth-it").length}
-        onClose={()=>setShowShare(false)}/>}
 
       {/* Card Renewal Timeline */}
       {feeCards.length>0&&(
