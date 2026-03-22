@@ -12,9 +12,9 @@
 //   - firebase-auth.js (window.CS_FB — Firebase auth/Firestore utilities)
 //
 // Component tree:
-//   App (root) → TopNav, HomeTab, BenefitsTab, TipsTab, UsecardTab,
-//                 OffersTab, QuizTab, WalletTab, StratModal,
-//                 NewsletterSubscribe, AuthModal
+//   App (root) → TopNav, HomeTab, RenewalAdvisorTab, HouseholdTab,
+//                 BenefitsTab, TipsTab, UsecardTab, OffersTab, QuizTab,
+//                 WalletTab, StratModal, NewsletterSubscribe, AuthModal
 //
 // Hooks: useLS (localStorage-backed state)
 // Helpers: Icon, CardArt, CreditCardDisplay, ValueMeter, CatChip, etc.
@@ -53,6 +53,18 @@ function useLS(k,d){
     try{localStorage.setItem(k,JSON.stringify(next))}catch{};
   },[k]);
   return[v,set];
+}
+
+/* ── Renewal date helpers ──────────────────────────────────────────────── */
+const MONTH_NAMES=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function getRenewalDays(cardId,anniversaryDates){
+  const month=anniversaryDates&&anniversaryDates[cardId];
+  if(!month)return null; // 1-12
+  const now=new Date();
+  // Anniversary = 1st of that month
+  let rd=new Date(now.getFullYear(),month-1,1);
+  if(rd<=now) rd=new Date(now.getFullYear()+1,month-1,1);
+  return Math.ceil((rd-now)/(1000*60*60*24));
 }
 
 /* ── Data loaded from cards-data.js ─────────────────────────────────────── */
@@ -128,6 +140,9 @@ const ICON_PATHS={
 "wave":<><path d="M2 12c2-2 4-4 6-2s4 2 6 0 4-4 6-2"/><path d="M2 17c2-2 4-4 6-2s4 2 6 0 4-4 6-2"/></>,
 "share":<><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></>,
 "download":<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>,
+"phone":<><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></>,
+"alert-triangle":<><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
+"users":<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
 };
 
 // Draws an SVG icon by name. Used throughout the app for buttons, navigation, and labels.
@@ -156,7 +171,7 @@ const SPECIAL_CAT_ICON={hyatt:"building",delta:"plane",sw:"plane",united:"plane"
 // These are used to create the colored chips/badges throughout the app.
 /* ── Category color system ────────────────────────────────────────────────── */
 const CATEGORY_COLORS={
-  dining:       {bg:"#fdf4ec",text:"#92400e",border:"#f59e0b"},
+  dining:       {bg:"#fdf4ec",text:"#065f46",border:"#f59e0b"},
   travel:       {bg:"#eff6ff",text:"#1e40af",border:"#3b82f6"},
   shopping:     {bg:"#f5f3ff",text:"#5b21b6",border:"#8b5cf6"},
   grocery:      {bg:"#f0fdf4",text:"#166534",border:"#22c55e"},
@@ -208,12 +223,12 @@ function CreditCardDisplay({card,size="md"}){
       {/* Bottom row: chip + dots + network */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
         <div style={{display:"flex",alignItems:"center",gap:isSm?6:10}}>
-          <div style={{width:isSm?24:36,height:isSm?16:26,borderRadius:isSm?2:4,background:"linear-gradient(135deg,#e6c369,#b8860b)",position:"relative",overflow:"hidden"}}>
+          <div style={{width:isSm?24:36,height:isSm?16:26,borderRadius:isSm?2:4,background:"linear-gradient(135deg,#14b8b8,#0d7377)",position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",inset:0,background:"repeating-linear-gradient(0deg,transparent,transparent 4px,rgba(255,255,255,.15) 4px,rgba(255,255,255,.15) 5px),repeating-linear-gradient(90deg,transparent,transparent 6px,rgba(255,255,255,.15) 6px,rgba(255,255,255,.15) 7px)"}}/>
           </div>
           {!isSm&&<div style={{display:"flex",gap:4}}>{[0,1,2,3].map(i=><div key={i} style={{display:"flex",gap:2}}>{[0,1,2,3].map(j=><div key={j} style={{width:3,height:3,borderRadius:"50%",background:"rgba(255,255,255,.35)"}}/>)}</div>)}</div>}
         </div>
-        <span style={{fontFamily:"'Playfair Display',Georgia,serif",fontStyle:"italic",fontSize:isSm?11:16,opacity:.8}}>{card.network}</span>
+        <span style={{fontFamily:"'Inter',sans-serif",fontStyle:"italic",fontSize:isSm?11:16,opacity:.8}}>{card.network}</span>
       </div>
     </div>
   );
@@ -340,7 +355,7 @@ function StratModal({stratId,myCards,onClose}){
               <span style={{fontSize:13,color:"var(--grn2)",fontWeight:600}}>You have the cards for this strategy!</span>
             </div>
           ):(
-            <div style={{background:"rgba(245,158,11,.08)",border:"1px solid rgba(245,158,11,.2)",borderRadius:12,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+            <div style={{background:"rgba(13,115,119,.08)",border:"1px solid rgba(13,115,119,.2)",borderRadius:12,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
               <Icon name="lightbulb" size={16} color="var(--gld2)"/>
               <span style={{fontSize:13,color:"var(--gld2)",fontWeight:600}}>Add the required cards to unlock this strategy</span>
             </div>
@@ -426,8 +441,8 @@ function StratModal({stratId,myCards,onClose}){
                       </div>
                     </div>
                     {card.signup&&card.signup!=="No signup bonus"&&card.signup!=="No sign-up bonus"&&(
-                      <div style={{marginTop:6,fontSize:11,fontWeight:600,color:"var(--acc)",background:"rgba(184,134,11,.07)",
-                        border:"1px solid rgba(184,134,11,.15)",borderRadius:6,padding:"4px 10px",lineHeight:1.35,display:"inline-block"}}>
+                      <div style={{marginTop:6,fontSize:11,fontWeight:600,color:"var(--acc)",background:"rgba(13,115,119,.07)",
+                        border:"1px solid rgba(13,115,119,.15)",borderRadius:6,padding:"4px 10px",lineHeight:1.35,display:"inline-block"}}>
                         {card.signup}
                       </div>
                     )}
@@ -713,7 +728,7 @@ function SharePortfolioModal({netValue,totalFees,totalCredits,numCards,activeStr
 // sorted by nearest renewal date with ROI progress bars and verdict badges,
 // and a collapsed section for no-annual-fee cards.
 // Props: myCards, setMyCards, checkedSet, setTab, setStratModal.
-function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
+function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversaryDates,user}){
   const [showShare,setShowShare]=useState(false);
   const [showFreeCards,setShowFreeCards]=useState(false);
   const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
@@ -741,34 +756,33 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
     },0);
     const monVal=card.monthly.reduce((a,b)=>a+((b.v||0)*12),0);
     const totalVal=annVal+monVal;
-    // Calculate renewal days — use renewalDate if present, else distribute across the year
-    const now=new Date();
-    let renewDays=null;
-    if(card.renewalDate){
-      const rd=new Date(card.renewalDate);
-      // Move to this year or next
-      rd.setFullYear(now.getFullYear());
-      if(rd<now) rd.setFullYear(now.getFullYear()+1);
-      renewDays=Math.ceil((rd-now)/(1000*60*60*24));
-    }else if(card.fee>0){
-      // Placeholder: distribute by card index position across the year
-      const idx=CARDS.findIndex(c=>c.id===card.id);
-      const dayOfYear=((idx*37)%365);
-      const jan1=new Date(now.getFullYear(),0,1);
-      const target=new Date(jan1.getTime()+dayOfYear*86400000);
-      if(target<now) target.setFullYear(now.getFullYear()+1);
-      renewDays=Math.ceil((target-now)/(1000*60*60*24));
-    }
+    // Calculate renewal days from user-set anniversary month
+    let renewDays=card.fee>0?getRenewalDays(card.id,anniversaryDates):null;
     const roiPct=card.fee>0?Math.round((totalVal/card.fee)*100):null;
     const verdict=card.fee===0?null:roiPct>=100?"worth-it":roiPct>=50?"on-track":"at-risk";
     return {card,totalVal,renewDays,roiPct,verdict};
-  }),[cards]);
+  }),[cards,anniversaryDates]);
 
   // Split into fee cards (sorted by nearest renewal) and free cards
   const feeCards=useMemo(()=>
-    cardStats.filter(cs=>cs.card.fee>0).sort((a,b)=>(a.renewDays||999)-(b.renewDays||999))
+    cardStats.filter(cs=>cs.card.fee>0).sort((a,b)=>{
+      const aD=a.renewDays!=null?a.renewDays:9999;
+      const bD=b.renewDays!=null?b.renewDays:9999;
+      return aD-bD;
+    })
   ,[cardStats]);
   const freeCards=useMemo(()=>cardStats.filter(cs=>cs.card.fee===0),[cardStats]);
+
+  // Write upcoming renewals to Firestore for newsletter reminders
+  useEffect(()=>{
+    if(!user)return;
+    const fb=window.CS_FB;
+    if(!fb)return;
+    const upcoming=feeCards.filter(({renewDays})=>renewDays!=null&&renewDays<=60)
+      .map(({card,renewDays})=>({cardId:card.id,cardName:card.short||card.name,daysUntilRenewal:renewDays,fee:card.fee}));
+    fb.setDoc(fb.doc(fb.db,'users',user.uid),{upcomingRenewals:upcoming},{merge:true})
+      .catch(e=>console.warn('Renewal sync failed:',e.message));
+  },[feeCards,user]);
 
   if(!myCards.length){
     return (
@@ -791,7 +805,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
                 </div>
                 {/* Card name */}
                 <div style={{flex:1,display:'flex',alignItems:'center'}}>
-                  <div style={{fontSize:20,fontFamily:"'Playfair Display',serif",fontStyle:'italic',fontWeight:500}}>Sage Platinum</div>
+                  <div style={{fontSize:20,fontFamily:"'Inter',sans-serif",fontStyle:'italic',fontWeight:500}}>Sage Platinum</div>
                 </div>
                 {/* Card number dots */}
                 <div style={{fontSize:12,letterSpacing:3,marginBottom:10,opacity:.7,fontFamily:'monospace'}}>•••• &nbsp;•••• &nbsp;•••• &nbsp;8842</div>
@@ -802,7 +816,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
                     <div style={{fontSize:11,letterSpacing:1,fontWeight:600}}>ALEXANDER SAGE</div>
                   </div>
                   <div style={{display:'flex',alignItems:'flex-end',gap:16}}>
-                    <div style={{width:40,height:30,borderRadius:4,background:'linear-gradient(135deg,#d4a840,#b8860b)',position:'relative',overflow:'hidden'}}>
+                    <div style={{width:40,height:30,borderRadius:4,background:'linear-gradient(135deg,#14b8b8,#0d7377)',position:'relative',overflow:'hidden'}}>
                       <div style={{position:'absolute',inset:0,background:'repeating-linear-gradient(0deg,transparent,transparent 5px,rgba(255,255,255,.15) 5px,rgba(255,255,255,.15) 6px),repeating-linear-gradient(90deg,transparent,transparent 7px,rgba(255,255,255,.15) 7px,rgba(255,255,255,.15) 8px)'}}/>
                     </div>
                     <div style={{fontSize:18,fontStyle:'italic',fontWeight:700,opacity:.8,letterSpacing:1}}>VISA</div>
@@ -842,6 +856,19 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
         <h2 className="page-title" style={{fontSize:36}}>Fee Dashboard</h2>
         <p className="page-subtitle">{cards.length} card{cards.length!==1?'s':''} · {feeCards.length} with annual fees</p>
       </div>
+
+      {/* Renewal notification banners */}
+      {feeCards.filter(({card,renewDays})=>renewDays!=null&&renewDays<=60).map(({card,renewDays})=>(
+        <div key={card.id+"banner"} onClick={()=>setTab("benefits")}
+          style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",marginBottom:8,borderRadius:12,cursor:"pointer",
+            background:renewDays<=7?"rgba(220,38,38,.08)":renewDays<=30?"rgba(13,115,119,.08)":"rgba(13,115,119,.06)",
+            border:renewDays<=7?"1px solid rgba(220,38,38,.2)":renewDays<=30?"1px solid rgba(13,115,119,.2)":"1px solid rgba(13,115,119,.15)"}}>
+          <Icon name="alert-triangle" size={16} color={renewDays<=7?"var(--red2)":renewDays<=30?"#d97706":"var(--acc)"}/>
+          <div style={{flex:1,fontSize:12,fontWeight:600,color:"var(--tx)",lineHeight:1.4}}>
+            Your <strong>{card.short||card.name}</strong> annual fee hits in {renewDays} day{renewDays!==1?"s":""}. <span style={{color:"var(--acc)",fontWeight:700}}>Review your ROI →</span>
+          </div>
+        </div>
+      ))}
 
       {/* Top stats row */}
       <div className="stats-grid fu">
@@ -884,7 +911,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
             const palette=getIssuerPalette(card.issuer);
             const verdictLabel=verdict==="worth-it"?"Worth It":verdict==="on-track"?"On Track":"At Risk";
             const verdictColor=verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--gold)":"var(--red2)";
-            const verdictBg=verdict==="worth-it"?"rgba(22,163,74,.1)":verdict==="on-track"?"rgba(184,134,11,.1)":"rgba(220,38,38,.1)";
+            const verdictBg=verdict==="worth-it"?"rgba(22,163,74,.1)":verdict==="on-track"?"rgba(13,115,119,.1)":"rgba(220,38,38,.1)";
             const barPct=Math.min(roiPct||0,100);
             const barColor=verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--gold)":"var(--red2)";
             return(
@@ -896,9 +923,14 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal}){
                     <div style={{fontSize:11,color:"var(--tx3)",marginTop:2}}>{card.issuer} · ${card.fee}/yr</div>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-                    {renewDays!=null&&(
+                    {renewDays!=null?(
                       <div style={{fontSize:11,color:renewDays<=60?"var(--red2)":renewDays<=120?"var(--gold)":"var(--tx3)",fontWeight:600,whiteSpace:"nowrap"}}>
                         {renewDays<=0?"Renews today":renewDays+" days"}
+                      </div>
+                    ):(
+                      <div style={{fontSize:11,color:"var(--acc)",fontWeight:600,whiteSpace:"nowrap",cursor:"pointer"}}
+                        onClick={e=>{e.stopPropagation();setTab("wallet");}}>
+                        Set renewal date →
                       </div>
                     )}
                     <span style={{display:"inline-flex",alignItems:"center",padding:"3px 10px",borderRadius:99,
@@ -1071,7 +1103,7 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
             <div style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>Benefits Used This Year</div>
             <div style={{fontSize:11,color:"var(--tx3)",marginTop:2}}>${usedValue.toLocaleString()} of ${totalValue.toLocaleString()} in credits redeemed</div>
           </div>
-          <div style={{fontSize:26,fontWeight:900,color:pct>60?"var(--grn2)":"var(--gld2)",lineHeight:1,fontFamily:"'Playfair Display',Georgia,serif"}}>{pct}%</div>
+          <div style={{fontSize:26,fontWeight:900,color:pct>60?"var(--grn2)":"var(--gld2)",lineHeight:1,fontFamily:"'Inter',sans-serif"}}>{pct}%</div>
         </div>
         <div className="prog-track">
           <div className="prog-fill" style={{width:pct+"%",background:"linear-gradient(90deg,var(--acc),var(--pur))"}}/>
@@ -1108,7 +1140,7 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10,background:getIssuerTint(card.issuer),borderRadius:12,padding:"10px 12px",border:`1px solid ${getIssuerColor(card.issuer)}15`}}>
                 <CreditCardDisplay card={card} size="sm"/>
                 <div style={{flex:1}}>
-                  <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:16,fontWeight:600,color:getIssuerColor(card.issuer)}}>{card.short||card.name}{card.confidence==="estimated"&&<span style={{fontSize:10,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
+                  <div style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:600,color:getIssuerColor(card.issuer)}}>{card.short||card.name}{card.confidence==="estimated"&&<span style={{fontSize:10,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
                   <div style={{fontSize:11,color:"var(--tx3)"}}>{usedHere}/{totalSlots} credits used{skippedHere>0&&<span style={{marginLeft:4,fontSize:10,fontStyle:"italic",color:"#9ca3af"}}>({skippedHere} skipped)</span>}</div>
                 </div>
                 <div className="prog-track" style={{width:80}}>
@@ -1188,7 +1220,7 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
                                       <div key={p.key} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,opacity:p.past&&!pd?0.45:1}}>
                                         <button className={"ben-check"+(pd?" done":"")}
                                           onClick={e=>toggle(p.key,e)}
-                                          style={{width:22,height:22,borderRadius:6,border:p.current&&!pd?"2px solid var(--acc)":"",boxShadow:p.current?"0 0 0 2px rgba(184,134,11,.2)":"none"}}>
+                                          style={{width:22,height:22,borderRadius:6,border:p.current&&!pd?"2px solid var(--acc)":"",boxShadow:p.current?"0 0 0 2px rgba(13,115,119,.2)":"none"}}>
                                           {pd&&<Icon name="check" size={11} color="var(--bg)"/>}
                                         </button>
                                         <span style={{fontSize:10,fontWeight:p.current?700:500,color:p.current?"var(--acc)":"var(--tx3)"}}>{p.label}</span>
@@ -1244,7 +1276,7 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
                             <div key={b.key} onClick={()=>toggleExpand(b.key)}
                               style={{borderBottom:i<activePerkBens.length-1?"1px solid var(--br)":"none",padding:"8px 0",cursor:"pointer"}}>
                               <div style={{display:"flex",alignItems:"center",gap:10}}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b8860b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d7377" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
                                   <path d="M12 2l7 4v5c0 5.25-3.5 9.74-7 11-3.5-1.26-7-5.75-7-11V6l7-4z"/><path d="M9 12l2 2 4-4"/>
                                 </svg>
                                 <div style={{flex:1,minWidth:0}}>
@@ -1340,7 +1372,7 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
             <div className="sheet" onClick={e=>e.stopPropagation()} style={{maxWidth:500,padding:"24px 20px 40px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
                 <div>
-                  <div style={{fontSize:18,fontWeight:800,color:"var(--tx)",fontFamily:"'Playfair Display',Georgia,serif"}}>Upgrade Options</div>
+                  <div style={{fontSize:18,fontWeight:800,color:"var(--tx)",fontFamily:"'Inter',sans-serif"}}>Upgrade Options</div>
                   <div style={{fontSize:12,color:"var(--tx3)",marginTop:2}}>Cards with better value than {uc.short||uc.name}</div>
                 </div>
                 <button onClick={()=>setUpgradeCard(null)} style={{background:"none",border:"none",fontSize:22,color:"var(--tx3)",cursor:"pointer",padding:4,lineHeight:1}}>&times;</button>
@@ -1368,7 +1400,7 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
                         </div>
                         <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
                           <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:"rgba(22,163,74,.08)",color:"var(--grn2)",border:"1px solid rgba(22,163,74,.15)"}}>${alt.credits.toLocaleString()} in credits</span>
-                          {alt.earnBoost>0&&<span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:"rgba(184,134,11,.08)",color:"var(--acc)",border:"1px solid rgba(184,134,11,.15)"}}>+{alt.earnBoost}x earn boost</span>}
+                          {alt.earnBoost>0&&<span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:"rgba(13,115,119,.08)",color:"var(--acc)",border:"1px solid rgba(13,115,119,.15)"}}>+{alt.earnBoost}x earn boost</span>}
                         </div>
                         {alt.signup&&alt.signup!=="No signup bonus"&&alt.signup!=="No sign-up bonus"&&(
                           <div style={{fontSize:11,fontWeight:600,color:"var(--acc)",marginBottom:8}}>{alt.signup}</div>
@@ -1378,9 +1410,9 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
                             <a href={applyUrl} target="_blank" rel="noopener noreferrer"
                               style={{display:"block",textAlign:"center",padding:"10px 20px",borderRadius:10,textDecoration:"none",
                                 background:"linear-gradient(135deg,var(--acc),var(--gld2))",color:"#fff",
-                                fontSize:13,fontWeight:700,boxShadow:"0 2px 8px rgba(184,134,11,.25)",transition:"all .2s"}}
-                              onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 14px rgba(184,134,11,.35)";}}
-                              onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 2px 8px rgba(184,134,11,.25)";}}>
+                                fontSize:13,fontWeight:700,boxShadow:"0 2px 8px rgba(13,115,119,.25)",transition:"all .2s"}}
+                              onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 14px rgba(13,115,119,.35)";}}
+                              onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 2px 8px rgba(13,115,119,.25)";}}>
                               Apply Now →
                             </a>
                             <div className="apply-disclose" style={{textAlign:"center",marginTop:6}}>Affiliate link — we may earn a commission at no cost to you.</div>
@@ -1395,6 +1427,1056 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
           </div>
         );
       })()}
+    </div>
+  );
+}
+
+/* ── RENEWAL ADVISOR TAB ──────────────────────────────────────────────────── */
+// The core FeeWorth feature — a deep-dive decision page for a single card.
+// Lets users pick a card, see benefit tracker, ROI verdict, retention scripts,
+// downgrade paths, cancellation consequences, and replacement suggestions.
+function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckDates,resetBadges=new Set(),skippedSet=new Set(),setSkippedBenefits,anniversaryDates={},setAnniversaryDates}){
+  const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
+  const feeCards=useMemo(()=>cards.filter(c=>c.fee>0),[cards]);
+
+  // Default to nearest-renewal card (prefer cards with anniversary dates set)
+  const [selectedId,setSelectedId]=useState(()=>{
+    if(!feeCards.length) return null;
+    let best=feeCards[0], bestDays=9999;
+    feeCards.forEach(card=>{
+      const days=getRenewalDays(card.id,anniversaryDates);
+      if(days!=null&&days<bestDays){bestDays=days;best=card;}
+    });
+    return best.id;
+  });
+
+  const [openBen,setOpenBen]=useState(null);
+  const [showRetention,setShowRetention]=useState(false);
+  const [showCancel,setShowCancel]=useState(false);
+
+  const card=useMemo(()=>CARDS.find(c=>c.id===selectedId),[selectedId]);
+
+  // Benefits for this card
+  const allBenefits=useMemo(()=>{
+    if(!card)return[];
+    const list=[];
+    card.annual.forEach(b=>list.push({...b,cardId:card.id,card,key:benKey(card.id,b,false),isMonthly:false}));
+    card.monthly.forEach(b=>list.push({...b,cardId:card.id,card,key:benKey(card.id,b,true),isMonthly:true}));
+    return list;
+  },[card]);
+
+  const trackable=useMemo(()=>allBenefits.filter(b=>b.v!=null&&!skippedSet.has(b.key)),[allBenefits,skippedSet]);
+  const totalCredits=useMemo(()=>trackable.reduce((s,b)=>s+annualBenValue(b),0),[trackable]);
+
+  // Count checked periods
+  const checkedCount=useMemo(()=>{
+    let count=0;
+    trackable.forEach(b=>{
+      const pk=periodKeys(card?.id,b,b.isMonthly);
+      if(pk) pk.forEach(p=>{if(checkedSet.has(p.key))count++;});
+      else if(checkedSet.has(b.key)) count++;
+    });
+    return count;
+  },[trackable,checkedSet,card]);
+  const totalSlots=useMemo(()=>{
+    let count=0;
+    trackable.forEach(b=>{
+      const pk=periodKeys(card?.id,b,b.isMonthly);
+      count+=pk?pk.length:1;
+    });
+    return count;
+  },[trackable,card]);
+  const usedValue=useMemo(()=>{
+    let total=0;
+    trackable.forEach(b=>{
+      const pk=periodKeys(card?.id,b,b.isMonthly);
+      if(pk) pk.forEach(p=>{if(checkedSet.has(p.key))total+=b.v;});
+      else if(checkedSet.has(b.key)) total+=annualBenValue(b);
+    });
+    return total;
+  },[trackable,checkedSet,card]);
+
+  const roiPct=card&&card.fee>0?Math.round((totalCredits/card.fee)*100):0;
+  const verdict=roiPct>=100?"worth-it":roiPct>=50?"on-track":"at-risk";
+
+  // Renewal days from user-set anniversary month
+  const renewDays=useMemo(()=>{
+    if(!card||card.fee===0)return null;
+    return getRenewalDays(card.id,anniversaryDates);
+  },[card,anniversaryDates]);
+
+  // Toggle benefit check
+  function toggle(key,e){
+    e.stopPropagation();
+    const willCheck=!checkedSet.has(key);
+    setCheckedBenefits(prev=>{
+      const n=new Set(prev);
+      n.has(key)?n.delete(key):n.add(key);
+      return n;
+    });
+    if(setCheckDates){
+      if(willCheck) setCheckDates(prev=>({...prev,[key]:new Date().toISOString()}));
+      else setCheckDates(prev=>{const n={...prev};delete n[key];return n;});
+    }
+  }
+  function toggleExpand(key){setOpenBen(prev=>prev===key?null:key);}
+  function toggleSkip(key,e){
+    e.stopPropagation();
+    if(!setSkippedBenefits)return;
+    setSkippedBenefits(prev=>{const n=new Set(prev);n.has(key)?n.delete(key):n.add(key);return n;});
+  }
+
+  // Downgrade paths and retention data
+  const downgrades=card?(card.downgradePaths||[]):[];
+  const retentionOffers=card?(card.retentionOffers||[]):[];
+  const issuerPhone=card?(ISSUER_PHONES[card.issuer]||ISSUER_PHONES[card.name.split(' ')[0]]||null):null;
+  const pointsInfo=card&&card.ifYouCancel?card.ifYouCancel:null;
+
+  // Replacement suggestion: best same-category card user doesn't own
+  const replacement=useMemo(()=>{
+    if(!card||card.fee===0)return null;
+    const topCats=Object.entries(card.earn||{}).filter(([k,v])=>k!=="o"&&parseFloat(String(v).replace(/[^0-9.]/g,""))>1).map(([k])=>k);
+    const candidates=CARDS.filter(c=>c.id!==card.id&&!myCards.includes(c.id))
+      .map(c=>{
+        const bens=[...c.annual,...c.monthly];
+        const credits=bens.filter(b=>b.v!=null).reduce((s,b)=>s+annualBenValue(b),0);
+        const net=credits-c.fee;
+        let earnBoost=0;
+        topCats.forEach(cat=>{
+          const oldR=parseFloat(String((card.earn&&card.earn[cat])||"0").replace(/[^0-9.]/g,""));
+          const newR=parseFloat(String((c.earn&&c.earn[cat])||"0").replace(/[^0-9.]/g,""));
+          if(newR>oldR)earnBoost+=(newR-oldR);
+        });
+        return {...c,credits,net,earnBoost,score:net+earnBoost*100};
+      })
+      .filter(c=>c.net>0||c.earnBoost>0)
+      .sort((a,b)=>b.score-a.score);
+    return candidates[0]||null;
+  },[card,myCards]);
+
+  if(!feeCards.length){
+    return (
+      <div style={{padding:40,textAlign:"center",color:"var(--tx3)"}}>
+        <Icon name="shield-check" size={36} color="var(--tx4)"/>
+        <div style={{marginTop:12,fontSize:15,fontWeight:600,color:"var(--tx2)"}}>No annual-fee cards in your wallet</div>
+        <div style={{marginTop:4,fontSize:12}}>Add cards with annual fees to get renewal analysis.</div>
+      </div>
+    );
+  }
+
+  if(!card) return null;
+
+  const palette=getIssuerPalette(card.issuer);
+  const verdictConfig={
+    "worth-it":{label:"Worth It",icon:"check",bg:"rgba(22,163,74,.06)",border:"rgba(22,163,74,.2)",color:"var(--grn2)",desc:"This card's benefits exceed its annual fee. Keep it."},
+    "on-track":{label:"On Track",icon:"zap",bg:"rgba(13,115,119,.06)",border:"rgba(13,115,119,.2)",color:"var(--acc)",desc:"You're using over half the fee's value. A few more benefits could make it worth it."},
+    "at-risk":{label:"At Risk",icon:"alert-triangle",bg:"rgba(220,38,38,.06)",border:"rgba(220,38,38,.2)",color:"var(--red2)",desc:"You're not getting enough value from this card. Consider downgrading or calling for a retention offer."}
+  };
+  const vc=verdictConfig[verdict];
+
+  const creditBens=allBenefits.filter(b=>b.type!=="perk"&&!skippedSet.has(b.key));
+  const perkBens=allBenefits.filter(b=>b.type==="perk"&&!skippedSet.has(b.key));
+  const skippedBens=allBenefits.filter(b=>skippedSet.has(b.key));
+
+  return (
+    <div style={{padding:"16px 16px 0"}}>
+      {/* ── CARD SELECTOR ── */}
+      <div style={{marginBottom:20}}>
+        <label style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"var(--tx3)",textTransform:"uppercase",marginBottom:6,display:"block"}}>Analyze Card</label>
+        <div className="ra-selector">
+          <select value={selectedId||""} onChange={e=>setSelectedId(e.target.value)}
+            style={{width:"100%",padding:"14px 16px",fontSize:15,fontWeight:600,color:"var(--tx)",
+              background:"var(--bg)",border:`2px solid ${palette.text}20`,borderRadius:14,
+              appearance:"none",cursor:"pointer",fontFamily:"'Inter',sans-serif"}}>
+            {feeCards.map(c=>{
+              const p=getIssuerPalette(c.issuer);
+              return <option key={c.id} value={c.id}>{c.short||c.name} — ${c.fee}/yr</option>;
+            })}
+          </select>
+          <div style={{position:"absolute",right:16,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}>
+            <Icon name="chevron-right" size={16} color="var(--tx3)" style={{transform:"rotate(90deg)"}}/>
+          </div>
+        </div>
+      </div>
+
+      {/* ── CARD HEADER ── */}
+      <div className="surf fu ra-header" style={{marginBottom:16,borderLeft:`4px solid ${palette.text}`,overflow:"hidden"}}>
+        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
+          <CreditCardDisplay card={card} size="sm"/>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"'Inter',sans-serif",fontSize:20,fontWeight:700,color:palette.text}}>{card.short||card.name}</div>
+            <div style={{fontSize:12,color:"var(--tx3)"}}>{card.issuer} · {card.network}</div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
+          <div style={{flex:1,minWidth:80,padding:"8px 10px",borderRadius:10,background:"var(--s3)",textAlign:"center"}}>
+            <div style={{fontSize:9,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase"}}>Annual Fee</div>
+            <div style={{fontSize:18,fontWeight:800,color:"var(--tx)"}}>${card.fee}</div>
+          </div>
+          <div style={{flex:1,minWidth:80,padding:"8px 10px",borderRadius:10,background:"var(--s3)",textAlign:"center"}}>
+            <div style={{fontSize:9,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase"}}>Total Credits</div>
+            <div style={{fontSize:18,fontWeight:800,color:"var(--grn2)"}}>${totalCredits.toLocaleString()}</div>
+          </div>
+          <div style={{flex:1,minWidth:80,padding:"8px 10px",borderRadius:10,background:totalCredits-card.fee>=0?"rgba(22,163,74,.06)":"rgba(220,38,38,.06)",textAlign:"center"}}>
+            <div style={{fontSize:9,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase"}}>Net Value</div>
+            <div style={{fontSize:18,fontWeight:800,color:totalCredits-card.fee>=0?"var(--grn2)":"var(--red2)"}}>{totalCredits-card.fee>=0?"+":""}${(totalCredits-card.fee).toLocaleString()}</div>
+          </div>
+        </div>
+        {renewDays!=null?(
+          <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,background:"var(--s3)"}}>
+            <Icon name="calendar" size={16} color={renewDays<=60?"var(--red2)":renewDays<=120?"var(--acc)":"var(--tx3)"}/>
+            <div style={{flex:1}}>
+              <div style={{fontSize:12,fontWeight:600,color:renewDays<=60?"var(--red2)":renewDays<=120?"var(--acc)":"var(--tx2)"}}>
+                {renewDays<=0?"Renewal due now":renewDays===1?"Renews tomorrow":`Renews in ${renewDays} days`}
+              </div>
+            </div>
+            <div style={{fontSize:22,fontWeight:800,fontFamily:"'Source Code Pro',monospace",color:renewDays<=60?"var(--red2)":"var(--tx)"}}>{renewDays}d</div>
+          </div>
+        ):(
+          <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,background:"rgba(13,115,119,.06)",border:"1px solid rgba(13,115,119,.15)"}}>
+            <Icon name="calendar" size={16} color="var(--acc)"/>
+            <div style={{flex:1,fontSize:12,fontWeight:600,color:"var(--acc)"}}>Set your anniversary month for an accurate countdown</div>
+            <select value={anniversaryDates[card.id]||""} onChange={e=>{
+              const v=e.target.value;
+              if(setAnniversaryDates) setAnniversaryDates(prev=>{
+                const next={...prev};
+                if(v) next[card.id]=parseInt(v);
+                else delete next[card.id];
+                return next;
+              });
+            }} className="ra-selector" style={{minWidth:80,padding:"5px 8px",borderRadius:8,border:"1px solid rgba(13,115,119,.3)",
+              background:"var(--bg)",fontSize:11,fontWeight:600,color:"var(--tx)",cursor:"pointer"}}>
+              <option value="">Month</option>
+              {MONTH_NAMES.map((m,i)=><option key={i} value={i+1}>{m}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* ── ROI PROGRESS + VERDICT ── */}
+      <div className="surf fu" style={{marginBottom:16,border:`1px solid ${vc.border}`,background:vc.bg}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+          <div style={{width:44,height:44,borderRadius:12,background:vc.color+"15",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <Icon name={vc.icon} size={22} color={vc.color}/>
+          </div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:18,fontWeight:800,color:vc.color,fontFamily:"'Inter',sans-serif"}}>{vc.label}</div>
+            <div style={{fontSize:11,color:"var(--tx3)"}}>{roiPct}% of annual fee covered by benefits</div>
+          </div>
+          <div style={{fontSize:28,fontWeight:900,fontFamily:"'Source Code Pro',monospace",color:vc.color}}>{roiPct}%</div>
+        </div>
+        <div className="prog-track" style={{height:8,marginBottom:10}}>
+          <div className="prog-fill" style={{width:Math.min(roiPct,100)+"%",background:vc.color,transition:"width .5s ease"}}/>
+        </div>
+        <p style={{fontSize:12,color:"var(--tx2)",margin:0,lineHeight:1.5}}>{vc.desc}</p>
+      </div>
+
+      {/* ── BENEFIT TRACKER ── */}
+      <div style={{marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>Benefit Tracker</div>
+          <div style={{fontSize:11,color:"var(--tx3)"}}>{checkedCount}/{totalSlots} used · ${usedValue.toLocaleString()} redeemed</div>
+        </div>
+        <div className="benefit-item" style={{borderLeftColor:palette.text,padding:"0 14px"}}>
+          {/* Credits with checkboxes */}
+          {creditBens.map((b,i)=>{
+            const pk=periodKeys(card.id,b,b.isMonthly);
+            const isMulti=!!pk;
+            const done=isMulti?pk.every(p=>checkedSet.has(p.key)):checkedSet.has(b.key);
+            const isOpen=openBen===b.key;
+            const bc=BCAT[b.cat]||BCAT.statement;
+            const rl=RESET_LABELS[b.reset];
+            const wasReset=resetBadges.has(b.key);
+            const periodLabel=b.reset==="quarterly"?"quarter":b.reset==="semi-annual"?"6 months":b.isMonthly?"month":"year";
+            return (
+              <div key={b.key} onClick={()=>toggleExpand(b.key)}
+                role="button" tabIndex={0}
+                onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&toggleExpand(b.key)}
+                style={{borderBottom:i<creditBens.length-1?"1px solid var(--br)":"none",padding:"10px 0",cursor:"pointer"}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                  {!isMulti&&(
+                    <button className={"ben-check"+(done?" done":"")} onClick={e=>toggle(b.key,e)} style={{marginTop:2}}>
+                      {done&&<Icon name="check" size={13} color="var(--bg)"/>}
+                    </button>
+                  )}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:3}}>
+                      <span style={{fontSize:13,fontWeight:600,color:done?"var(--tx3)":"var(--tx)",textDecoration:done?"line-through":"none"}}>{b.n}</span>
+                      <span style={{padding:"1px 7px",borderRadius:99,fontSize:10,fontWeight:700,color:bc.color,background:bc.bg}}><Icon name={BCAT_ICON_MAP[b.cat]||"credit-card"} size={10} color={bc.color}/> {bc.label}</span>
+                      {rl&&<span style={{padding:"1px 6px",borderRadius:99,fontSize:10,background:"rgba(148,163,184,.15)",color:"var(--tx3)",fontWeight:600}}>{rl}</span>}
+                      {wasReset&&<span style={{padding:"1px 7px",borderRadius:99,fontSize:10,background:"rgba(212,168,64,.18)",color:"var(--gld3)",fontWeight:700}}>↺ Refreshed</span>}
+                    </div>
+                    {isMulti&&(
+                      <div style={{display:"flex",alignItems:"center",gap:pk.length>2?8:14,marginTop:6,marginBottom:4}}>
+                        {pk.map(p=>{
+                          const pd=checkedSet.has(p.key);
+                          return (
+                            <div key={p.key} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,opacity:p.past&&!pd?0.45:1}}>
+                              <button className={"ben-check"+(pd?" done":"")}
+                                onClick={e=>toggle(p.key,e)}
+                                style={{width:22,height:22,borderRadius:6,border:p.current&&!pd?"2px solid var(--acc)":"",boxShadow:p.current?"0 0 0 2px rgba(13,115,119,.2)":"none"}}>
+                                {pd&&<Icon name="check" size={11} color="var(--bg)"/>}
+                              </button>
+                              <span style={{fontSize:10,fontWeight:p.current?700:500,color:p.current?"var(--acc)":"var(--tx3)"}}>{p.label}</span>
+                              {p.sub&&<span style={{fontSize:8,color:"var(--tx4)"}}>{p.sub}</span>}
+                            </div>
+                          );
+                        })}
+                        <div style={{fontSize:12,fontWeight:700,color:"var(--grn2)",marginLeft:4}}>${b.v}<span style={{fontSize:10,fontWeight:500,color:"var(--tx3)"}}> / {periodLabel}</span></div>
+                      </div>
+                    )}
+                    {!isMulti&&b.v&&<div style={{fontSize:11,color:"var(--grn2)",fontWeight:700}}>Up to ${b.isMonthly?b.v+"/mo ($"+b.v*12+"/yr)":b.v+(b.reset==="annual"?"/yr":"")}</div>}
+                  </div>
+                  <button onClick={e=>toggleSkip(b.key,e)} title="Skip this benefit"
+                    style={{flexShrink:0,background:"none",border:"none",cursor:"pointer",padding:4,marginTop:2,opacity:0.35,transition:"opacity .15s"}}
+                    onMouseEnter={e=>e.currentTarget.style.opacity=1} onMouseLeave={e=>e.currentTarget.style.opacity=0.35}>
+                    <Icon name="x" size={13} color="var(--tx3)"/>
+                  </button>
+                  <span style={{flexShrink:0,transition:"transform .15s",display:"inline-flex",transform:isOpen?"rotate(90deg)":"rotate(0deg)",marginTop:4}}><Icon name="chevron-right" size={14} color="var(--tx3)"/></span>
+                </div>
+                {isOpen&&(
+                  <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid var(--br)"}}>
+                    {b.d&&<p style={{fontSize:12,color:"var(--tx2)",margin:"0 0 8px",lineHeight:1.6}}>{b.d}</p>}
+                    <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
+                      {b.v&&<span style={{fontSize:11,color:"var(--grn2)",fontWeight:700}}>Value: ${b.v}/{periodLabel} (${annualBenValue(b)}/yr)</span>}
+                      {rl&&<span style={{fontSize:11,color:"var(--tx3)"}}>↺ Resets: {rl}</span>}
+                      {b.enroll&&<span style={{fontSize:11,color:"var(--gld3)",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><Icon name="bolt" size={11} color="var(--gld3)"/> Activation required</span>}
+                    </div>
+                    <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+                      {b.enrollUrl&&<a href={b.enrollUrl} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} style={{fontSize:12,color:"var(--acc)",fontWeight:600,textDecoration:"none"}}>Activate →</a>}
+                      {b.useUrl&&<a href={b.useUrl} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} style={{fontSize:12,color:"var(--acc)",fontWeight:600,textDecoration:"none"}}>Use benefit →</a>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Perks (read-only) */}
+          {perkBens.length>0&&(
+            <>
+              {creditBens.length>0&&(
+                <div style={{borderTop:"1px solid var(--br)",margin:"6px 0",paddingTop:10}}>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,color:"#9ca3af",textTransform:"uppercase",marginBottom:6}}>INCLUDED PROTECTIONS & PERKS</div>
+                </div>
+              )}
+              {perkBens.map((b,i)=>{
+                const isOpen=openBen===b.key;
+                return (
+                  <div key={b.key} onClick={()=>toggleExpand(b.key)}
+                    style={{borderBottom:i<perkBens.length-1?"1px solid var(--br)":"none",padding:"8px 0",cursor:"pointer"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d7377" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
+                        <path d="M12 2l7 4v5c0 5.25-3.5 9.74-7 11-3.5-1.26-7-5.75-7-11V6l7-4z"/><path d="M9 12l2 2 4-4"/>
+                      </svg>
+                      <div style={{flex:1,minWidth:0}}>
+                        <span style={{fontSize:12,fontWeight:500,color:"#6b7280"}}>{b.n}</span>
+                        {b.v&&<span style={{fontSize:10,color:"#9ca3af",marginLeft:6}}>up to ${b.v.toLocaleString()}</span>}
+                      </div>
+                      <span style={{flexShrink:0,transition:"transform .15s",display:"inline-flex",transform:isOpen?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={12} color="#9ca3af"/></span>
+                    </div>
+                    {isOpen&&(
+                      <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid var(--br)",marginLeft:26}}>
+                        {b.d&&<p style={{fontSize:11,color:"#9ca3af",margin:0,lineHeight:1.5}}>{b.d}</p>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {/* Skipped benefits */}
+          {skippedBens.length>0&&(
+            <>
+              <div style={{borderTop:"1px solid var(--br)",margin:"6px 0",paddingTop:10}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,color:"#9ca3af",textTransform:"uppercase",marginBottom:6}}>SKIPPED</div>
+              </div>
+              {skippedBens.map((b,i)=>(
+                <div key={b.key} style={{borderBottom:i<skippedBens.length-1?"1px solid var(--br)":"none",padding:"8px 0",opacity:0.4}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <span style={{fontSize:12,fontWeight:500,color:"var(--tx)",textDecoration:"line-through"}}>{b.n}</span>
+                      <span style={{fontSize:10,fontStyle:"italic",color:"#9ca3af",marginLeft:6}}>skipped</span>
+                      {b.v&&<div style={{fontSize:10,color:"var(--tx3)"}}>${b.v}{b.isMonthly?"/mo":b.reset==="quarterly"?"/quarter":b.reset==="semi-annual"?"/6 mo":"/yr"}</div>}
+                    </div>
+                    <button onClick={e=>toggleSkip(b.key,e)} title="Un-skip"
+                      style={{flexShrink:0,background:"none",border:"none",cursor:"pointer",padding:4}}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── RETENTION OFFER SECTION ── */}
+      {retentionOffers.length>0&&(
+        <div className="surf fu" style={{marginBottom:16}}>
+          <button onClick={()=>setShowRetention(!showRetention)}
+            style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
+            <div style={{width:40,height:40,borderRadius:10,background:"rgba(13,115,119,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <Icon name="phone" size={20} color="var(--acc)"/>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Retention Offers</div>
+              <div style={{fontSize:11,color:"var(--tx3)"}}>Call before you cancel — most people get an offer</div>
+            </div>
+            <span style={{transition:"transform .2s",transform:showRetention?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
+          </button>
+          {showRetention&&(
+            <div style={{marginTop:16}}>
+              {issuerPhone&&(
+                <a href={"tel:"+issuerPhone.replace(/[^0-9]/g,"")} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderRadius:10,background:palette.tint,border:`1px solid ${palette.text}15`,textDecoration:"none",marginBottom:14}}>
+                  <Icon name="phone" size={18} color={palette.text}/>
+                  <div>
+                    <div style={{fontSize:14,fontWeight:700,color:palette.text}}>{issuerPhone}</div>
+                    <div style={{fontSize:11,color:"var(--tx3)"}}>{card.issuer} Retention Line</div>
+                  </div>
+                </a>
+              )}
+              <div style={{fontSize:11,fontWeight:700,letterSpacing:.8,color:"var(--tx3)",textTransform:"uppercase",marginBottom:8}}>Typical offers reported</div>
+              {retentionOffers.map((offer,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:8}}>
+                  <div style={{width:6,height:6,borderRadius:99,background:"var(--acc)",marginTop:5,flexShrink:0}}/>
+                  <span style={{fontSize:13,color:"var(--tx2)"}}>{offer}</span>
+                </div>
+              ))}
+              <div style={{marginTop:14,padding:"12px 14px",borderRadius:10,background:"var(--s3)",border:"1px solid var(--br)"}}>
+                <div style={{fontSize:11,fontWeight:700,color:"var(--tx)",marginBottom:6}}>What to say:</div>
+                <p style={{fontSize:12,color:"var(--tx2)",margin:0,lineHeight:1.6,fontStyle:"italic"}}>
+                  "Hi, I'm considering canceling my {card.short||card.name} because I'm not sure the ${card.fee} annual fee is worth it for me. Are there any retention offers or annual fee credits available on my account?"
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── IF YOU CANCEL ── */}
+      <div className="surf fu" style={{marginBottom:16}}>
+        <button onClick={()=>setShowCancel(!showCancel)}
+          style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
+          <div style={{width:40,height:40,borderRadius:10,background:"rgba(220,38,38,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <Icon name="x" size={20} color="var(--red2)"/>
+          </div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>If You Cancel</div>
+            <div style={{fontSize:11,color:"var(--tx3)"}}>What you'll lose and what happens to your points</div>
+          </div>
+          <span style={{transition:"transform .2s",transform:showCancel?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
+        </button>
+        {showCancel&&(
+          <div style={{marginTop:16}}>
+            {/* Lost benefits */}
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:.8,color:"var(--tx3)",textTransform:"uppercase",marginBottom:8}}>Benefits you'll lose</div>
+            <div style={{marginBottom:14}}>
+              {allBenefits.filter(b=>!skippedSet.has(b.key)).map((b,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:6}}>
+                  <Icon name="x" size={12} color="var(--red2)" style={{marginTop:2,flexShrink:0}}/>
+                  <span style={{fontSize:12,color:"var(--tx2)"}}>{b.n}{b.v?" ($"+annualBenValue(b)+"/yr)":""}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Transfer partners */}
+            {card.partners&&card.partners.length>0&&(
+              <div style={{marginBottom:14}}>
+                <div style={{fontSize:11,fontWeight:700,letterSpacing:.8,color:"var(--tx3)",textTransform:"uppercase",marginBottom:8}}>Transfer partners lost</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {card.partners.map(p=>(
+                    <span key={p} style={{fontSize:11,padding:"3px 10px",borderRadius:99,background:"rgba(220,38,38,.06)",color:"var(--red2)",fontWeight:600,border:"1px solid rgba(220,38,38,.12)"}}>{p}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Points on cancel */}
+            {pointsInfo&&(
+              <div style={{padding:"12px 14px",borderRadius:10,background:"rgba(13,115,119,.05)",border:"1px solid rgba(13,115,119,.15)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                  <Icon name="zap" size={14} color="var(--acc)"/>
+                  <span style={{fontSize:12,fontWeight:700,color:"var(--tx)"}}>Your {card.cur||"Points"}</span>
+                </div>
+                <p style={{fontSize:12,color:"var(--tx2)",margin:0,lineHeight:1.6}}>{pointsInfo.pointsFate||""}</p>
+                {pointsInfo.loseAccess&&pointsInfo.loseAccess.length>0&&(
+                  <div style={{marginTop:8}}>
+                    <div style={{fontSize:10,fontWeight:700,letterSpacing:.8,color:"var(--red2)",textTransform:"uppercase",marginBottom:4}}>You lose access to</div>
+                    {pointsInfo.loseAccess.map((item,j)=>(
+                      <div key={j} style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:3}}>
+                        <Icon name="x" size={11} color="var(--red2)" style={{marginTop:2,flexShrink:0}}/>
+                        <span style={{fontSize:11,color:"var(--tx2)"}}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── DOWNGRADE PATHS ── */}
+      {downgrades.length>0&&(
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:10}}>Downgrade Options</div>
+          {downgrades.map((dg,i)=>{
+            const dgCard=dg.affiliateKey?CARDS.find(c=>c.id===dg.affiliateKey):null;
+            const applyUrl=dg.affiliateKey&&APPLY_URLS[dg.affiliateKey]&&!APPLY_URLS[dg.affiliateKey].startsWith("#")?APPLY_URLS[dg.affiliateKey]:null;
+            return (
+              <div key={i} className="surf fu" style={{marginBottom:10,borderLeft:`3px solid ${palette.text}40`}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                  {dgCard&&<div style={{width:36,height:22,borderRadius:5,background:`linear-gradient(135deg,${dgCard.c1},${dgCard.c2})`,flexShrink:0,boxShadow:"0 1px 4px rgba(0,0,0,.12)"}}/>}
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>{dg.cardName}</div>
+                    <div style={{fontSize:11,color:"var(--tx3)"}}>{dg.annualFee===0?"No annual fee":"$"+dg.annualFee+"/yr"} · Product change (no hard pull)</div>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:10,marginBottom:8}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:10,fontWeight:700,letterSpacing:.8,color:"var(--grn2)",textTransform:"uppercase",marginBottom:4}}>You keep</div>
+                    <div style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:3}}>
+                      <Icon name="check" size={11} color="var(--grn2)" style={{marginTop:2,flexShrink:0}}/>
+                      <span style={{fontSize:11,color:"var(--tx2)"}}>{dg.whatYouKeep}</span>
+                    </div>
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:10,fontWeight:700,letterSpacing:.8,color:"var(--red2)",textTransform:"uppercase",marginBottom:4}}>You lose</div>
+                    <div style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:3}}>
+                      <Icon name="x" size={11} color="var(--red2)" style={{marginTop:2,flexShrink:0}}/>
+                      <span style={{fontSize:11,color:"var(--tx2)"}}>{dg.whatYouLose}</span>
+                    </div>
+                  </div>
+                </div>
+                {applyUrl&&(
+                  <div>
+                    <a href={applyUrl} target="_blank" rel="noopener noreferrer"
+                      style={{display:"block",textAlign:"center",padding:"10px",borderRadius:10,textDecoration:"none",
+                        background:palette.tint,color:palette.text,fontSize:12,fontWeight:700,border:`1px solid ${palette.text}20`}}>
+                      View {dg.cardName} Details →
+                    </a>
+                    <div className="apply-disclose" style={{textAlign:"center",marginTop:4}}>Affiliate link — we may earn a commission at no cost to you.</div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── RECOMMENDED REPLACEMENT ── */}
+      {replacement&&verdict==="at-risk"&&(
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:10}}>Recommended Replacement</div>
+          <div className="surf fu" style={{borderLeft:`3px solid var(--grn2)`}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+              <div style={{width:42,height:26,borderRadius:6,background:`linear-gradient(135deg,${replacement.c1},${replacement.c2})`,flexShrink:0,boxShadow:"0 1px 4px rgba(0,0,0,.12)"}}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:15,fontWeight:700,color:"var(--tx)"}}>{replacement.short||replacement.name}</div>
+                <div style={{fontSize:11,color:"var(--tx3)"}}>{replacement.issuer} · {replacement.fee===0?"No fee":"$"+replacement.fee+"/yr"}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:16,fontWeight:800,color:"var(--grn2)"}}>+${replacement.net.toLocaleString()}</div>
+                <div style={{fontSize:9,color:"var(--tx3)",textTransform:"uppercase",fontWeight:600}}>Net value</div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+              <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:"rgba(22,163,74,.08)",color:"var(--grn2)",border:"1px solid rgba(22,163,74,.15)"}}>${replacement.credits.toLocaleString()} in credits</span>
+              {replacement.earnBoost>0&&<span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:"rgba(13,115,119,.08)",color:"var(--acc)",border:"1px solid rgba(13,115,119,.15)"}}>+{replacement.earnBoost}x earn boost</span>}
+            </div>
+            {replacement.signup&&replacement.signup!=="No signup bonus"&&replacement.signup!=="No sign-up bonus"&&(
+              <div style={{fontSize:11,fontWeight:600,color:"var(--acc)",marginBottom:10}}>{replacement.signup}</div>
+            )}
+            {(()=>{
+              const applyUrl=APPLY_URLS[replacement.id]&&!APPLY_URLS[replacement.id].startsWith("#")?APPLY_URLS[replacement.id]:null;
+              return applyUrl?(
+                <div>
+                  <a href={applyUrl} target="_blank" rel="noopener noreferrer"
+                    style={{display:"block",textAlign:"center",padding:"12px 20px",borderRadius:10,textDecoration:"none",
+                      background:"linear-gradient(135deg,var(--acc),var(--gld2))",color:"#fff",
+                      fontSize:13,fontWeight:700,boxShadow:"0 2px 8px rgba(13,115,119,.25)"}}>
+                    Apply Now →
+                  </a>
+                  <div className="apply-disclose" style={{textAlign:"center",marginTop:6}}>Affiliate link — we may earn a commission at no cost to you.</div>
+                </div>
+              ):null;
+            })()}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── HOUSEHOLD TAB ────────────────────────────────────────────────────────── */
+// Couples/household optimizer — lets user manage P1 + P2 wallets,
+// detect redundant benefits, suggest optimizations, and show coverage map.
+function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetup,setHouseholdSetup,checkedSet,user,onAuthClick,setTab}){
+  const [addingP2,setAddingP2]=useState(false);
+  const [p2Search,setP2Search]=useState("");
+  const [showRedundancy,setShowRedundancy]=useState(true);
+
+  // Resolve card objects
+  const p1Cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
+  const p2Resolved=useMemo(()=>p2Cards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[p2Cards]);
+
+  // Per-card stats helper
+  function cardStat(card){
+    const annVal=card.annual.reduce((a,b)=>{
+      if(!b.v)return a;
+      if(b.reset==="quarterly")return a+b.v*4;
+      if(b.reset==="semi-annual")return a+b.v*2;
+      return a+b.v;
+    },0);
+    const monVal=card.monthly.reduce((a,b)=>a+((b.v||0)*12),0);
+    const totalVal=annVal+monVal;
+    const roiPct=card.fee>0?Math.round((totalVal/card.fee)*100):null;
+    const verdict=card.fee===0?null:roiPct>=100?"worth-it":roiPct>=50?"on-track":"at-risk";
+    return {totalVal,roiPct,verdict};
+  }
+
+  // Household totals
+  const p1Fees=useMemo(()=>p1Cards.reduce((s,c)=>s+c.fee,0),[p1Cards]);
+  const p2Fees=useMemo(()=>p2Resolved.reduce((s,c)=>s+c.fee,0),[p2Resolved]);
+  const p1Credits=useMemo(()=>p1Cards.reduce((s,c)=>s+cardStat(c).totalVal,0),[p1Cards]);
+  const p2Credits=useMemo(()=>p2Resolved.reduce((s,c)=>s+cardStat(c).totalVal,0),[p2Resolved]);
+  const hhFees=p1Fees+p2Fees;
+  const hhCredits=p1Credits+p2Credits;
+  const hhNet=hhCredits-hhFees;
+
+  // ── Redundancy Detection ──
+  const redundancies=useMemo(()=>{
+    if(!p2Resolved.length)return[];
+    const alerts=[];
+
+    // 1. Same card held by both
+    const p1Ids=new Set(myCards);
+    p2Cards.forEach(id=>{
+      if(p1Ids.has(id)){
+        const card=CARDS.find(c=>c.id===id);
+        if(card&&card.fee>0){
+          alerts.push({
+            type:"same-card",
+            label:`Both hold ${card.short||card.name}`,
+            detail:`You're paying $${card.fee} × 2 = $${card.fee*2}/yr for the same card. Consider if one partner can downgrade.`,
+            savings:card.fee,
+            cards:[card]
+          });
+        }
+      }
+    });
+
+    // 2. Overlapping benefits via OVERLAP_GROUPS
+    const p1Bens=[];
+    p1Cards.forEach(card=>{
+      [...card.annual,...card.monthly].forEach(b=>{
+        p1Bens.push({name:b.n,card,value:b.v,ben:b});
+      });
+    });
+    const p2Bens=[];
+    p2Resolved.forEach(card=>{
+      [...card.annual,...card.monthly].forEach(b=>{
+        p2Bens.push({name:b.n,card,value:b.v,ben:b});
+      });
+    });
+
+    Object.entries(OVERLAP_GROUPS).forEach(([groupId,group])=>{
+      if(!group.savings)return; // skip groups marked as not-redundant
+      const p1Matches=p1Bens.filter(b=>group.keywords.some(kw=>b.name.toLowerCase().includes(kw.toLowerCase())));
+      const p2Matches=p2Bens.filter(b=>group.keywords.some(kw=>b.name.toLowerCase().includes(kw.toLowerCase())));
+      if(p1Matches.length>0&&p2Matches.length>0){
+        // Deduplicate by card — don't flag the same card twice (already caught above)
+        const p1CardIds=new Set(p1Matches.map(m=>m.card.id));
+        const p2CardIds=new Set(p2Matches.map(m=>m.card.id));
+        const overlap=[...p2CardIds].some(id=>!p1CardIds.has(id))||[...p1CardIds].some(id=>!p2CardIds.has(id));
+        if(overlap){
+          alerts.push({
+            type:"overlap",
+            label:`Overlapping: ${group.label}`,
+            detail:group.tip,
+            savings:group.savings,
+            cards:[...p1Matches.map(m=>m.card),...p2Matches.map(m=>m.card)].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i)
+          });
+        }
+      }
+    });
+
+    return alerts;
+  },[myCards,p2Cards,p1Cards,p2Resolved]);
+
+  // ── Household Suggestions ──
+  const suggestions=useMemo(()=>{
+    if(!p2Resolved.length)return[];
+    const suggs=[];
+    const allHHCards=[...p1Cards,...p2Resolved];
+    const allHHIds=new Set([...myCards,...p2Cards]);
+
+    // Check for category gaps
+    const catLabels={d:"Dining",g:"Groceries",gas:"Gas",t:"Travel",s:"Streaming",tr:"Rideshare"};
+    Object.entries(catLabels).forEach(([catKey,catLabel])=>{
+      // Find best card in household for this category
+      let bestRate=0;
+      allHHCards.forEach(c=>{
+        if(c.earn&&c.earn[catKey]){
+          const rate=parseFloat(String(c.earn[catKey]).replace(/[^0-9.]/g,""));
+          if(rate>bestRate)bestRate=rate;
+        }
+      });
+      if(bestRate<=1.5){
+        // Gap — find the best card for this category that nobody owns
+        const topCardId=(EARN_PRIORITY[catKey]||[])[0];
+        if(topCardId&&!allHHIds.has(topCardId)){
+          const topCard=CARDS.find(c=>c.id===topCardId);
+          if(topCard){
+            const topRate=topCard.earn&&topCard.earn[catKey]?topCard.earn[catKey]:"top";
+            suggs.push({
+              type:"gap",
+              text:`Neither partner has a strong ${catLabel.toLowerCase()} card. The ${topCard.short||topCard.name} earns ${topRate}x on ${catLabel.toLowerCase()}.`,
+              card:topCard
+            });
+          }
+        }
+      }
+    });
+
+    // Check for redundant high-fee cards where one could downgrade
+    redundancies.filter(r=>r.type==="same-card").forEach(r=>{
+      const card=r.cards[0];
+      const paths=card.downgradePaths;
+      if(paths&&paths.length>0){
+        const best=paths[0];
+        suggs.push({
+          type:"downgrade",
+          text:`${p2Name||"P2"} should downgrade their ${card.short||card.name} to ${best.cardName} — ${p2Name?"they":"P2"} save${p2Name?"s":""} $${card.fee-best.annualFee}/yr and can use ${p2Name?"your":"P1's"} card as primary.`,
+          card:null
+        });
+      }
+    });
+
+    return suggs;
+  },[p1Cards,p2Resolved,myCards,p2Cards,redundancies,p2Name]);
+
+  // ── Coverage Map ──
+  const coverageMap=useMemo(()=>{
+    const cats=BASIC_CATS.filter(c=>c.id!=="o"); // skip "everything else"
+    return cats.map(cat=>{
+      let p1Best=null,p1Rate=0,p2Best=null,p2Rate=0;
+      p1Cards.forEach(c=>{
+        if(c.earn&&c.earn[cat.id]){
+          const r=parseFloat(String(c.earn[cat.id]).replace(/[^0-9.]/g,""));
+          if(r>p1Rate){p1Rate=r;p1Best=c;}
+        }
+      });
+      p2Resolved.forEach(c=>{
+        if(c.earn&&c.earn[cat.id]){
+          const r=parseFloat(String(c.earn[cat.id]).replace(/[^0-9.]/g,""));
+          if(r>p2Rate){p2Rate=r;p2Best=c;}
+        }
+      });
+      const winner=p1Rate>=p2Rate?"p1":"p2";
+      const gap=Math.max(p1Rate,p2Rate)<=1.5;
+      return {cat,p1Best,p1Rate,p2Best,p2Rate,winner,gap};
+    });
+  },[p1Cards,p2Resolved]);
+
+  // ── P2 card management ──
+  function toggleP2Card(id){
+    setP2Cards(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
+  }
+
+  const filteredCards=useMemo(()=>{
+    if(!p2Search.trim())return CARDS;
+    const q=p2Search.toLowerCase();
+    return CARDS.filter(c=>
+      c.name.toLowerCase().includes(q)||
+      (c.short&&c.short.toLowerCase().includes(q))||
+      c.issuer.toLowerCase().includes(q)
+    );
+  },[p2Search]);
+
+  // ── SETUP SCREEN ──
+  if(!householdSetup){
+    return (
+      <div style={{padding:"16px 16px 0"}}>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <h2 className="page-title" style={{textAlign:"center"}}>Household Optimizer</h2>
+        </div>
+        <div className="surf fu" style={{textAlign:"center",padding:"32px 20px"}}>
+          <div style={{width:56,height:56,borderRadius:16,background:"rgba(13,115,119,.08)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>
+            <Icon name="users" size={28} color="var(--acc)"/>
+          </div>
+          <div style={{fontSize:18,fontWeight:700,color:"var(--tx)",fontFamily:"'Inter',sans-serif",marginBottom:8}}>Add your partner to optimize your household</div>
+          <p style={{fontSize:13,color:"var(--tx3)",lineHeight:1.6,marginBottom:24,maxWidth:360,margin:"0 auto 24px"}}>
+            See where you're double-paying for benefits, find coverage gaps, and figure out which cards each partner should carry.
+          </p>
+          <button onClick={()=>setHouseholdSetup(true)}
+            className="btn" style={{width:"100%",maxWidth:320,marginBottom:12}}>
+            I'll manage both wallets
+          </button>
+          <div style={{fontSize:11,color:"var(--tx3)",marginBottom:20}}>Manually add your partner's cards below</div>
+          <button disabled style={{width:"100%",maxWidth:320,padding:"12px 20px",borderRadius:12,
+            background:"var(--s3)",border:"1px solid var(--br2)",color:"var(--tx3)",
+            fontSize:14,fontWeight:600,cursor:"not-allowed",opacity:0.5}}>
+            Invite partner — Coming soon
+          </button>
+          <div style={{fontSize:10,color:"var(--tx4)",marginTop:6}}>Partner links their own FeeWorth account (V2)</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── P2 CARD ADDING MODAL ──
+  const p2Modal=addingP2&&(
+    <div className="sheet-overlay" onClick={()=>{setAddingP2(false);setP2Search("");}}>
+      <div className="sheet" onClick={e=>e.stopPropagation()} style={{maxWidth:500,padding:"20px 16px 40px",maxHeight:"80vh",display:"flex",flexDirection:"column"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontSize:16,fontWeight:700,color:"var(--tx)",fontFamily:"'Inter',sans-serif"}}>{p2Name||"Partner"}'s Cards</div>
+          <button onClick={()=>{setAddingP2(false);setP2Search("");}} style={{background:"none",border:"none",fontSize:22,color:"var(--tx3)",cursor:"pointer",padding:4,lineHeight:1}}>&times;</button>
+        </div>
+        <input type="text" placeholder="Search cards..." value={p2Search} onChange={e=>setP2Search(e.target.value)}
+          style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--br2)",fontSize:14,
+            background:"var(--s3)",color:"var(--tx)",marginBottom:12,outline:"none",boxSizing:"border-box"}}/>
+        <div style={{flex:1,overflowY:"auto",margin:"0 -16px",padding:"0 16px"}}>
+          {filteredCards.map(card=>{
+            const inP2=p2Cards.includes(card.id);
+            const palette=getIssuerPalette(card.issuer);
+            return (
+              <button key={card.id} onClick={()=>toggleP2Card(card.id)}
+                style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",
+                  borderRadius:10,border:inP2?`2px solid ${palette.text}`:"1px solid var(--br)",
+                  background:inP2?palette.tint:"var(--bg)",marginBottom:6,cursor:"pointer",textAlign:"left",
+                  transition:"all .15s"}}>
+                <div style={{width:36,height:22,borderRadius:5,background:`linear-gradient(135deg,${card.c1},${card.c2})`,flexShrink:0,boxShadow:"0 1px 3px rgba(0,0,0,.12)"}}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:600,color:"var(--tx)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{card.short||card.name}</div>
+                  <div style={{fontSize:10,color:"var(--tx3)"}}>{card.issuer} · {card.fee===0?"No fee":"$"+card.fee+"/yr"}</div>
+                </div>
+                {inP2&&<Icon name="check" size={16} color={palette.text}/>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  const verdictBadge=(verdict)=>{
+    if(!verdict)return null;
+    const cfg={
+      "worth-it":{label:"Worth It",color:"var(--grn2)",bg:"rgba(22,163,74,.08)"},
+      "on-track":{label:"On Track",color:"var(--acc)",bg:"rgba(13,115,119,.08)"},
+      "at-risk":{label:"At Risk",color:"var(--red2)",bg:"rgba(220,38,38,.08)"}
+    }[verdict];
+    return <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,color:cfg.color,background:cfg.bg}}>{cfg.label}</span>;
+  };
+
+  // Card list renderer for P1 or P2
+  const renderCardList=(cards,label)=>(
+    <div>
+      <div style={{fontSize:11,fontWeight:700,letterSpacing:1,color:"var(--tx3)",textTransform:"uppercase",marginBottom:8}}>{label}'s Cards</div>
+      {cards.length===0?(
+        <div style={{padding:"16px 0",fontSize:12,color:"var(--tx3)",fontStyle:"italic"}}>No cards added yet.</div>
+      ):cards.map(card=>{
+        const stat=cardStat(card);
+        const palette=getIssuerPalette(card.issuer);
+        return (
+          <div key={card.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,
+            background:palette.tint,border:`1px solid ${palette.text}10`,marginBottom:6}}>
+            <div style={{width:34,height:20,borderRadius:4,background:`linear-gradient(135deg,${card.c1},${card.c2})`,flexShrink:0,boxShadow:"0 1px 3px rgba(0,0,0,.1)"}}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:12,fontWeight:600,color:"var(--tx)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{card.short||card.name}</div>
+              <div style={{fontSize:10,color:"var(--tx3)"}}>{card.fee===0?"Free":"$"+card.fee+"/yr"} · ${stat.totalVal.toLocaleString()} credits</div>
+            </div>
+            {verdictBadge(stat.verdict)}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <div style={{padding:"16px 16px 0"}}>
+      {p2Modal}
+
+      {/* Page header */}
+      <div style={{textAlign:"center",marginBottom:24}}>
+        <h2 className="page-title" style={{textAlign:"center"}}>Household Optimizer</h2>
+      </div>
+
+      {/* Partner name + manage */}
+      <div className="surf fu" style={{marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
+        <div style={{flex:1}}>
+          <label style={{fontSize:10,fontWeight:700,letterSpacing:.8,color:"var(--tx3)",textTransform:"uppercase",marginBottom:4,display:"block"}}>Partner Name</label>
+          <input type="text" value={p2Name} onChange={e=>setP2Name(e.target.value)} placeholder="e.g. Alex"
+            style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--br2)",fontSize:14,
+              fontWeight:600,color:"var(--tx)",background:"var(--bg)",outline:"none",boxSizing:"border-box"}}/>
+        </div>
+        <button onClick={()=>setAddingP2(true)} className="btn" style={{flexShrink:0,padding:"10px 16px",fontSize:12}}>
+          {p2Cards.length?`Edit Cards (${p2Cards.length})`:"Add Cards"}
+        </button>
+      </div>
+
+      {/* ── Household Totals ── */}
+      <div className="hh-stats-row" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:16}}>
+        <div className="surf fu" style={{textAlign:"center",padding:"12px 8px"}}>
+          <div style={{fontSize:9,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase"}}>Total Fees</div>
+          <div style={{fontSize:20,fontWeight:800,color:"var(--tx)",fontFamily:"'Source Code Pro',monospace"}}>${hhFees.toLocaleString()}</div>
+          <div style={{fontSize:10,color:"var(--tx3)",marginTop:2}}>You ${p1Fees.toLocaleString()} · {p2Name||"P2"} ${p2Fees.toLocaleString()}</div>
+        </div>
+        <div className="surf fu" style={{textAlign:"center",padding:"12px 8px"}}>
+          <div style={{fontSize:9,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase"}}>Total Credits</div>
+          <div style={{fontSize:20,fontWeight:800,color:"var(--grn2)",fontFamily:"'Source Code Pro',monospace"}}>${hhCredits.toLocaleString()}</div>
+          <div style={{fontSize:10,color:"var(--tx3)",marginTop:2}}>You ${p1Credits.toLocaleString()} · {p2Name||"P2"} ${p2Credits.toLocaleString()}</div>
+        </div>
+        <div className="surf fu" style={{textAlign:"center",padding:"12px 8px"}}>
+          <div style={{fontSize:9,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase"}}>Net ROI</div>
+          <div style={{fontSize:20,fontWeight:800,color:hhNet>=0?"var(--grn2)":"var(--red2)",fontFamily:"'Source Code Pro',monospace"}}>{hhNet>=0?"+":""}${hhNet.toLocaleString()}</div>
+          <div style={{fontSize:10,color:"var(--tx3)",marginTop:2}}>{hhCredits>0?Math.round((hhCredits/Math.max(hhFees,1))*100):0}% fee coverage</div>
+        </div>
+      </div>
+
+      {/* ── P1 / P2 Two-Column Layout ── */}
+      <div className="hh-columns" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+        <div className="surf fu">{renderCardList(p1Cards,"You")}</div>
+        <div className="surf fu">{renderCardList(p2Resolved,p2Name||"Partner")}</div>
+      </div>
+
+      {/* ── Redundancy Alerts ── */}
+      {redundancies.length>0&&(
+        <div style={{marginBottom:16}}>
+          <button onClick={()=>setShowRedundancy(!showRedundancy)}
+            style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"none",border:"none",cursor:"pointer",padding:0,marginBottom:10,textAlign:"left"}}>
+            <div style={{width:36,height:36,borderRadius:10,background:"rgba(220,38,38,.06)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <Icon name="alert-triangle" size={18} color="var(--red2)"/>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Redundancy Alerts</div>
+              <div style={{fontSize:11,color:"var(--tx3)"}}>{redundancies.length} overlap{redundancies.length>1?"s":""} found</div>
+            </div>
+            <span style={{transition:"transform .2s",transform:showRedundancy?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
+          </button>
+          {showRedundancy&&redundancies.map((r,i)=>(
+            <div key={i} className="surf fu" style={{marginBottom:8,borderLeft:"3px solid var(--red2)"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:4}}>{r.label}</div>
+              <p style={{fontSize:12,color:"var(--tx2)",margin:"0 0 8px",lineHeight:1.6}}>{r.detail}</p>
+              {r.savings&&typeof r.savings==="number"?(
+                <div style={{fontSize:11,fontWeight:700,color:"var(--grn2)"}}>Potential savings: ${r.savings}/yr</div>
+              ):r.savings?(
+                <div style={{fontSize:11,fontWeight:700,color:"var(--grn2)"}}>Potential savings: {r.savings}</div>
+              ):null}
+              {r.cards.length>0&&(
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
+                  {r.cards.map(c=>{
+                    const p=getIssuerPalette(c.issuer);
+                    return <span key={c.id} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:p.tint,color:p.text,border:`1px solid ${p.text}15`}}>{c.short||c.name}</span>;
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Household Suggestions ── */}
+      {suggestions.length>0&&(
+        <div style={{marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+            <Icon name="zap" size={16} color="var(--acc)"/>
+            <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Recommendations</div>
+          </div>
+          {suggestions.map((s,i)=>{
+            const applyUrl=s.card&&APPLY_URLS[s.card.id]&&!APPLY_URLS[s.card.id].startsWith("#")?APPLY_URLS[s.card.id]:null;
+            return (
+              <div key={i} className="surf fu" style={{marginBottom:8,borderLeft:"3px solid var(--acc)"}}>
+                <p style={{fontSize:13,color:"var(--tx2)",margin:"0 0 8px",lineHeight:1.6}}>{s.text}</p>
+                {s.card&&(
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:applyUrl?10:0}}>
+                    <div style={{width:30,height:18,borderRadius:4,background:`linear-gradient(135deg,${s.card.c1},${s.card.c2})`,flexShrink:0,boxShadow:"0 1px 3px rgba(0,0,0,.1)"}}/>
+                    <span style={{fontSize:12,fontWeight:600,color:"var(--tx)"}}>{s.card.short||s.card.name}</span>
+                    <span style={{fontSize:10,color:"var(--tx3)"}}>{s.card.fee===0?"No fee":"$"+s.card.fee+"/yr"}</span>
+                  </div>
+                )}
+                {applyUrl&&(
+                  <div>
+                    <a href={applyUrl} target="_blank" rel="noopener noreferrer"
+                      style={{display:"block",textAlign:"center",padding:"10px",borderRadius:10,textDecoration:"none",
+                        background:"linear-gradient(135deg,var(--acc),var(--gld2))",color:"#fff",
+                        fontSize:12,fontWeight:700,boxShadow:"0 2px 8px rgba(13,115,119,.25)"}}>
+                      Apply Now →
+                    </a>
+                    <div className="apply-disclose" style={{textAlign:"center",marginTop:4}}>Affiliate link — we may earn a commission at no cost to you.</div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Coverage Map ── */}
+      {p2Resolved.length>0&&(
+        <div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+            <Icon name="target" size={16} color="var(--acc)"/>
+            <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Coverage Map</div>
+          </div>
+          <div className="surf fu" style={{padding:"12px 10px",overflowX:"auto"}}>
+            <table className="hh-coverage-table" style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+              <thead>
+                <tr>
+                  <th style={{textAlign:"left",padding:"6px 8px",fontSize:10,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase",borderBottom:"2px solid var(--br2)"}}>Category</th>
+                  <th style={{textAlign:"center",padding:"6px 8px",fontSize:10,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase",borderBottom:"2px solid var(--br2)"}}>You</th>
+                  <th style={{textAlign:"center",padding:"6px 8px",fontSize:10,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase",borderBottom:"2px solid var(--br2)"}}>{p2Name||"Partner"}</th>
+                  <th style={{textAlign:"center",padding:"6px 8px",fontSize:10,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase",borderBottom:"2px solid var(--br2)"}}>Best</th>
+                </tr>
+              </thead>
+              <tbody>
+                {coverageMap.map(row=>(
+                  <tr key={row.cat.id} style={{background:row.gap?"rgba(220,38,38,.03)":"transparent"}}>
+                    <td style={{padding:"8px",fontWeight:600,color:"var(--tx)",borderBottom:"1px solid var(--br)"}}>
+                      {row.cat.label}
+                      {row.gap&&<span style={{fontSize:9,fontWeight:700,color:"var(--red2)",marginLeft:6}}>GAP</span>}
+                    </td>
+                    <td style={{textAlign:"center",padding:"8px",borderBottom:"1px solid var(--br)"}}>
+                      {row.p1Best?(
+                        <div>
+                          <div style={{fontSize:11,fontWeight:row.winner==="p1"?700:400,color:row.winner==="p1"?"var(--grn2)":"var(--tx3)"}}>{row.p1Rate}x</div>
+                          <div style={{fontSize:9,color:"var(--tx4)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}>{row.p1Best.short||row.p1Best.name}</div>
+                        </div>
+                      ):<span style={{color:"var(--tx4)"}}>—</span>}
+                    </td>
+                    <td style={{textAlign:"center",padding:"8px",borderBottom:"1px solid var(--br)"}}>
+                      {row.p2Best?(
+                        <div>
+                          <div style={{fontSize:11,fontWeight:row.winner==="p2"?700:400,color:row.winner==="p2"?"var(--grn2)":"var(--tx3)"}}>{row.p2Rate}x</div>
+                          <div style={{fontSize:9,color:"var(--tx4)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}>{row.p2Best.short||row.p2Best.name}</div>
+                        </div>
+                      ):<span style={{color:"var(--tx4)"}}>—</span>}
+                    </td>
+                    <td style={{textAlign:"center",padding:"8px",borderBottom:"1px solid var(--br)"}}>
+                      {row.gap?(
+                        <span style={{fontSize:10,fontWeight:700,color:"var(--red2)"}}>None</span>
+                      ):(
+                        <span style={{fontSize:10,fontWeight:700,color:"var(--grn2)"}}>{row.winner==="p1"?"You":p2Name||"Partner"}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── Reset household ── */}
+      <div style={{textAlign:"center",paddingBottom:16}}>
+        <button onClick={()=>{if(confirm("Reset household? This will remove your partner's cards.")){setP2Cards([]);setP2Name("");setHouseholdSetup(false);}}}
+          style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"var(--tx4)",textDecoration:"underline"}}>
+          Reset household setup
+        </button>
+      </div>
     </div>
   );
 }
@@ -1451,7 +2533,7 @@ function TipsTab({myCards}){
   };
 
   const LockIcon=()=>(
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b8860b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0d7377" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
       <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
     </svg>
@@ -1808,7 +2890,7 @@ function PlanTab({myCards}){
             {savedTrips.map((trip,i)=>(
               <button key={i} onClick={()=>loadTrip(trip)}
                 style={{display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,
-                  background:"var(--gld3)",border:"1px solid rgba(184,134,11,.2)",cursor:"pointer",
+                  background:"var(--gld3)",border:"1px solid rgba(13,115,119,.2)",cursor:"pointer",
                   fontFamily:"'Inter',sans-serif",fontSize:12,fontWeight:600,color:"var(--tx)"}}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 6-9 12-9 12S3 16 3 10a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 {trip.origin?`${trip.origin} → ${trip.destination}`:trip.destination}
@@ -1918,7 +3000,7 @@ function PlanTab({myCards}){
                 onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--br2)";e.currentTarget.style.color="var(--tx2)";}}>
                 -
               </button>
-              <span style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:22,fontWeight:700,color:"var(--tx)",minWidth:24,textAlign:"center"}}>{travelers}</span>
+              <span style={{fontFamily:"'Inter',sans-serif",fontSize:22,fontWeight:700,color:"var(--tx)",minWidth:24,textAlign:"center"}}>{travelers}</span>
               <button type="button" onClick={()=>setTravelers(Math.min(6,travelers+1))}
                 style={{width:34,height:34,borderRadius:10,border:"1.5px solid var(--br2)",background:"var(--bg)",
                   cursor:"pointer",fontSize:18,color:"var(--tx2)",display:"flex",alignItems:"center",justifyContent:"center",
@@ -1936,9 +3018,9 @@ function PlanTab({myCards}){
             style={{width:"100%",padding:"12px 24px",borderRadius:12,border:"none",
               background:"linear-gradient(135deg,var(--acc),var(--gld2))",color:"#fff",
               fontFamily:"'Inter',sans-serif",fontSize:15,fontWeight:700,cursor:"pointer",
-              letterSpacing:.3,transition:"all .2s",boxShadow:"0 2px 8px rgba(184,134,11,.25)"}}
-            onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(184,134,11,.35)"}
-            onMouseLeave={e=>e.currentTarget.style.boxShadow="0 2px 8px rgba(184,134,11,.25)"}>
+              letterSpacing:.3,transition:"all .2s",boxShadow:"0 2px 8px rgba(13,115,119,.25)"}}
+            onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(13,115,119,.35)"}
+            onMouseLeave={e=>e.currentTarget.style.boxShadow="0 2px 8px rgba(13,115,119,.25)"}>
             Find Strategies
           </button>
         </div>
@@ -1957,7 +3039,7 @@ function PlanTab({myCards}){
 
           {results.fallback?(
             <div className="surf fu" style={{padding:24,textAlign:"center"}}>
-              <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:18,fontWeight:600,color:"var(--tx)",marginBottom:8}}>Region Not Found</div>
+              <div style={{fontFamily:"'Inter',sans-serif",fontSize:18,fontWeight:600,color:"var(--tx)",marginBottom:8}}>Region Not Found</div>
               <p style={{fontFamily:"'Inter',sans-serif",fontSize:13,color:"var(--tx2)",lineHeight:1.6,margin:0}}>
                 We couldn't match "{destination}" to a specific region. Try a city name like "Tokyo", "Paris", or "Cancun".
                 <br/><br/>Supported regions: Japan, Europe, UK, Caribbean, Mexico, Hawaii, Southeast Asia, Middle East, South Pacific, South America, Africa, India, South Korea.
@@ -1967,11 +3049,11 @@ function PlanTab({myCards}){
             <>
               {/* Region header */}
               <div style={{marginBottom:20,padding:"16px 20px",borderRadius:14,
-                background:"linear-gradient(135deg,rgba(184,134,11,.06),rgba(184,134,11,.02))",
-                border:"1px solid rgba(184,134,11,.12)"}}>
+                background:"linear-gradient(135deg,rgba(13,115,119,.06),rgba(13,115,119,.02))",
+                border:"1px solid rgba(13,115,119,.12)"}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 6-9 12-9 12S3 16 3 10a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                  <span style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:20,fontWeight:700,color:"var(--tx)"}}>{results.region.display}</span>
+                  <span style={{fontFamily:"'Inter',sans-serif",fontSize:20,fontWeight:700,color:"var(--tx)"}}>{results.region.display}</span>
                 </div>
                 <p style={{fontFamily:"'Inter',sans-serif",fontSize:12,color:"var(--tx2)",margin:0,lineHeight:1.5}}>{results.region.notes}</p>
               </div>
@@ -1992,7 +3074,7 @@ function PlanTab({myCards}){
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                           <div style={{flex:1}}>
                             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                              <span style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:15,fontWeight:700,color:"var(--tx)"}}>{strat.currency}</span>
+                              <span style={{fontFamily:"'Inter',sans-serif",fontSize:15,fontWeight:700,color:"var(--tx)"}}>{strat.currency}</span>
                               <span style={{padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:700,
                                 background:palette.tint,color:palette.text}}>{strat.issuer}</span>
                             </div>
@@ -2026,7 +3108,7 @@ function PlanTab({myCards}){
                             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:10}}>
                               {strat.partners.map(p=>(
                                 <span key={p} style={{fontFamily:"'Inter',sans-serif",fontSize:10,fontWeight:600,padding:"3px 9px",borderRadius:99,
-                                  background:"rgba(184,134,11,.08)",color:"var(--acc)",border:"1px solid rgba(184,134,11,.15)"}}>{p}</span>
+                                  background:"rgba(13,115,119,.08)",color:"var(--acc)",border:"1px solid rgba(13,115,119,.15)"}}>{p}</span>
                               ))}
                             </div>
                           </div>
@@ -2058,7 +3140,7 @@ function PlanTab({myCards}){
                         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
                           <CreditCardDisplay card={rec.card} size="xs"/>
                           <div style={{flex:1}}>
-                            <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:14,fontWeight:600,color:palette.text}}>{rec.card.short||rec.card.name}</div>
+                            <div style={{fontFamily:"'Inter',sans-serif",fontSize:14,fontWeight:600,color:palette.text}}>{rec.card.short||rec.card.name}</div>
                             <div style={{fontFamily:"'Inter',sans-serif",fontSize:11,color:"var(--tx3)"}}>{rec.card.issuer} · ${rec.card.fee}/yr</div>
                           </div>
                         </div>
@@ -2066,8 +3148,8 @@ function PlanTab({myCards}){
                         <a href={APPLY_URLS[rec.card.id]||"#apply-"+rec.card.id} target="_blank" rel="noopener noreferrer"
                           onClick={e=>e.stopPropagation()}
                           style={{fontFamily:"'Inter',sans-serif",display:"inline-block",fontSize:11,fontWeight:700,color:"var(--acc)",
-                            background:"rgba(184,134,11,.08)",padding:"5px 14px",borderRadius:8,
-                            border:"1px solid rgba(184,134,11,.2)",textDecoration:"none"}}>
+                            background:"rgba(13,115,119,.08)",padding:"5px 14px",borderRadius:8,
+                            border:"1px solid rgba(13,115,119,.2)",textDecoration:"none"}}>
                           Apply for {rec.card.short} →
                         </a>
                         <div className="apply-disclose">Affiliate link — we may earn a commission at no cost to you.</div>
@@ -2139,7 +3221,7 @@ function PlanTab({myCards}){
                   <div style={{fontFamily:"'Inter',sans-serif",fontSize:11,fontWeight:700,letterSpacing:1,color:"var(--tx3)",textTransform:"uppercase",marginBottom:12}}>RELATED TIPS</div>
                   {results.tips.map(tip=>(
                     <div key={tip.id} className="surf fu" style={{marginBottom:8,padding:14}}>
-                      <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:14,fontWeight:600,color:"var(--tx)",marginBottom:4}}>{tip.title}</div>
+                      <div style={{fontFamily:"'Inter',sans-serif",fontSize:14,fontWeight:600,color:"var(--tx)",marginBottom:4}}>{tip.title}</div>
                       <div style={{fontFamily:"'Inter',sans-serif",fontSize:12,color:"var(--tx2)",lineHeight:1.5,
                         display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}
                         dangerouslySetInnerHTML={{__html:tip.body}}/>
@@ -2999,7 +4081,7 @@ function OffersTab({myCards}){
 // Props: myCards (array of card IDs), setMyCards (setter to update the wallet).
 // The card browser. Browse all ~100 cards, search by name, filter by issuer,
 // and add or remove cards from your personal wallet.
-function WalletTab({myCards,setMyCards}){
+function WalletTab({myCards,setMyCards,anniversaryDates,setAnniversaryDates}){
   const [showAdd,setShowAdd]=useState(false);
   const [issuerFilter,setIssuerFilter]=useState("All");
   const [detailId,setDetailId]=useState(null);
@@ -3041,7 +4123,7 @@ function WalletTab({myCards,setMyCards}){
 
           {/* Signup bonus */}
           {c.signup&&(
-            <div style={{background:"rgba(245,158,11,.08)",border:"1px solid rgba(245,158,11,.2)",borderRadius:12,padding:"12px 14px",marginBottom:12}}>
+            <div style={{background:"rgba(13,115,119,.08)",border:"1px solid rgba(13,115,119,.2)",borderRadius:12,padding:"12px 14px",marginBottom:12}}>
               <div style={{fontSize:10,fontWeight:800,color:"var(--gld2)",textTransform:"uppercase",letterSpacing:1,marginBottom:4,display:"flex",alignItems:"center",gap:4}}><Icon name="gift" size={11} color="var(--gld2)"/> Signup Bonus</div>
               <div style={{fontSize:13,color:"var(--tx2)",lineHeight:1.5}}>{c.signup}</div>
             </div>
@@ -3058,6 +4140,45 @@ function WalletTab({myCards,setMyCards}){
               <div className="stat-lbl">Net Value</div>
             </div>
           </div>
+
+          {/* Anniversary month selector */}
+          {c.fee>0&&myCards.includes(c.id)&&(
+            <div style={{marginBottom:12,padding:"12px 14px",background:"rgba(13,115,119,.05)",border:"1px solid rgba(13,115,119,.15)",borderRadius:12}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                <div>
+                  <div style={{fontSize:12,fontWeight:700,color:"var(--tx)",marginBottom:2,display:"flex",alignItems:"center",gap:6}}>
+                    <Icon name="calendar" size={14} color="var(--acc)"/> Anniversary Month
+                  </div>
+                  <div style={{fontSize:11,color:"var(--tx3)"}}>When does your annual fee hit?</div>
+                </div>
+                <select
+                  value={anniversaryDates[c.id]||""}
+                  onChange={e=>{
+                    const v=e.target.value;
+                    setAnniversaryDates(prev=>{
+                      const next={...prev};
+                      if(v) next[c.id]=parseInt(v);
+                      else delete next[c.id];
+                      return next;
+                    });
+                  }}
+                  className="ra-selector"
+                  style={{minWidth:100,padding:"6px 10px",borderRadius:8,border:"1px solid var(--br2)",background:"var(--bg)",
+                    fontSize:12,fontWeight:600,color:"var(--tx)",cursor:"pointer"}}>
+                  <option value="">Not set</option>
+                  {MONTH_NAMES.map((m,i)=><option key={i} value={i+1}>{m}</option>)}
+                </select>
+              </div>
+              {anniversaryDates[c.id]&&(()=>{
+                const days=getRenewalDays(c.id,anniversaryDates);
+                return days!=null?(
+                  <div style={{marginTop:8,fontSize:11,fontWeight:600,color:days<=60?"var(--red2)":days<=120?"var(--acc)":"var(--tx2)"}}>
+                    <Icon name="clock" size={11} color="currentColor"/> Renews in {days} day{days!==1?"s":""}
+                  </div>
+                ):null;
+              })()}
+            </div>
+          )}
 
           {/* Benefits list */}
           {(c.annual.length>0||c.monthly.length>0)&&(
@@ -3145,8 +4266,8 @@ function WalletTab({myCards,setMyCards}){
                 <div style={{fontSize:11,fontWeight:700,color:"var(--tx)",marginBottom:2,lineHeight:1.3}}>{card.name}{card.confidence==="estimated"&&<span style={{fontSize:9,color:"#9ca3af",fontStyle:"italic",fontWeight:400,marginLeft:4}}>(unverified)</span>}</div>
                 <div style={{fontSize:10,color:"var(--tx3)",marginBottom:6}}>{card.issuer}</div>
                 {!inWallet&&card.signup&&card.signup!=="No signup bonus"&&card.signup!=="No sign-up bonus"&&(
-                  <div style={{fontSize:10,fontWeight:600,color:"var(--acc)",background:"rgba(184,134,11,.07)",
-                    border:"1px solid rgba(184,134,11,.15)",borderRadius:6,padding:"3px 8px",marginBottom:6,lineHeight:1.35}}>
+                  <div style={{fontSize:10,fontWeight:600,color:"var(--acc)",background:"rgba(13,115,119,.07)",
+                    border:"1px solid rgba(13,115,119,.15)",borderRadius:6,padding:"3px 8px",marginBottom:6,lineHeight:1.35}}>
                     {card.signup}
                   </div>
                 )}
@@ -3194,7 +4315,7 @@ function WalletTab({myCards,setMyCards}){
       {!myCardObjs.length?(
         <div className="wallet-empty-slot" style={{padding:"64px 20px"}} onClick={()=>setShowAdd(true)}>
           <div style={{width:56,height:56,borderRadius:'50%',background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:16,boxShadow:'0 1px 6px rgba(0,0,0,.08)',fontSize:24,color:'var(--tx3)'}}>+</div>
-          <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontWeight:700,fontSize:18,color:'#0f172a'}}>Sync another card</div>
+          <div style={{fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:18,color:'#0f172a'}}>Sync another card</div>
           <div style={{fontSize:13,color:'#6b7280',marginTop:6}}>Unlock more optimizations</div>
         </div>
       ):(
@@ -3218,7 +4339,7 @@ function WalletTab({myCards,setMyCards}){
                 </div>
                 <div className="wallet-card-tags">
                   {tags.map(t=>(<span key={t} className="wallet-card-tag" style={{background:it,color:ic,border:`1px solid ${ic}20`}}>{t}</span>))}
-                  {c.isBiz&&<span className="wallet-card-tag" style={{background:'rgba(184,134,11,.1)',color:'var(--acc)'}}>Business</span>}
+                  {c.isBiz&&<span className="wallet-card-tag" style={{background:'rgba(13,115,119,.1)',color:'var(--acc)'}}>Business</span>}
                 </div>
               </div>
             </div>
@@ -3226,7 +4347,7 @@ function WalletTab({myCards,setMyCards}){
         })}
           <div className="wallet-empty-slot" onClick={()=>setShowAdd(true)}>
             <div style={{width:48,height:48,borderRadius:'50%',background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:16,boxShadow:'0 1px 4px rgba(0,0,0,.06)',fontSize:22,color:'var(--tx3)'}}>+</div>
-            <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontWeight:700,color:'#0f172a'}}>Sync another card</div>
+            <div style={{fontFamily:"'Inter',sans-serif",fontWeight:700,color:'#0f172a'}}>Sync another card</div>
             <div style={{fontSize:12,color:'#6b7280',marginTop:4}}>Unlock more optimizations</div>
           </div>
         </div>
@@ -3374,7 +4495,7 @@ function QuizResults({answers,onRetake,myCards}){
     <div style={{padding:"16px 16px 0",maxWidth:560,margin:"0 auto"}}>
       <div className="fu" style={{textAlign:"center",marginBottom:24}}>
         <div style={{marginBottom:8}}><Icon name="target" size={32} color="var(--acc)"/></div>
-        <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontStyle:"italic",fontSize:24,fontWeight:700,color:"var(--tx)",marginBottom:4}}>Your Top Cards</div>
+        <div style={{fontFamily:"'Inter',sans-serif",fontStyle:"italic",fontSize:24,fontWeight:700,color:"var(--tx)",marginBottom:4}}>Your Top Cards</div>
         <div style={{fontSize:12,color:"var(--tx3)"}}>Personalized picks based on your profile</div>
         <div style={{fontSize:10,color:"var(--tx4)",marginTop:6,lineHeight:1.4}}>Recommended cards include affiliate links. We earn a commission if you apply and are approved.</div>
       </div>
@@ -3503,7 +4624,7 @@ function QuizTab({myCards}){
 
       {/* Question + options */}
       <div key={animKey} className="quiz-slide">
-        <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontStyle:"italic",fontSize:22,fontWeight:700,color:"var(--tx)",marginBottom:22,lineHeight:1.35}}>
+        <div style={{fontFamily:"'Inter',sans-serif",fontStyle:"italic",fontSize:22,fontWeight:700,color:"var(--tx)",marginBottom:22,lineHeight:1.35}}>
           {q.q}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
@@ -3834,6 +4955,10 @@ function App(){
   const [checkedArr,setCheckedArr]=useLS(CS_CONFIG.LS_KEYS.checked,[]);
   const [skippedArr,setSkippedArr]=useLS(CS_CONFIG.LS_KEYS.skipped,[]);
   const [checkDates,setCheckDates]=useLS(CS_CONFIG.LS_KEYS.checkDates,{});
+  const [p2Cards,setP2Cards]=useLS(CS_CONFIG.LS_KEYS.p2Cards,[]);
+  const [p2Name,setP2Name]=useLS(CS_CONFIG.LS_KEYS.p2Name,"");
+  const [householdSetup,setHouseholdSetup]=useLS(CS_CONFIG.LS_KEYS.householdSetup,false);
+  const [anniversaryDates,setAnniversaryDates]=useLS(CS_CONFIG.LS_KEYS.anniversaryDates,{});
   const [resetBadges,setResetBadges]=useState(new Set());
   const [stratModal,setStratModal]=useState(null);
   const [user,setUser]=useState(null);
@@ -3971,6 +5096,10 @@ function App(){
           setMyCards(cloud.cs_cards||[]);
           setCheckedArr(cloud.cs_checked||[]);
           if(cloud.cs_skipped) setSkippedArr(cloud.cs_skipped);
+          if(cloud.cs_p2_cards) setP2Cards(cloud.cs_p2_cards);
+          if(cloud.cs_p2_name) setP2Name(cloud.cs_p2_name);
+          if(cloud.cs_household_setup!=null) setHouseholdSetup(cloud.cs_household_setup);
+          if(cloud.cs_anniversary_dates) setAnniversaryDates(cloud.cs_anniversary_dates);
         } else {
           // New user — upload current localStorage data to cloud
           await fb.setDoc(fb.doc(fb.db,'users',u.uid),{
@@ -4001,10 +5130,12 @@ function App(){
     const u=userRef.current;
     if(!fb||!u) return;
     fb.setDoc(fb.doc(fb.db,'users',u.uid),
-      {cs_cards:myCards, cs_checked:checkedArr, cs_skipped:skippedArr},
+      {cs_cards:myCards, cs_checked:checkedArr, cs_skipped:skippedArr,
+       cs_p2_cards:p2Cards, cs_p2_name:p2Name, cs_household_setup:householdSetup,
+       cs_anniversary_dates:anniversaryDates},
       {merge:true}
     ).catch(e=>console.warn('Firestore write failed:',e.message));
-  },[myCards,checkedArr,skippedArr]);
+  },[myCards,checkedArr,skippedArr,p2Cards,p2Name,householdSetup,anniversaryDates]);
 
   useEffect(()=>{window.scrollTo({top:0,behavior:"smooth"});},[tab]);
 
@@ -4035,15 +5166,16 @@ function App(){
         </div>
       )}
       <div className="tab-content-wrap" style={{paddingTop:8}}>
-        {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal}/>}
-        {tab==="benefits"&&<BenefitsTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits}/>}
+        {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user}/>}
+        {tab==="benefits"&&<RenewalAdvisorTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits} anniversaryDates={anniversaryDates} setAnniversaryDates={setAnniversaryDates}/>}
+        {tab==="household"&&<HouseholdTab myCards={myCards} p2Cards={p2Cards} setP2Cards={setP2Cards} p2Name={p2Name} setP2Name={setP2Name} householdSetup={householdSetup} setHouseholdSetup={setHouseholdSetup} checkedSet={checkedSet} user={user} onAuthClick={()=>setAuthModal(true)} setTab={setTab}/>}
         {/* REMOVED IN FEEWORTH PIVOT — preserved for reference */}
         {/* {tab==="tips"&&    <TipsTab myCards={myCards}/>} */}
         {/* {tab==="plan"&&    <PlanTab myCards={myCards}/>} */}
         {/* {tab==="usecard"&& <UsecardTab myCards={myCards}/>} */}
         {/* {tab==="offers"&&  <OffersTab myCards={myCards}/>} */}
         {tab==="quiz"&&    <QuizTab myCards={myCards}/>}
-        {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={setMyCards}/>}
+        {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={setMyCards} anniversaryDates={anniversaryDates} setAnniversaryDates={setAnniversaryDates}/>}
       </div>
       {stratModal&&<StratModal stratId={stratModal} myCards={myCards} onClose={()=>setStratModal(null)}/>}
       <NewsletterPopup/>

@@ -12,7 +12,7 @@ const CS_CONFIG = {
   // ── Versioning ──────────────────────────────────────────────────────────────
   // The current app version. Incrementing this forces all users' browsers to
   // download fresh files instead of using old cached copies.
-  CACHE_VERSION: 'v49',
+  CACHE_VERSION: 'v54',
 
   // ── Site Metadata ───────────────────────────────────────────────────────────
   // Basic info about the site — name, URL, contact email, and descriptions
@@ -39,9 +39,10 @@ const CS_CONFIG = {
   // ── Colors (semantic names for JS usage) ────────────────────────────────────
   // Named colors used by JavaScript code (e.g., for card art gradients and charts).
   COLORS: {
-    primary:   '#b8860b',
-    gold:      '#b8860b',
-    goldLight: '#fef9ec',
+    primary:   '#0d7377',
+    accent:    '#0d7377',
+    accentLight: '#e6f5f5',
+    accentDark:'#0a5c5f',
     text:      '#1a1a2e',
     textMuted: '#6b7280',
     bg:        '#ffffff',
@@ -57,8 +58,8 @@ const CS_CONFIG = {
     bg: '#ffffff', s1: '#ffffff', s2: '#ffffff', s3: '#f8f8f6', s4: '#f0f0ee',
     br: 'rgba(0,0,0,.06)', br2: '#e5e7eb', br3: '#d1d5db',
     tx: '#1a1a2e', tx2: '#6b7280', tx3: '#9ca3af', tx4: '#d1d5db',
-    acc: '#b8860b', acc2: '#a07608', pur: '#0f172a', pur2: '#1e293b',
-    gold: '#b8860b', gld2: '#d4a840', gld3: '#fef9ec',
+    acc: '#0d7377', acc2: '#0a5c5f', pur: '#0f172a', pur2: '#1e293b',
+    gold: '#0d7377', gld2: '#14b8b8', gld3: '#e6f5f5',
     grn: '#166534', grn2: '#16a34a', grn3: '#22c55e',
     red: '#991b1b', red2: '#dc2626',
     sky: '#004c97', pnk: '#db2777', teal: '#0d9488',
@@ -106,7 +107,11 @@ const CS_CONFIG = {
     iosDismissed: 'cs_ios_dismissed',
     skipped: 'cs_skipped',
     savedTrips: 'cs_saved_trips',
-    popupDismissed: 'cs_popup_dismissed'
+    popupDismissed: 'cs_popup_dismissed',
+    p2Cards: 'cs_p2_cards',
+    p2Name: 'cs_p2_name',
+    householdSetup: 'cs_household_setup',
+    anniversaryDates: 'cs_anniversary_dates'
   }
 };
 
