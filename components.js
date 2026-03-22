@@ -1455,6 +1455,8 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   const [showCancel,setShowCancel]=useState(false);
   const [showHiddenValue,setShowHiddenValue]=useState(false);
   const [expandedHiddenPerk,setExpandedHiddenPerk]=useState(null);
+  const [showSynergies,setShowSynergies]=useState(false);
+  const [expandedSynergy,setExpandedSynergy]=useState(null);
 
   const card=useMemo(()=>CARDS.find(c=>c.id===selectedId),[selectedId]);
 
@@ -2152,6 +2154,130 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           </div>
         </div>
       )}
+
+      {/* ── STRATEGY PLAYS (SYNERGIES) ── */}
+      {(()=>{
+        const synergies=card?CARD_SYNERGIES[card.name]:null;
+        if(!synergies||!synergies.length)return null;
+        const userCardNames=new Set(myCards.map(id=>{const c=CARDS.find(x=>x.id===id);return c?c.name:null;}).filter(Boolean));
+        // Sort: owned pairs first
+        const sorted=[...synergies].sort((a,b)=>{
+          const aOwned=userCardNames.has(a.pairWith)?1:0;
+          const bOwned=userCardNames.has(b.pairWith)?1:0;
+          return bOwned-aOwned;
+        });
+        const isWorthIt=usedRoiPct>=100;
+        // Ecosystem alert: check if user has earners but no unlocker
+        const ecoAlerts=[];
+        if(card.cur){
+          Object.entries(ECOSYSTEM_MAP).forEach(([ecoName,eco])=>{
+            const hasEarner=eco.earners.some(n=>userCardNames.has(n));
+            const hasUnlocker=eco.unlockers.some(n=>userCardNames.has(n));
+            if(hasEarner&&!hasUnlocker){
+              ecoAlerts.push({ecoName,...eco});
+            }
+          });
+        }
+        const sectionContent=(
+          <div style={{marginTop:12}}>
+            {/* Ecosystem alert */}
+            {ecoAlerts.map((ea,i)=>(
+              <div key={i} style={{padding:"12px 14px",borderRadius:12,background:"rgba(13,115,119,.06)",border:"1px solid rgba(13,115,119,.18)",marginBottom:12,display:"flex",alignItems:"flex-start",gap:10}}>
+                <span style={{fontSize:16,lineHeight:1,flexShrink:0}}>⚡</span>
+                <p style={{fontSize:12,color:"var(--tx2)",margin:0,lineHeight:1.6}}>
+                  You have <strong>{ea.ecoName}</strong> points but no card to unlock transfer partners. Adding <strong style={{color:"var(--acc)"}}>{ea.cheapestUnlocker}</strong> (${ea.cheapestUnlockerFee}/yr) would make those points worth <strong style={{color:"var(--grn2)"}}>{ea.valueUplift}</strong>.
+                  {ea.warning&&<span style={{display:"block",marginTop:4,color:"var(--red2)",fontWeight:600,fontSize:11}}>{ea.warning}</span>}
+                </p>
+              </div>
+            ))}
+            {/* ROI < 100% callout */}
+            {!isWorthIt&&(
+              <div style={{padding:"10px 14px",borderRadius:10,background:"rgba(13,115,119,.05)",border:"1px solid rgba(13,115,119,.12)",marginBottom:14}}>
+                <p style={{fontSize:12,color:"var(--tx2)",margin:0,lineHeight:1.5,fontStyle:"italic"}}>This card could be worth keeping if you pair it with the right card.</p>
+              </div>
+            )}
+            {/* Synergy tiles */}
+            {sorted.map((syn,i)=>{
+              const st=SYNERGY_TYPES[syn.type]||SYNERGY_TYPES.companionCombo;
+              const pairCard=CARDS.find(c=>c.name===syn.pairWith);
+              const owned=userCardNames.has(syn.pairWith);
+              const isExpanded=expandedSynergy===(card.id+"-"+i);
+              return (
+                <div key={i} className="surf fu" style={{marginBottom:10,borderLeft:`3px solid ${st.color}`,position:"relative"}}>
+                  {/* Type badge */}
+                  <div style={{position:"absolute",top:10,right:10}}>
+                    <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:st.color+"12",color:st.color,border:`1px solid ${st.color}25`,whiteSpace:"nowrap"}}>{st.icon} {st.label}</span>
+                  </div>
+                  {/* Owned badge */}
+                  {owned&&(
+                    <div style={{marginBottom:8}}>
+                      <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"rgba(22,163,74,.08)",color:"var(--grn2)",border:"1px solid rgba(22,163,74,.15)"}}>✅ You already have this card!</span>
+                    </div>
+                  )}
+                  {/* Pair card */}
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,marginRight:owned?0:100}}>
+                    {pairCard&&<div style={{width:36,height:22,borderRadius:5,background:`linear-gradient(135deg,${pairCard.c1},${pairCard.c2})`,flexShrink:0,boxShadow:"0 1px 4px rgba(0,0,0,.12)"}}/>}
+                    <div>
+                      <div style={{fontSize:10,fontWeight:600,color:"var(--tx3)",textTransform:"uppercase",letterSpacing:.5}}>Pair with</div>
+                      <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>{pairCard?pairCard.short||pairCard.name:syn.pairWith}</div>
+                    </div>
+                  </div>
+                  {/* Pitch + uplift */}
+                  <p style={{fontSize:13,color:owned?"var(--tx)":"var(--tx2)",margin:"0 0 8px",lineHeight:1.6,fontWeight:owned?600:400}}>
+                    {owned?"You already have "+(pairCard?pairCard.short||pairCard.name:syn.pairWith)+" — here's the strategy you're sitting on: ":""}
+                    {syn.youGet}
+                  </p>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                    <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,background:"rgba(13,115,119,.08)",color:"var(--acc)",border:"1px solid rgba(13,115,119,.15)",fontFamily:"'Source Code Pro',monospace"}}>+{syn.estimatedUplift}</span>
+                    {syn.bestFor&&<span style={{fontSize:10,color:"var(--tx3)"}}>Best for: {syn.bestFor}</span>}
+                  </div>
+                  {/* Expandable details */}
+                  <button onClick={()=>setExpandedSynergy(isExpanded?null:card.id+"-"+i)}
+                    style={{marginTop:8,background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,color:"var(--acc)"}}>
+                    {isExpanded?"Hide details":"See the math →"}
+                    <span style={{transition:"transform .15s",transform:isExpanded?"rotate(90deg)":"rotate(0deg)",display:"inline-flex"}}><Icon name="chevron-right" size={11} color="var(--acc)"/></span>
+                  </button>
+                  {isExpanded&&(
+                    <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid var(--br)"}}>
+                      <p style={{fontSize:12,color:"var(--tx2)",margin:0,lineHeight:1.7}}>{syn.details}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+        // When ROI >= 100%, collapse by default with subtle header
+        if(isWorthIt){
+          return (
+            <div style={{marginBottom:16,borderTop:"1px solid var(--br)",paddingTop:16}}>
+              <button onClick={()=>setShowSynergies(!showSynergies)}
+                style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
+                <span style={{fontSize:16}}>🔑</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>Level Up Your Strategy</div>
+                  <div style={{fontSize:11,color:"var(--tx3)"}}>{sorted.length} synerg{sorted.length===1?"y":"ies"} available</div>
+                </div>
+                <span style={{transition:"transform .2s",transform:showSynergies?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
+              </button>
+              {showSynergies&&sectionContent}
+            </div>
+          );
+        }
+        // When ROI < 100%, show prominently
+        return (
+          <div style={{marginBottom:16,borderTop:"1px solid var(--br)",paddingTop:16}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+              <span style={{fontSize:16}}>🔑</span>
+              <div>
+                <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Strategy Plays</div>
+                <div style={{fontSize:11,color:"var(--tx3)"}}>This card might not pay for itself alone — but pair it with the right card and it could</div>
+              </div>
+            </div>
+            {sectionContent}
+          </div>
+        );
+      })()}
     </div>
   );
 }

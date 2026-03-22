@@ -1402,6 +1402,103 @@ const UNIVERSAL_HIDDEN_VALUES=[
   {title:"Extended Warranty Savings",description:"Stop buying extended warranties at checkout — your card likely extends manufacturer warranties by 1-2 years automatically. This saves $50-300/year for frequent shoppers.",applies:"Most Visa Signature, World Elite Mastercard, and Amex cards"}
 ];
 
+/* ── CARD SYNERGY DATA ──────────────────────────────────────────────────────── */
+
+const SYNERGY_TYPES={
+  ecosystemUnlocker:{label:"Ecosystem Unlocker",icon:"🔑",description:"Adding this card unlocks transfer partners for points you already earn on other cards.",color:"#0d7377"},
+  companionCombo:{label:"Companion Combo",icon:"🤝",description:"These cards are worth more together than apart — combined strategy beats either card alone.",color:"#d97706"},
+  statusStacking:{label:"Status Stacking",icon:"👑",description:"Holding both cards accelerates you toward elite status tiers or gives you automatic status.",color:"#7c3aed"},
+  categoryCoverage:{label:"Category Coverage",icon:"🎯",description:"This card fills a gap in your earning structure, so you earn max points on every purchase.",color:"#2563eb"}
+};
+
+const CARD_SYNERGIES={
+  "Chase Sapphire Preferred":[
+    {type:"ecosystemUnlocker",pairWith:"Chase Freedom Flex",youGet:"Your Freedom Flex 5x categories become worth 10-15% via transfer partners instead of 5% cash back",details:"Freedom Flex earns 5x UR in rotating quarterly categories. Without a Sapphire card, those points are stuck at 1¢ each as cash back. With the CSP, you can transfer to Hyatt at 2-3¢ per point or United at 1.5-2¢. That turns a $75 quarterly bonus into $112-225 in travel value. Over a year of rotating categories, the uplift adds up fast.",estimatedUplift:"$150-600/yr",bestFor:"Anyone with Freedom Flex or Freedom Unlimited"},
+    {type:"ecosystemUnlocker",pairWith:"Chase Freedom Unlimited",youGet:"Your Freedom Unlimited 1.5x on everything becomes worth 3-4.5% via transfer partners",details:"Freedom Unlimited earns 1.5 UR per dollar on everything. At 1¢ each, that's 1.5% cash back. But add the CSP and transfer those points to partners at 2-3¢ each — suddenly you're earning 3-4.5% effective on all spending. On $20k/yr in non-category spend, that's $600-900 in travel value vs $300 in cash back.",estimatedUplift:"$300-600/yr",bestFor:"Anyone with Freedom Unlimited"},
+    {type:"companionCombo",pairWith:"World of Hyatt Card",youGet:"Transfer UR to Hyatt at 2-3¢/point while earning 4x on Hyatt stays — the ultimate hotel strategy",details:"The Hyatt card earns 4x at Hyatt properties plus a free Category 1-4 night annually. The CSP lets you transfer other UR points to Hyatt 1:1. Hyatt points are consistently worth 2-3¢ each — the highest hotel currency value. Together you earn fast on Hyatt stays and funnel all other UR into the same high-value pool.",estimatedUplift:"$200-500/yr",bestFor:"Hyatt loyalists"}
+  ],
+  "Chase Sapphire Reserve":[
+    {type:"ecosystemUnlocker",pairWith:"Chase Freedom Flex",youGet:"Freedom Flex 5x becomes worth 12.5-15% via CSR portal/transfers",details:"The CSR's 1.5¢ portal redemption rate beats the CSP's 1.25¢. So Freedom Flex 5x × 1.5¢ = 7.5% through the Chase Travel portal, or 5x × 2-3¢ = 10-15% via transfer partners like Hyatt and United. The Reserve makes every Freedom point significantly more valuable than the Preferred does.",estimatedUplift:"$200-700/yr",bestFor:"Anyone with Freedom Flex"},
+    {type:"companionCombo",pairWith:"World of Hyatt Card",youGet:"CSR portal at 1.5¢ + Hyatt transfers at 2-3¢ + Hyatt card 4x = premium hotel trifecta",details:"In 2026, $75k in CSR spend also earns World of Hyatt Explorist status — room upgrades, late checkout, and bonus points. Combined with the Hyatt card's 4x earning at properties and the ability to transfer all UR to Hyatt at 2-3¢ each, this is the most powerful hotel setup in the points game.",estimatedUplift:"$300-800/yr",bestFor:"Hyatt loyalists, luxury travelers"},
+    {type:"categoryCoverage",pairWith:"Chase Freedom Unlimited",youGet:"1.5x everything (FU) + 3x travel/dining (CSR) = no earning gaps",details:"The CSR earns 3x on travel and dining but just 1x on everything else. Freedom Unlimited fills that gap at 1.5x on all non-category spend. Add Freedom Flex for 5x rotating categories and you have the complete Chase Trifecta. Total annual fees: $550 + $0 + $0 = $550 for a system that covers every dollar.",estimatedUplift:"$200-400/yr",bestFor:"Everyone building a Chase Trifecta"}
+  ],
+  "Chase Freedom Flex":[
+    {type:"ecosystemUnlocker",pairWith:"Chase Sapphire Preferred",youGet:"Your 5x rotating categories are trapped at 1¢/point — the CSP unlocks 2-3¢ via transfers",details:"Without a Sapphire or Ink Preferred card, your UR points are cash back only at 1¢ each. The CSP ($95/yr) unlocks transfer partners for ALL your Chase UR points. Your 5x rotating categories go from 5% cash back to 10-15% effective value through Hyatt, United, and other partners.",estimatedUplift:"$150-600/yr",bestFor:"Anyone without a Sapphire or Ink Preferred card"}
+  ],
+  "Chase Freedom Unlimited":[
+    {type:"ecosystemUnlocker",pairWith:"Chase Sapphire Preferred",youGet:"Your 1.5% everywhere becomes 3-4.5% when you can transfer to partners",details:"Freedom Unlimited earns 1.5 UR per dollar on everything. Without a Sapphire card, that's 1.5% cash back. Add the CSP ($95/yr) and those points become transferable — worth 2-3¢ each via Hyatt, United, Southwest, and 11 other partners. Your baseline earning on all spending doubles or triples.",estimatedUplift:"$300-600/yr",bestFor:"Anyone spending $20k+/yr without a Sapphire card"}
+  ],
+  "The Platinum Card® from American Express":[
+    {type:"companionCombo",pairWith:"American Express® Gold Card",youGet:"Platinum covers travel/lounges, Gold covers dining/groceries — maximize every MR point",details:"The Platinum earns 5x on flights but only 1x on dining and groceries. The Gold fills that gap with 4x dining and 4x supermarkets. All Membership Rewards points pool together across both cards, giving you access to 20+ transfer partners. Combined net cost is roughly $545-625 after using all credits, while earning $3,000-4,000+ per year in transferable points.",estimatedUplift:"$500-1,500/yr",bestFor:"High spenders on dining and travel"},
+    {type:"statusStacking",pairWith:"Hilton Honors American Express Aspire Card",youGet:"Platinum gives Hilton Gold, Aspire gives Diamond — stack for max hotel perks",details:"The Platinum automatically gives you Hilton Gold (room upgrades, breakfast at select properties). The Aspire upgrades you to Diamond — the top tier with suite upgrades, executive lounge access, daily F&B credits, and 100% bonus points. The Aspire's $550 fee is largely offset by $250 resort credit, free weekend night, and $100 airline credit. Together: Diamond status + Centurion Lounges + Priority Pass + combined earning power.",estimatedUplift:"$500-2,000/yr",bestFor:"Frequent Hilton guests"},
+    {type:"statusStacking",pairWith:"Marriott Bonvoy Boundless®",youGet:"Platinum gives Marriott Gold + Boundless adds 15 elite nights toward Platinum status",details:"The Amex Platinum auto-enrolls you in Marriott Gold Elite. The Boundless ($95/yr) adds 15 elite qualifying night credits each year plus 6x at Marriott. Combined: you start each year with Gold status and a 15-night head start toward Marriott Platinum (50 nights). Stay 35 more nights and you unlock suite upgrades, lounge access, and complimentary breakfast.",estimatedUplift:"$200-500/yr",bestFor:"Marriott loyalists aiming for Platinum status"}
+  ],
+  "American Express® Gold Card":[
+    {type:"ecosystemUnlocker",pairWith:"Amex EveryDay",youGet:"If you cancel Gold, downgrade to EveryDay ($0) to preserve all MR points",details:"CRITICAL: If the Gold is your only Membership Rewards card and you cancel it, you LOSE ALL your MR points. The EveryDay card has no annual fee and keeps your MR account alive. This isn't about earning synergy — it's point insurance. Even if you cancel the Gold, make sure you have EveryDay, Green, or Blue Business Plus to preserve potentially thousands of dollars in MR points.",estimatedUplift:"Preserves $500-5,000+ in MR",bestFor:"Anyone considering canceling their Gold card"},
+    {type:"companionCombo",pairWith:"The Platinum Card® from American Express",youGet:"Gold handles dining/groceries (4x), Platinum handles travel (5x) — the Amex power duo",details:"The Gold earns 4x on dining and 4x on supermarkets — two of the biggest spending categories. The Platinum earns 5x on flights and provides lounges, status, and premium travel perks. All MR points pool together across both cards and access the same 20+ transfer partners. The combined strategy covers every major spending category at premium rates.",estimatedUplift:"$500-1,500/yr",bestFor:"High spenders across dining, groceries, and travel"}
+  ],
+  "Capital One Venture X Rewards Credit Card":[
+    {type:"categoryCoverage",pairWith:"Capital One SavorOne Cash Rewards",youGet:"SavorOne earns 3-8% on dining/entertainment/groceries, Venture X handles everything else at 2x + transfers",details:"SavorOne ($0/yr) earns 3% on dining, 3% on groceries, 8% on Capital One Entertainment, and 5% on hotels via Capital One Travel. All rewards pool with Venture X for transfer partner access. $600/mo in dining on SavorOne earns $216/yr vs $144 at Venture X's 2x rate. The SavorOne fills the category gaps while the Venture X provides transfers, lounges, and travel credits.",estimatedUplift:"$100-300/yr",bestFor:"Capital One cardholders who spend heavily on dining and groceries"}
+  ],
+  "Capital One SavorOne Cash Rewards":[
+    {type:"ecosystemUnlocker",pairWith:"Capital One Venture X Rewards Credit Card",youGet:"Your cash back converts to miles and unlocks 15+ transfer partners",details:"SavorOne alone earns cash back rewards. But paired with the Venture X, those rewards convert to Capital One miles and unlock 15+ transfer partners. Turkish Miles&Smiles turns 7,500 miles into $300-500 United flights (4-6.6¢ per point). Air Canada, British Airways, and more. The Venture X is effectively free after its $300 travel credit and 10,000 anniversary miles.",estimatedUplift:"$200-500/yr",bestFor:"SavorOne holders who travel"}
+  ],
+  "Citi Strata Premier℠ Card":[
+    {type:"ecosystemUnlocker",pairWith:"Citi Double Cash® Card",youGet:"Your Double Cash 2% becomes 3-4% when ThankYou points transfer to partners",details:"The Double Cash earns 2 ThankYou points per dollar on everything. Without the Strata Premier, those points are stuck at 1¢ each — just 2% cash back. With the Strata Premier, transfer to Turkish Miles&Smiles at 3-6.6¢ (7,500 miles for a United domestic flight), Avianca, or Air France. On $30k/yr: $600 in cash back becomes $900-1,200 in transfer value.",estimatedUplift:"$300-600/yr",bestFor:"Double Cash holders who travel"},
+    {type:"ecosystemUnlocker",pairWith:"Citi Custom Cash® Card",youGet:"Your Custom Cash 5% top category becomes 10-15% via transfers",details:"The Custom Cash earns 5x ThankYou points in your top spending category (up to $500/mo). Without the Strata Premier, that's 5% cash back. With transfers: Turkish at 3-6.6¢ per point means your top category effectively earns 10-15%. On the full $500/mo cap, that's $60-90/mo in transfer value vs $25 in cash back.",estimatedUplift:"$420-780/yr",bestFor:"Custom Cash holders"}
+  ],
+  "Citi Double Cash® Card":[
+    {type:"ecosystemUnlocker",pairWith:"Citi Strata Premier℠ Card",youGet:"Your 2% everywhere is actually 2 ThankYou points per dollar — unlock transfers for 3-4%",details:"Most people think the Double Cash is a cash back card, but it actually earns ThankYou points. Add the Strata Premier ($95/yr) and those points become transferable to 22 partners. The Turkish Miles&Smiles sweet spot — 7,500 miles for United domestic flights worth $300-500 — turns your everyday 2% card into a premium travel engine.",estimatedUplift:"$300-600/yr",bestFor:"Double Cash holders who want more from their points"}
+  ],
+  "World of Hyatt Card":[
+    {type:"companionCombo",pairWith:"Chase Sapphire Preferred",youGet:"Transfer ALL your Chase UR to Hyatt at 2-3¢ each — best hotel transfer in the game",details:"The Hyatt card earns 4x at Hyatt properties but limited rates elsewhere. The CSP (or CSR) lets you transfer UR from Freedom Flex, Freedom Unlimited, and Sapphire cards to Hyatt 1:1. At 2-3¢ per point, 15,000 points at a Park Hyatt is worth $400+ (2.67¢/point). This dual pipeline is the most efficient way to accumulate the highest-value hotel currency.",estimatedUplift:"$300-1,000/yr",bestFor:"Hyatt loyalists with Chase UR cards"}
+  ],
+  "Marriott Bonvoy Boundless®":[
+    {type:"statusStacking",pairWith:"The Platinum Card® from American Express",youGet:"Platinum gives instant Marriott Gold + Boundless adds 15 elite nights toward Platinum status",details:"The Amex Platinum gives you automatic Marriott Gold Elite. The Boundless adds 15 elite qualifying night credits each year. Together: Gold status with a 15-night head start toward Platinum (50 nights). Stay 35 more nights in a year and you unlock suite upgrades, executive lounge access, and complimentary breakfast. The Boundless free night certificate ($95 fee) covers most Marriott properties.",estimatedUplift:"$200-500/yr",bestFor:"Marriott loyalists with Amex Platinum"}
+  ],
+  "Hilton Honors American Express Aspire Card":[
+    {type:"statusStacking",pairWith:"The Platinum Card® from American Express",youGet:"Aspire gives Diamond + Platinum gives Hilton Gold backup + Centurion Lounges stack with Priority Pass",details:"The Aspire gives top-tier Hilton Diamond status — suite upgrades, executive lounge, daily F&B credits, 100% bonus points. The Platinum adds Centurion Lounge access for airports without Hilton lounges. Both cards have Priority Pass — give one membership to a travel companion. The Platinum's Marriott Gold diversifies your hotel loyalty across two major chains.",estimatedUplift:"$300-800/yr",bestFor:"Frequent Hilton travelers with Amex Platinum"}
+  ],
+  "Bilt Mastercard®":[
+    {type:"companionCombo",pairWith:"World of Hyatt Card",youGet:"Earn points on rent, redeem at 2-3¢ each at Hyatt",details:"Bilt is the only card that earns points on rent payments. Transfer those points 1:1 to World of Hyatt at 2-3¢ per point. At $2,000/mo rent, that's 24,000 points per year — enough for 1-2 free nights worth $400-700 at great Hyatt properties. The Hyatt card adds 4x earning at Hyatt stays, creating a dual pipeline into the most valuable hotel currency.",estimatedUplift:"$400-700/yr",bestFor:"Renters who stay at Hyatt properties"},
+    {type:"ecosystemUnlocker",pairWith:"Chase Sapphire Preferred",youGet:"Both Bilt and Chase UR transfer to Hyatt — run dual pipelines into the same account",details:"Bilt and Chase Ultimate Rewards both transfer 1:1 to World of Hyatt. This isn't same-ecosystem synergy — it's dual-pipeline strategy. Earn Bilt points on rent, earn UR on everything else, and funnel both into Hyatt at 2-3¢ per point. Two independent earning engines feeding the highest-value hotel currency. The CSP also adds United, Southwest, and 11 other partners.",estimatedUplift:"$300-600/yr",bestFor:"Renters who also hold Chase UR cards"}
+  ]
+};
+
+const ECOSYSTEM_MAP={
+  "Chase Ultimate Rewards":{
+    earners:["Chase Freedom Flex","Chase Freedom Unlimited","Ink Business Cash® Credit Card","Ink Business Unlimited® Credit Card"],
+    unlockers:["Chase Sapphire Preferred","Chase Sapphire Reserve","Ink Business Preferred® Credit Card"],
+    cheapestUnlocker:"Chase Sapphire Preferred",cheapestUnlockerFee:95,
+    valueUplift:"1¢ → 2-3¢ per point (2-3x)"
+  },
+  "Amex Membership Rewards":{
+    earners:["American Express® Gold Card","The Platinum Card® from American Express","American Express® Green Card","Amex EveryDay","Amex EveryDay Preferred","American Express® Blue Business Plus"],
+    unlockers:["American Express® Gold Card","The Platinum Card® from American Express","American Express® Green Card","Amex EveryDay","Amex EveryDay Preferred","American Express® Blue Business Plus"],
+    cheapestUnlocker:"Amex EveryDay",cheapestUnlockerFee:0,
+    valueUplift:"0.6¢ → 2.2¢ per point (3.7x)",
+    warning:"Canceling your ONLY MR card forfeits ALL your Membership Rewards points."
+  },
+  "Citi ThankYou Points":{
+    earners:["Citi Double Cash® Card","Citi Custom Cash® Card","Citi Rewards+® Card"],
+    unlockers:["Citi Strata Premier℠ Card"],
+    cheapestUnlocker:"Citi Strata Premier℠ Card",cheapestUnlockerFee:95,
+    valueUplift:"1¢ → 1.9-2¢ per point (2x)"
+  },
+  "Capital One Miles":{
+    earners:["Capital One SavorOne Cash Rewards","Capital One Quicksilver","Capital One Savor"],
+    unlockers:["Capital One Venture X Rewards Credit Card","Capital One Venture Rewards"],
+    cheapestUnlocker:"Capital One Venture Rewards",cheapestUnlockerFee:95,
+    valueUplift:"1¢ → 1.85¢ per point (1.85x)"
+  },
+  "Bilt Points":{
+    earners:["Bilt Mastercard®"],
+    unlockers:["Bilt Mastercard®"],
+    cheapestUnlocker:"Bilt Mastercard®",cheapestUnlockerFee:0,
+    valueUplift:"1¢ → 2-3¢ via Hyatt/Turkish transfers"
+  }
+};
+
 /* OVERLAP_GROUPS — curated map of household-redundant benefits.
    Each group has: label, keywords (matched against benefit names), a tip for
    households, and estimated annual savings if one person drops the overlap. */
