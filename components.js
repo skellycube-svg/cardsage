@@ -143,6 +143,8 @@ const ICON_PATHS={
 "phone":<><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></>,
 "alert-triangle":<><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
 "users":<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
+"arrow-down":<><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></>,
+"key":<><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></>,
 };
 
 // Draws an SVG icon by name. Used throughout the app for buttons, navigation, and labels.
@@ -1501,6 +1503,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   const [showPaths,setShowPaths]=useState(false);
   const [showAllPaths,setShowAllPaths]=useState(false);
   const [showDowngrades,setShowDowngrades]=useState(false);
+  const [showReplacement,setShowReplacement]=useState(false);
 
   const card=useMemo(()=>CARDS.find(c=>c.id===selectedId),[selectedId]);
 
@@ -1508,7 +1511,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   useEffect(()=>{
     setShowRetention(false);setShowCancel(false);setShowHiddenValue(false);
     setShowSynergies(false);setShowPaths(false);setShowAllPaths(false);
-    setShowDowngrades(false);setShowBenefits(true);setOpenBen(null);
+    setShowDowngrades(false);setShowReplacement(false);setShowBenefits(true);setOpenBen(null);
     setExpandedHiddenPerk(null);setExpandedSynergy(null);
   },[selectedId]);
 
@@ -1837,107 +1840,6 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
         </div>
       )}
 
-      {/* ── BEYOND THE NUMBERS — HIDDEN VALUE ── */}
-      {card.hiddenValue&&(
-        <div className="surf fu" style={{marginBottom:16}}>
-          <button onClick={()=>{setShowHiddenValue(!showHiddenValue);setExpandedHiddenPerk(null);}}
-            style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
-            <div style={{width:40,height:40,borderRadius:10,background:"rgba(13,115,119,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <Icon name="star" size={20} color="var(--acc)"/>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Beyond the Numbers</div>
-              <div style={{fontSize:11,color:"var(--tx3)"}}>Transfer partners, insurance, status perks & more</div>
-            </div>
-            <span style={{transition:"transform .2s",transform:showHiddenValue?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
-          </button>
-          {showHiddenValue&&(
-            <div style={{marginTop:16}}>
-              {/* Intangible note */}
-              <p style={{fontSize:13,color:"var(--tx2)",margin:"0 0 16px",lineHeight:1.7,fontStyle:"italic"}}>{card.hiddenValue.intangibleNote}</p>
-
-              {/* Transfer Partner mini-card */}
-              {card.hiddenValue.transferEcosystem&&TRANSFER_PARTNER_DATA[card.hiddenValue.transferEcosystem]&&(()=>{
-                const eco=TRANSFER_PARTNER_DATA[card.hiddenValue.transferEcosystem];
-                const multiplier=(eco.transferValue/eco.cashValue).toFixed(1);
-                return (
-                  <div style={{padding:"12px 14px",borderRadius:12,background:"rgba(13,115,119,.06)",border:"1px solid rgba(13,115,119,.15)",marginBottom:16}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                      <span style={{fontSize:14}}>🔄</span>
-                      <div style={{fontSize:12,fontWeight:700,color:"var(--acc)"}}>Transfer Partner Value</div>
-                    </div>
-                    <p style={{fontSize:12,color:"var(--tx2)",margin:"0 0 10px",lineHeight:1.6}}>
-                      Your {card.hiddenValue.transferEcosystem} points are worth <strong>{eco.cashValue}¢ as cash</strong>, but <strong style={{color:"var(--acc)"}}>{eco.transferValue}¢ via transfer partners</strong> — a <strong style={{color:"var(--grn2)"}}>{multiplier}x uplift</strong>.
-                    </p>
-                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                      {eco.topPartners.slice(0,4).map((tp,i)=>(
-                        <div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:11}}>
-                          <span style={{width:6,height:6,borderRadius:99,background:"var(--acc)",flexShrink:0}}/>
-                          <span style={{fontWeight:600,color:"var(--tx)",minWidth:90}}>{tp.name}</span>
-                          <span style={{color:"var(--grn2)",fontWeight:700,fontFamily:"'Source Code Pro',monospace",minWidth:55}}>{tp.cpp}</span>
-                          <span style={{color:"var(--tx3)",fontStyle:"italic"}}>{tp.sweetSpot}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Hidden perks grouped by category */}
-              {(()=>{
-                const grouped={};
-                (card.hiddenValue.hiddenPerks||[]).forEach(p=>{
-                  if(!grouped[p.category])grouped[p.category]=[];
-                  grouped[p.category].push(p);
-                });
-                return Object.entries(grouped).map(([catKey,perks])=>{
-                  const cat=HIDDEN_VALUE_CATEGORIES[catKey]||{label:catKey,icon:"📋"};
-                  return (
-                    <div key={catKey} style={{marginBottom:12}}>
-                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-                        <span style={{fontSize:13}}>{cat.icon}</span>
-                        <span style={{fontSize:11,fontWeight:700,letterSpacing:.5,color:"var(--tx2)",textTransform:"uppercase"}}>{cat.label}</span>
-                      </div>
-                      {perks.map((p,j)=>{
-                        const perkKey=catKey+"-"+j;
-                        const isExpanded=expandedHiddenPerk===perkKey;
-                        return (
-                          <div key={j} onClick={()=>setExpandedHiddenPerk(isExpanded?null:perkKey)}
-                            style={{padding:"8px 10px",borderRadius:8,background:"var(--bg)",border:"1px solid var(--br)",marginBottom:4,cursor:"pointer"}}>
-                            <div style={{display:"flex",alignItems:"center",gap:8}}>
-                              <div style={{flex:1,fontSize:12,fontWeight:600,color:"var(--tx)"}}>{p.perk}</div>
-                              <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"rgba(13,115,119,.08)",color:"var(--acc)",whiteSpace:"nowrap",fontFamily:"'Source Code Pro',monospace"}}>{p.estimatedValue}</span>
-                              <span style={{transition:"transform .15s",transform:isExpanded?"rotate(90deg)":"rotate(0deg)",display:"inline-flex"}}><Icon name="chevron-right" size={12} color="var(--tx3)"/></span>
-                            </div>
-                            {isExpanded&&<p style={{fontSize:11,color:"var(--tx2)",margin:"6px 0 0",lineHeight:1.6}}>{p.details}</p>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                });
-              })()}
-
-              {/* Universal hidden values */}
-              <div style={{marginTop:8,paddingTop:12,borderTop:"1px solid var(--br)"}}>
-                <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"var(--tx3)",textTransform:"uppercase",marginBottom:8}}>Also Consider</div>
-                {UNIVERSAL_HIDDEN_VALUES.filter(u=>
-                  u.applies==="All cards"||(u.applies.includes("ecosystem")&&card.hiddenValue.transferEcosystem)||(u.applies.includes("annual fees")&&card.fee>0)||(u.applies.includes("Visa Signature")||u.applies.includes("Mastercard")||u.applies.includes("Amex"))
-                ).slice(0,3).map((u,i)=>(
-                  <div key={i} style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:6}}>
-                    <span style={{fontSize:10,color:"var(--acc)",marginTop:2,flexShrink:0}}>▸</span>
-                    <div>
-                      <span style={{fontSize:11,fontWeight:600,color:"var(--tx)"}}>{u.title}: </span>
-                      <span style={{fontSize:11,color:"var(--tx3)"}}>{u.description}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* ── BENEFIT TRACKER ── */}
       <div className="surf fu" style={{marginBottom:16}}>
         <button onClick={()=>setShowBenefits(!showBenefits)}
@@ -2088,6 +1990,107 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
         )}
       </div>
 
+      {/* ── BEYOND THE NUMBERS — HIDDEN VALUE ── */}
+      {card.hiddenValue&&(
+        <div className="surf fu" style={{marginBottom:16}}>
+          <button onClick={()=>{setShowHiddenValue(!showHiddenValue);setExpandedHiddenPerk(null);}}
+            style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
+            <div style={{width:40,height:40,borderRadius:10,background:"rgba(13,115,119,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <Icon name="star" size={20} color="var(--acc)"/>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Beyond the Numbers</div>
+              <div style={{fontSize:11,color:"var(--tx3)"}}>Transfer partners, insurance, status perks & more</div>
+            </div>
+            <span style={{transition:"transform .2s",transform:showHiddenValue?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
+          </button>
+          {showHiddenValue&&(
+            <div style={{marginTop:16}}>
+              {/* Intangible note */}
+              <p style={{fontSize:13,color:"var(--tx2)",margin:"0 0 16px",lineHeight:1.7,fontStyle:"italic"}}>{card.hiddenValue.intangibleNote}</p>
+
+              {/* Transfer Partner mini-card */}
+              {card.hiddenValue.transferEcosystem&&TRANSFER_PARTNER_DATA[card.hiddenValue.transferEcosystem]&&(()=>{
+                const eco=TRANSFER_PARTNER_DATA[card.hiddenValue.transferEcosystem];
+                const multiplier=(eco.transferValue/eco.cashValue).toFixed(1);
+                return (
+                  <div style={{padding:"12px 14px",borderRadius:12,background:"rgba(13,115,119,.06)",border:"1px solid rgba(13,115,119,.15)",marginBottom:16}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                      <span style={{fontSize:14}}>🔄</span>
+                      <div style={{fontSize:12,fontWeight:700,color:"var(--acc)"}}>Transfer Partner Value</div>
+                    </div>
+                    <p style={{fontSize:12,color:"var(--tx2)",margin:"0 0 10px",lineHeight:1.6}}>
+                      Your {card.hiddenValue.transferEcosystem} points are worth <strong>{eco.cashValue}¢ as cash</strong>, but <strong style={{color:"var(--acc)"}}>{eco.transferValue}¢ via transfer partners</strong> — a <strong style={{color:"var(--grn2)"}}>{multiplier}x uplift</strong>.
+                    </p>
+                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                      {eco.topPartners.slice(0,4).map((tp,i)=>(
+                        <div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:11}}>
+                          <span style={{width:6,height:6,borderRadius:99,background:"var(--acc)",flexShrink:0}}/>
+                          <span style={{fontWeight:600,color:"var(--tx)",minWidth:90}}>{tp.name}</span>
+                          <span style={{color:"var(--grn2)",fontWeight:700,fontFamily:"'Source Code Pro',monospace",minWidth:55}}>{tp.cpp}</span>
+                          <span style={{color:"var(--tx3)",fontStyle:"italic"}}>{tp.sweetSpot}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Hidden perks grouped by category */}
+              {(()=>{
+                const grouped={};
+                (card.hiddenValue.hiddenPerks||[]).forEach(p=>{
+                  if(!grouped[p.category])grouped[p.category]=[];
+                  grouped[p.category].push(p);
+                });
+                return Object.entries(grouped).map(([catKey,perks])=>{
+                  const cat=HIDDEN_VALUE_CATEGORIES[catKey]||{label:catKey,icon:"📋"};
+                  return (
+                    <div key={catKey} style={{marginBottom:12}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                        <span style={{fontSize:13}}>{cat.icon}</span>
+                        <span style={{fontSize:11,fontWeight:700,letterSpacing:.5,color:"var(--tx2)",textTransform:"uppercase"}}>{cat.label}</span>
+                      </div>
+                      {perks.map((p,j)=>{
+                        const perkKey=catKey+"-"+j;
+                        const isExpanded=expandedHiddenPerk===perkKey;
+                        return (
+                          <div key={j} onClick={()=>setExpandedHiddenPerk(isExpanded?null:perkKey)}
+                            style={{padding:"8px 10px",borderRadius:8,background:"var(--bg)",border:"1px solid var(--br)",marginBottom:4,cursor:"pointer"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                              <div style={{flex:1,fontSize:12,fontWeight:600,color:"var(--tx)"}}>{p.perk}</div>
+                              <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"rgba(13,115,119,.08)",color:"var(--acc)",whiteSpace:"nowrap",fontFamily:"'Source Code Pro',monospace"}}>{p.estimatedValue}</span>
+                              <span style={{transition:"transform .15s",transform:isExpanded?"rotate(90deg)":"rotate(0deg)",display:"inline-flex"}}><Icon name="chevron-right" size={12} color="var(--tx3)"/></span>
+                            </div>
+                            {isExpanded&&<p style={{fontSize:11,color:"var(--tx2)",margin:"6px 0 0",lineHeight:1.6}}>{p.details}</p>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                });
+              })()}
+
+              {/* Universal hidden values */}
+              <div style={{marginTop:8,paddingTop:12,borderTop:"1px solid var(--br)"}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"var(--tx3)",textTransform:"uppercase",marginBottom:8}}>Also Consider</div>
+                {UNIVERSAL_HIDDEN_VALUES.filter(u=>
+                  u.applies==="All cards"||(u.applies.includes("ecosystem")&&card.hiddenValue.transferEcosystem)||(u.applies.includes("annual fees")&&card.fee>0)||(u.applies.includes("Visa Signature")||u.applies.includes("Mastercard")||u.applies.includes("Amex"))
+                ).slice(0,3).map((u,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:6}}>
+                    <span style={{fontSize:10,color:"var(--acc)",marginTop:2,flexShrink:0}}>▸</span>
+                    <div>
+                      <span style={{fontSize:11,fontWeight:600,color:"var(--tx)"}}>{u.title}: </span>
+                      <span style={{fontSize:11,color:"var(--tx3)"}}>{u.description}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── RETENTION OFFER SECTION ── */}
       {retentionOffers.length>0&&(
         <div className="surf fu" style={{marginBottom:16}}>
@@ -2136,7 +2139,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
         <button onClick={()=>setShowCancel(!showCancel)}
           style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
           <div style={{width:40,height:40,borderRadius:10,background:"rgba(220,38,38,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <Icon name="x" size={20} color="var(--red2)"/>
+            <Icon name="alert-triangle" size={20} color="var(--red2)"/>
           </div>
           <div style={{flex:1}}>
             <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>If You Cancel</div>
@@ -2350,7 +2353,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             <button onClick={()=>{setShowPaths(!showPaths);if(showPaths)setShowAllPaths(false);}}
               style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
               <div style={{width:40,height:40,borderRadius:10,background:"rgba(13,115,119,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <Icon name="zap" size={20} color="var(--acc)"/>
+                <Icon name="refresh" size={20} color="var(--acc)"/>
               </div>
               <div style={{flex:1}}>
                 <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Alternative Points Paths</div>
@@ -2398,42 +2401,56 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
 
       {/* ── RECOMMENDED REPLACEMENT ── */}
       {replacement&&verdict==="at-risk"&&(
-        <div style={{marginBottom:24}}>
-          <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:10}}>Recommended Replacement</div>
-          <div className="surf fu" style={{borderLeft:`3px solid var(--grn2)`}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-              <div style={{width:42,height:26,borderRadius:6,background:`linear-gradient(135deg,${replacement.c1},${replacement.c2})`,flexShrink:0,boxShadow:"0 1px 4px rgba(0,0,0,.12)"}}/>
-              <div style={{flex:1}}>
-                <div style={{fontSize:15,fontWeight:700,color:"var(--tx)"}}>{replacement.short||replacement.name}</div>
-                <div style={{fontSize:11,color:"var(--tx3)"}}>{replacement.issuer} · {replacement.fee===0?"No fee":"$"+replacement.fee+"/yr"}</div>
-              </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontSize:16,fontWeight:800,color:"var(--grn2)"}}>+${replacement.net.toLocaleString()}</div>
-                <div style={{fontSize:9,color:"var(--tx3)",textTransform:"uppercase",fontWeight:600}}>Net value</div>
-              </div>
+        <div className="surf fu" style={{marginBottom:16}}>
+          <button onClick={()=>setShowReplacement(!showReplacement)}
+            style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
+            <div style={{width:40,height:40,borderRadius:10,background:"rgba(22,163,74,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <Icon name="arrow-up" size={20} color="var(--grn2)"/>
             </div>
-            <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-              <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:"rgba(22,163,74,.08)",color:"var(--grn2)",border:"1px solid rgba(22,163,74,.15)"}}>${replacement.credits.toLocaleString()} in credits</span>
-              {replacement.earnBoost>0&&<span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:"rgba(13,115,119,.08)",color:"var(--acc)",border:"1px solid rgba(13,115,119,.15)"}}>+{replacement.earnBoost}x earn boost</span>}
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Recommended Replacement</div>
+              <div style={{fontSize:11,color:"var(--tx3)"}}>{replacement.short||replacement.name} · +${replacement.net.toLocaleString()} net value</div>
             </div>
-            {replacement.signup&&replacement.signup!=="No signup bonus"&&replacement.signup!=="No sign-up bonus"&&(
-              <div style={{fontSize:11,fontWeight:600,color:"var(--acc)",marginBottom:10}}>{replacement.signup}</div>
-            )}
-            {(()=>{
-              const applyUrl=APPLY_URLS[replacement.id]&&!APPLY_URLS[replacement.id].startsWith("#")?APPLY_URLS[replacement.id]:null;
-              return applyUrl?(
-                <div>
-                  <a href={applyUrl} target="_blank" rel="noopener noreferrer"
-                    style={{display:"block",textAlign:"center",padding:"12px 20px",borderRadius:10,textDecoration:"none",
-                      background:"linear-gradient(135deg,var(--acc),var(--gld2))",color:"#fff",
-                      fontSize:13,fontWeight:700,boxShadow:"0 2px 8px rgba(13,115,119,.25)"}}>
-                    Apply Now →
-                  </a>
-                  <div className="apply-disclose" style={{textAlign:"center",marginTop:6}}>Affiliate link — we may earn a commission at no cost to you.</div>
+            <span style={{transition:"transform .2s",transform:showReplacement?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
+          </button>
+          {showReplacement&&(
+          <div style={{marginTop:16}}>
+            <div style={{borderLeft:`3px solid var(--grn2)`,borderRadius:10,padding:"14px",background:"var(--s3)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                <div style={{width:42,height:26,borderRadius:6,background:`linear-gradient(135deg,${replacement.c1},${replacement.c2})`,flexShrink:0,boxShadow:"0 1px 4px rgba(0,0,0,.12)"}}/>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:15,fontWeight:700,color:"var(--tx)"}}>{replacement.short||replacement.name}</div>
+                  <div style={{fontSize:11,color:"var(--tx3)"}}>{replacement.issuer} · {replacement.fee===0?"No fee":"$"+replacement.fee+"/yr"}</div>
                 </div>
-              ):null;
-            })()}
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:16,fontWeight:800,color:"var(--grn2)"}}>+${replacement.net.toLocaleString()}</div>
+                  <div style={{fontSize:9,color:"var(--tx3)",textTransform:"uppercase",fontWeight:600}}>Net value</div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+                <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:"rgba(22,163,74,.08)",color:"var(--grn2)",border:"1px solid rgba(22,163,74,.15)"}}>${replacement.credits.toLocaleString()} in credits</span>
+                {replacement.earnBoost>0&&<span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:"rgba(13,115,119,.08)",color:"var(--acc)",border:"1px solid rgba(13,115,119,.15)"}}>+{replacement.earnBoost}x earn boost</span>}
+              </div>
+              {replacement.signup&&replacement.signup!=="No signup bonus"&&replacement.signup!=="No sign-up bonus"&&(
+                <div style={{fontSize:11,fontWeight:600,color:"var(--acc)",marginBottom:10}}>{replacement.signup}</div>
+              )}
+              {(()=>{
+                const applyUrl=APPLY_URLS[replacement.id]&&!APPLY_URLS[replacement.id].startsWith("#")?APPLY_URLS[replacement.id]:null;
+                return applyUrl?(
+                  <div>
+                    <a href={applyUrl} target="_blank" rel="noopener noreferrer"
+                      style={{display:"block",textAlign:"center",padding:"12px 20px",borderRadius:10,textDecoration:"none",
+                        background:"linear-gradient(135deg,var(--acc),var(--gld2))",color:"#fff",
+                        fontSize:13,fontWeight:700,boxShadow:"0 2px 8px rgba(13,115,119,.25)"}}>
+                      Apply Now →
+                    </a>
+                    <div className="apply-disclose" style={{textAlign:"center",marginTop:6}}>Affiliate link — we may earn a commission at no cost to you.</div>
+                  </div>
+                ):null;
+              })()}
+            </div>
           </div>
+          )}
         </div>
       )}
 
@@ -2537,7 +2554,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             <button onClick={()=>setShowSynergies(!showSynergies)}
               style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
               <div style={{width:40,height:40,borderRadius:10,background:"rgba(13,115,119,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <Icon name="layers" size={20} color="var(--acc)"/>
+                <Icon name="key" size={20} color="var(--acc)"/>
               </div>
               <div style={{flex:1}}>
                 <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Strategy Plays</div>
