@@ -1497,8 +1497,20 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   const [expandedHiddenPerk,setExpandedHiddenPerk]=useState(null);
   const [showSynergies,setShowSynergies]=useState(false);
   const [expandedSynergy,setExpandedSynergy]=useState(null);
+  const [showBenefits,setShowBenefits]=useState(true);
+  const [showPaths,setShowPaths]=useState(false);
+  const [showAllPaths,setShowAllPaths]=useState(false);
+  const [showDowngrades,setShowDowngrades]=useState(false);
 
   const card=useMemo(()=>CARDS.find(c=>c.id===selectedId),[selectedId]);
+
+  // Reset collapsible sections when card changes
+  useEffect(()=>{
+    setShowRetention(false);setShowCancel(false);setShowHiddenValue(false);
+    setShowSynergies(false);setShowPaths(false);setShowAllPaths(false);
+    setShowDowngrades(false);setShowBenefits(true);setOpenBen(null);
+    setExpandedHiddenPerk(null);setExpandedSynergy(null);
+  },[selectedId]);
 
   // Benefits for this card
   const allBenefits=useMemo(()=>{
@@ -1827,18 +1839,20 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
 
       {/* ── BEYOND THE NUMBERS — HIDDEN VALUE ── */}
       {card.hiddenValue&&(
-        <div style={{marginBottom:16}}>
+        <div className="surf fu" style={{marginBottom:16}}>
           <button onClick={()=>{setShowHiddenValue(!showHiddenValue);setExpandedHiddenPerk(null);}}
-            style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"rgba(13,115,119,.04)",border:"1px solid rgba(13,115,119,.12)",borderRadius:14,cursor:"pointer",padding:"14px 16px",textAlign:"left"}}>
-            <span style={{fontSize:20,lineHeight:1,flexShrink:0}}>💎</span>
+            style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
+            <div style={{width:40,height:40,borderRadius:10,background:"rgba(13,115,119,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <Icon name="star" size={20} color="var(--acc)"/>
+            </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Hidden Value — What the Math Doesn't Capture</div>
+              <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Beyond the Numbers</div>
               <div style={{fontSize:11,color:"var(--tx3)"}}>Transfer partners, insurance, status perks & more</div>
             </div>
             <span style={{transition:"transform .2s",transform:showHiddenValue?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
           </button>
           {showHiddenValue&&(
-            <div style={{marginTop:12,padding:"16px",borderRadius:14,background:"rgba(13,115,119,.03)",border:"1px solid rgba(13,115,119,.10)",borderLeft:"4px solid var(--acc)"}}>
+            <div style={{marginTop:16}}>
               {/* Intangible note */}
               <p style={{fontSize:13,color:"var(--tx2)",margin:"0 0 16px",lineHeight:1.7,fontStyle:"italic"}}>{card.hiddenValue.intangibleNote}</p>
 
@@ -1925,12 +1939,20 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
       )}
 
       {/* ── BENEFIT TRACKER ── */}
-      <div style={{marginBottom:16}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-          <div style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>Benefit Tracker</div>
-          <div style={{fontSize:11,color:"var(--tx3)"}}>{checkedCount}/{totalSlots} used · ${usedValue.toLocaleString()} redeemed</div>
-        </div>
-        <div className="benefit-item" style={{borderLeftColor:palette.text,padding:"0 14px"}}>
+      <div className="surf fu" style={{marginBottom:16}}>
+        <button onClick={()=>setShowBenefits(!showBenefits)}
+          style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
+          <div style={{width:40,height:40,borderRadius:10,background:"rgba(13,115,119,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <Icon name="check-circle" size={20} color="var(--acc)"/>
+          </div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Benefit Tracker</div>
+            <div style={{fontSize:11,color:"var(--tx3)"}}>{checkedCount}/{totalSlots} used · ${usedValue.toLocaleString()} redeemed</div>
+          </div>
+          <span style={{transition:"transform .2s",transform:showBenefits?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
+        </button>
+        {showBenefits&&(
+        <div className="benefit-item" style={{borderLeftColor:palette.text,padding:"0 14px",marginTop:16}}>
           {/* Credits with checkboxes */}
           {creditBens.map((b,i)=>{
             const pk=periodKeys(card.id,b,b.isMonthly);
@@ -2063,6 +2085,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             </>
           )}
         </div>
+        )}
       </div>
 
       {/* ── RETENTION OFFER SECTION ── */}
@@ -2219,8 +2242,20 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
 
       {/* ── DOWNGRADE PATHS ── */}
       {downgrades.length>0&&(
-        <div style={{marginBottom:16}}>
-          <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:10}}>Downgrade Options</div>
+        <div className="surf fu" style={{marginBottom:16}}>
+          <button onClick={()=>setShowDowngrades(!showDowngrades)}
+            style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
+            <div style={{width:40,height:40,borderRadius:10,background:"rgba(13,115,119,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <Icon name="arrow-down" size={20} color="var(--acc)"/>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Downgrade Options</div>
+              <div style={{fontSize:11,color:"var(--tx3)"}}>{downgrades.length} product change{downgrades.length>1?"s":""} available · No hard pull</div>
+            </div>
+            <span style={{transition:"transform .2s",transform:showDowngrades?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
+          </button>
+          {showDowngrades&&(
+          <div style={{marginTop:16}}>
           {downgrades.map((dg,i)=>{
             const dgCard=dg.affiliateKey?CARDS.find(c=>c.id===dg.affiliateKey):null;
             const applyUrl=dg.affiliateKey&&APPLY_URLS[dg.affiliateKey]&&!APPLY_URLS[dg.affiliateKey].startsWith("#")?APPLY_URLS[dg.affiliateKey]:null;
@@ -2267,6 +2302,8 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
               </div>
             );
           })}
+          </div>
+          )}
         </div>
       )}
 
@@ -2274,61 +2311,87 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
       {card&&TRANSFER_PATHS[card.cur]&&(()=>{
         const tp=TRANSFER_PATHS[card.cur];
         const allOwnedIds=new Set([...myCards,...p2Cards]);
+        // Sort sources: owned-first, then by ratio quality
+        const enriched=tp.sources.map(src=>({...src,ownedCards:src.cards.filter(id=>allOwnedIds.has(id)),srcCards:src.cards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean)}));
+        const owned=enriched.filter(s=>s.ownedCards.length>0);
+        const couldGet=enriched.filter(s=>s.ownedCards.length===0);
+        const totalPaths=enriched.length;
+        const visibleOwned=owned;
+        const visibleCouldGet=showAllPaths?couldGet:couldGet.slice(0,Math.max(0,3-owned.length));
+        const hiddenCount=totalPaths-visibleOwned.length-visibleCouldGet.length;
+        const ownedCount=owned.reduce((s,o)=>s+o.ownedCards.length,0);
+
+        function renderPath(src){
+          return (
+            <div key={src.currency} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:8,background:"var(--s3)",border:"1px solid var(--br)"}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                  <span style={{fontSize:12,fontWeight:700,color:"var(--tx)"}}>{src.currency}</span>
+                  <span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99,
+                    background:src.ratio==="1:1"?"rgba(22,163,74,.08)":"rgba(13,115,119,.08)",
+                    color:src.ratio==="1:1"?"var(--grn2)":"var(--acc)",letterSpacing:.3}}>{src.ratio}</span>
+                </div>
+                {src.note&&<div style={{fontSize:10,color:"var(--tx3)",marginTop:2,fontStyle:"italic"}}>{src.note}</div>}
+                <div style={{display:"flex",flexWrap:"wrap",gap:3,marginTop:4}}>
+                  {src.srcCards.map(sc=>{
+                    const isOwned=allOwnedIds.has(sc.id);
+                    return <span key={sc.id} style={{fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:99,
+                      background:isOwned?"rgba(22,163,74,.08)":"var(--bg)",color:isOwned?"var(--grn2)":"var(--tx3)",
+                      border:isOwned?"1px solid rgba(22,163,74,.2)":"1px solid var(--br2)"}}>{isOwned?"✓ ":""}{sc.short||sc.name}</span>;
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         return (
           <div className="surf fu" style={{marginBottom:16}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+            <button onClick={()=>{setShowPaths(!showPaths);if(showPaths)setShowAllPaths(false);}}
+              style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
               <div style={{width:40,height:40,borderRadius:10,background:"rgba(13,115,119,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                 <Icon name="zap" size={20} color="var(--acc)"/>
               </div>
-              <div>
+              <div style={{flex:1}}>
                 <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Alternative Points Paths</div>
-                <div style={{fontSize:11,color:"var(--tx3)"}}>Other ways to earn {tp.program} points</div>
+                <div style={{fontSize:11,color:"var(--tx3)"}}>{ownedCount>0?ownedCount+" path"+(ownedCount>1?"s":"")+" already in your wallet":totalPaths+" transfer path"+(totalPaths>1?"s":"")+" available"}</div>
+              </div>
+              <span style={{transition:"transform .2s",transform:showPaths?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
+            </button>
+            {showPaths&&(
+            <div style={{marginTop:16}}>
+              <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.6,marginBottom:12}}>
+                You can still earn <strong>{tp.program}</strong> points through these transfer partners{ownedCount>0?"":" if you pick up a flexible-points card"}.
+              </div>
+              {visibleOwned.length>0&&(
+                <div style={{marginBottom:visibleCouldGet.length>0?10:0}}>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:.8,color:"var(--grn2)",textTransform:"uppercase",marginBottom:6}}>✅ You already have</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {visibleOwned.map(renderPath)}
+                  </div>
+                </div>
+              )}
+              {visibleCouldGet.length>0&&(
+                <div>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:.8,color:"var(--tx3)",textTransform:"uppercase",marginBottom:6,marginTop:visibleOwned.length>0?10:0}}>Could get</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {visibleCouldGet.map(renderPath)}
+                  </div>
+                </div>
+              )}
+              {hiddenCount>0&&!showAllPaths&&(
+                <button onClick={e=>{e.stopPropagation();setShowAllPaths(true);}}
+                  style={{display:"block",margin:"10px auto 0",background:"none",border:"none",cursor:"pointer",fontSize:11,fontWeight:600,color:"var(--acc)"}}>
+                  Show all {totalPaths} paths →
+                </button>
+              )}
+              <div style={{padding:"8px 12px",borderRadius:8,background:"rgba(154,110,26,.06)",border:"1px solid rgba(154,110,26,.12)",marginTop:12}}>
+                <p style={{fontSize:11,color:"var(--tx2)",margin:0,lineHeight:1.6}}>
+                  <strong style={{color:"var(--gold)"}}>Trade-off:</strong> Co-branded cards earn at higher rates on brand spending and include perks like free nights and elite status credits.
+                </p>
               </div>
             </div>
-            <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.6,marginBottom:14}}>
-              If you cancel this card, you can still earn <strong>{tp.program}</strong> points by transferring from:
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
-              {tp.sources.map((src,si)=>{
-                const ownedCards=src.cards.filter(id=>allOwnedIds.has(id));
-                const srcCards=src.cards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
-                return (
-                  <div key={si} style={{padding:"10px 12px",borderRadius:10,background:"var(--s3)",border:"1px solid var(--br)"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                      <span style={{fontSize:12,fontWeight:700,color:"var(--tx)"}}>{src.currency}</span>
-                      <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,
-                        background:src.ratio==="1:1"?"rgba(22,163,74,.08)":"rgba(13,115,119,.08)",
-                        color:src.ratio==="1:1"?"var(--grn2)":"var(--acc)",
-                        border:src.ratio==="1:1"?"1px solid rgba(22,163,74,.15)":"1px solid rgba(13,115,119,.15)"}}>{src.ratio}</span>
-                    </div>
-                    {src.note&&<div style={{fontSize:10,color:"var(--tx3)",marginBottom:6,fontStyle:"italic"}}>{src.note}</div>}
-                    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                      {srcCards.map(sc=>{
-                        const owned=allOwnedIds.has(sc.id);
-                        return (
-                          <span key={sc.id} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,
-                            background:owned?"rgba(22,163,74,.08)":"var(--bg)",
-                            color:owned?"var(--grn2)":"var(--tx3)",
-                            border:owned?"1px solid rgba(22,163,74,.2)":"1px solid var(--br2)"}}>
-                            {owned&&"✓ "}{sc.short||sc.name}
-                          </span>
-                        );
-                      })}
-                    </div>
-                    {ownedCards.length>0&&(
-                      <div style={{marginTop:6,fontSize:11,color:"var(--grn2)",fontWeight:600}}>
-                        ✅ You already have {ownedCards.length===1?(CARDS.find(c=>c.id===ownedCards[0])?.short||ownedCards[0]):ownedCards.length+" cards"} that transfer{ownedCards.length===1?"s":""} to {tp.program}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{padding:"8px 12px",borderRadius:8,background:"rgba(154,110,26,.06)",border:"1px solid rgba(154,110,26,.12)"}}>
-              <p style={{fontSize:11,color:"var(--tx2)",margin:0,lineHeight:1.6}}>
-                <strong style={{color:"var(--gold)"}}>Trade-off:</strong> Transfer partners give you flexibility, but co-branded cards often earn at higher rates on that brand's spending (e.g., 6x at Marriott vs. 3x via Chase) and come with perks like free night certificates and elite status credits.
-              </p>
-            </div>
+            )}
           </div>
         );
       })()}
@@ -2466,34 +2529,23 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             })}
           </div>
         );
-        // When ROI >= 100%, collapse by default with subtle header
-        if(isWorthIt){
-          return (
-            <div style={{marginBottom:16,borderTop:"1px solid var(--br)",paddingTop:16}}>
-              <button onClick={()=>setShowSynergies(!showSynergies)}
-                style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
-                <span style={{fontSize:16}}>🔑</span>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>Level Up Your Strategy</div>
-                  <div style={{fontSize:11,color:"var(--tx3)"}}>{sorted.length} synerg{sorted.length===1?"y":"ies"} available</div>
-                </div>
-                <span style={{transition:"transform .2s",transform:showSynergies?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
-              </button>
-              {showSynergies&&sectionContent}
-            </div>
-          );
-        }
-        // When ROI < 100%, show prominently
+        const synergySubtitle=isWorthIt
+          ?sorted.length+" synerg"+(sorted.length===1?"y":"ies")+" to level up your strategy"
+          :"Pair with the right card to close the gap";
         return (
-          <div style={{marginBottom:16,borderTop:"1px solid var(--br)",paddingTop:16}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
-              <span style={{fontSize:16}}>🔑</span>
-              <div>
-                <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Strategy Plays</div>
-                <div style={{fontSize:11,color:"var(--tx3)"}}>This card might not pay for itself alone — but pair it with the right card and it could</div>
+          <div className="surf fu" style={{marginBottom:16}}>
+            <button onClick={()=>setShowSynergies(!showSynergies)}
+              style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
+              <div style={{width:40,height:40,borderRadius:10,background:"rgba(13,115,119,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <Icon name="layers" size={20} color="var(--acc)"/>
               </div>
-            </div>
-            {sectionContent}
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Strategy Plays</div>
+                <div style={{fontSize:11,color:"var(--tx3)"}}>{synergySubtitle}</div>
+              </div>
+              <span style={{transition:"transform .2s",transform:showSynergies?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
+            </button>
+            {showSynergies&&<div style={{marginTop:16}}>{sectionContent}</div>}
           </div>
         );
       })()}
