@@ -742,24 +742,38 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
   };
 
   const allHouseCards=useMemo(()=>[...cards,...p2Resolved],[cards,p2Resolved]);
-  const totalFees=useMemo(()=>allHouseCards.reduce((s,c)=>s+c.fee,0),[allHouseCards]);
-  const totalCredits=useMemo(()=>allHouseCards.reduce((s,c)=>s+cardCreditVal(c),0),[allHouseCards]);
-  const netROI=totalCredits-totalFees;
-
   const p2Set=useMemo(()=>new Set(p2Cards),[p2Cards]);
 
-  // Calculate per-card credit values
+  // Compute used value for a card based on checked-off benefits
+  function cardUsedValue(card){
+    let total=0;
+    const allBens=[...card.annual.map(b=>({...b,isMonthly:false})),...card.monthly.map(b=>({...b,isMonthly:true}))];
+    allBens.forEach(b=>{
+      if(!b.v)return;
+      const pk=periodKeys(card.id,b,b.isMonthly);
+      if(pk) pk.forEach(p=>{if(checkedSet.has(p.key))total+=b.v;});
+      else if(checkedSet.has(benKey(card.id,b,b.isMonthly))) total+=annualBenValue(b);
+    });
+    return total;
+  }
+
+  const totalFees=useMemo(()=>allHouseCards.reduce((s,c)=>s+c.fee,0),[allHouseCards]);
+  const totalCredits=useMemo(()=>allHouseCards.reduce((s,c)=>s+cardUsedValue(c),0),[allHouseCards,checkedSet]);
+  const netROI=totalCredits-totalFees;
+
+  // Calculate per-card used credit values
   function buildCardStats(cardList,owner){
     return cardList.map(card=>{
-      const totalVal=cardCreditVal(card);
+      const usedVal=cardUsedValue(card);
+      const potentialVal=cardCreditVal(card);
       let renewDays=card.fee>0?getRenewalDays(card.id,anniversaryDates):null;
-      const roiPct=card.fee>0?Math.round((totalVal/card.fee)*100):null;
+      const roiPct=card.fee>0?Math.round((usedVal/card.fee)*100):null;
       const verdict=card.fee===0?null:roiPct>=100?"worth-it":roiPct>=50?"on-track":"at-risk";
-      return {card,totalVal,renewDays,roiPct,verdict,owner};
+      return {card,usedVal,potentialVal,renewDays,roiPct,verdict,owner};
     });
   }
-  const cardStats=useMemo(()=>buildCardStats(cards,"you"),[cards,anniversaryDates]);
-  const p2CardStats=useMemo(()=>buildCardStats(p2Resolved,p2Name||"Partner"),[p2Resolved,anniversaryDates,p2Name]);
+  const cardStats=useMemo(()=>buildCardStats(cards,"you"),[cards,anniversaryDates,checkedSet]);
+  const p2CardStats=useMemo(()=>buildCardStats(p2Resolved,p2Name||"Partner"),[p2Resolved,anniversaryDates,p2Name,checkedSet]);
 
   // Split into fee cards (sorted by nearest renewal) and free cards
   const allStats=useMemo(()=>[...cardStats,...p2CardStats],[cardStats,p2CardStats]);
@@ -873,7 +887,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
         </div>
         <div className="stat-box">
           <div className="stat-val grn-text">${totalCredits}</div>
-          <div className="stat-lbl">Credits Used</div>
+          <div className="stat-lbl">Credits Captured</div>
         </div>
         <div className="stat-box">
           <div className="stat-val" style={{color:netROI>=0?"var(--grn2)":"var(--red2)"}}>
@@ -902,7 +916,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
           <div className="section-hdr" style={{marginBottom:12}}>
             <div className="section-title"><Icon name="calendar" size={14} color="var(--acc)"/> RENEWAL TIMELINE</div>
           </div>
-          {feeCards.map(({card,totalVal,renewDays,roiPct,verdict,owner})=>{
+          {feeCards.map(({card,usedVal,renewDays,roiPct,verdict,owner})=>{
             const palette=getIssuerPalette(card.issuer);
             const verdictLabel=verdict==="worth-it"?"Worth It":verdict==="on-track"?"On Track":"At Risk";
             const verdictColor=verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--gold)":"var(--red2)";
@@ -940,7 +954,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
                 {/* ROI progress bar */}
                 <div style={{marginBottom:6}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
-                    <span style={{fontSize:11,fontWeight:600,color:"var(--tx2)"}}>${totalVal} of ${card.fee} used</span>
+                    <span style={{fontSize:11,fontWeight:600,color:"var(--tx2)"}}>${usedVal} of ${card.fee} captured</span>
                     <span style={{fontSize:11,fontWeight:700,color:verdictColor}}>{roiPct}%</span>
                   </div>
                   <div className="prog-track" style={{height:6,borderRadius:99}}>
