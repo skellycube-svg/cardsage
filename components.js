@@ -1806,27 +1806,31 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
 
       {/* ── FIRST YEAR TOGGLE ── */}
       {card&&allBenefits.some(b=>b.requiresRenewal)&&(
-        <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,marginBottom:16,
-          background:isFirstYear?"rgba(212,168,64,.06)":"rgba(13,115,119,.04)",
-          border:isFirstYear?"1px solid rgba(212,168,64,.2)":"1px solid rgba(13,115,119,.1)"}}>
-          <span style={{fontSize:14,flexShrink:0}}>{isFirstYear?"🆕":"🔄"}</span>
-          <div style={{flex:1,fontSize:12,color:"var(--tx2)"}}>
-            {isFirstYear
-              ?<><strong style={{color:"var(--gold)"}}>First year</strong> — renewal-only benefits (free nights, anniversary bonuses) are excluded from ROI</>
-              :<>This card has renewal-only benefits included in ROI</>}
+        <div style={{marginBottom:16,padding:"14px 16px",borderRadius:12,
+          background:isFirstYear?"rgba(212,168,64,.05)":"rgba(13,115,119,.03)",
+          border:isFirstYear?"1px solid rgba(212,168,64,.18)":"1px solid rgba(13,115,119,.1)"}}>
+          <div style={{fontSize:12,fontWeight:600,color:"var(--tx2)",marginBottom:10}}>Is this your first year with this card?</div>
+          <div style={{display:"flex",borderRadius:10,overflow:"hidden",border:"1.5px solid "+(isFirstYear?"var(--gold)":"var(--acc)"),background:"var(--bg)"}}>
+            <button onClick={()=>{
+              if(setFirstYearCards) setFirstYearCards(prev=>{const s=new Set(prev);s.add(card.id);return [...s];});
+            }} style={{flex:1,padding:"9px 0",fontSize:13,fontWeight:700,cursor:"pointer",border:"none",transition:"all .2s",
+              background:isFirstYear?"var(--gold)":"transparent",
+              color:isFirstYear?"#fff":"var(--tx3)"}}>
+              First Year
+            </button>
+            <button onClick={()=>{
+              if(setFirstYearCards) setFirstYearCards(prev=>{const s=new Set(prev);s.delete(card.id);return [...s];});
+            }} style={{flex:1,padding:"9px 0",fontSize:13,fontWeight:700,cursor:"pointer",border:"none",borderLeft:"1.5px solid "+(isFirstYear?"var(--gold)":"var(--acc)"),transition:"all .2s",
+              background:isFirstYear?"transparent":"var(--acc)",
+              color:isFirstYear?"var(--tx3)":"#fff"}}>
+              Renewal Year
+            </button>
           </div>
-          <button onClick={()=>{
-            if(setFirstYearCards) setFirstYearCards(prev=>{
-              const s=new Set(prev);
-              s.has(card.id)?s.delete(card.id):s.add(card.id);
-              return [...s];
-            });
-          }} style={{flexShrink:0,padding:"4px 10px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",
-            background:isFirstYear?"rgba(212,168,64,.12)":"rgba(13,115,119,.08)",
-            color:isFirstYear?"var(--gold)":"var(--acc)",
-            border:isFirstYear?"1px solid rgba(212,168,64,.25)":"1px solid rgba(13,115,119,.2)"}}>
-            {isFirstYear?"First Year":"Renewal Year"}
-          </button>
+          <div style={{fontSize:11,color:"var(--tx3)",marginTop:8,lineHeight:1.4}}>
+            {isFirstYear
+              ?"Renewal-only benefits (free nights, anniversary bonuses) are excluded from your ROI."
+              :"All benefits including renewal-only perks are counted in your ROI."}
+          </div>
         </div>
       )}
 
