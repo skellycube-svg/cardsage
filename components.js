@@ -2635,8 +2635,13 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
         const ecoData=eco?eco[1]:null;
         const isUnlocker=ecoData?ecoData.unlockers.includes(card.name):false;
         const allHHIds=[...myCards,...(householdSetup?p2Cards:[])];
-        const isOnlyUnlocker=isUnlocker&&ecoData?ecoData.unlockers.filter(u=>CARDS.some(c=>allHHIds.includes(c.id)&&c.name===u)).length===1:false;
+        // Detect partner's unlocker status in same ecosystem
+        const partnerUnlockerCard=isUnlocker&&ecoData&&householdSetup?p2Resolved.find(c=>ecoData.unlockers.includes(c.name)):null;
+        const partnerHasUnlocker=!!partnerUnlockerCard;
+        const hhUnlockerCount=isUnlocker&&ecoData?ecoData.unlockers.filter(u=>CARDS.some(c=>allHHIds.includes(c.id)&&c.name===u)).length:0;
+        const isOnlyUnlocker=isUnlocker&&hhUnlockerCount===1;
         const onlyCardInEco=ecoName?allHHIds.filter(id=>{const c=CARDS.find(x=>x.id===id);return c&&(ecoData.earners.includes(c.name)||ecoData.unlockers.includes(c.name));}).length===1:false;
+        const canShareHH=psr&&psr.canShareHousehold;
         const synergies=CARD_SYNERGIES[card.name]||[];
         const earnCats=Object.entries(card.earn||{}).filter(([k,v])=>k!=="o"&&parseFloat(String(v).replace(/[^0-9.]/g,""))>1);
         const hasTravelBens=(()=>{const allBens=[...card.annual,...card.monthly];return allBens.some(b=>{const n=(b.n||"").toLowerCase();return n.includes("lounge")||n.includes("travel credit")||n.includes("airline")||n.includes("global entry")||n.includes("tsa")||n.includes("hotel credit")||n.includes("trip");});})();
@@ -2781,7 +2786,8 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           }
 
           // Q2: Transfer partner multiplier
-          if(answers.transfer){
+          // Skip transfer bonus if partner already has an unlocker with sharing — the transfer access is redundant for THIS card
+          if(answers.transfer&&!(partnerHasUnlocker&&canShareHH)){
             const transferBonus=answers.transfer==="regular"?150:answers.transfer==="sometimes"?75:0;
             if(transferBonus>0){totalValue+=transferBonus;reasons.push("Transfer partner usage adds ~$"+transferBonus+"/yr in extra value vs cash back");}
             if(answers.transfer==="didnt_know"&&tpd){
@@ -2790,13 +2796,22 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             if(answers.transfer==="rarely"&&tpd){
               tips.push("Transferring to partners could boost your point value from "+tpd.cashValue+"c to "+tpd.transferValue+"c each. Consider trying before deciding.");
             }
+          } else if(answers.transfer&&partnerHasUnlocker&&canShareHH){
+            tips.push("You still get full transfer partner access through "+(p2Name||"partner")+"'s "+(partnerUnlockerCard?.short||partnerUnlockerCard?.name||"card")+" via household point combining.");
           }
 
           // Q4: Household redundancy discount
           if(answers.household==="dont_need"){
-            const discount=Math.round(totalValue*0.3);
-            totalValue-=discount;
-            reasons.push("Partner covers overlapping benefits (-$"+discount+" household redundancy)");
+            // If partner has an unlocker in same ecosystem with sharing, be much more aggressive
+            if(partnerHasUnlocker&&canShareHH){
+              const discount=Math.round(totalValue*0.7);
+              totalValue-=discount;
+              reasons.push("Partner covers overlapping benefits (-$"+discount+" household redundancy — transfer access is fully redundant)");
+            } else {
+              const discount=Math.round(totalValue*0.3);
+              totalValue-=discount;
+              reasons.push("Partner covers overlapping benefits (-$"+discount+" household redundancy)");
+            }
           }
 
           // Q5: Travel frequency scaling
@@ -2846,11 +2861,36 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             }
           }
 
-          // Only-unlocker ecosystem bonus
-          if(isOnlyUnlocker&&ecoName){
-            totalValue+=200;
-            reasons.push("This is your household's only "+ecoName.split(" ")[0]+" transfer unlocker (+$200 strategic value)");
-            warnings.push("Canceling drops ALL household "+ecoName+" points to cash value");
+          // Ecosystem unlocker analysis — household-aware
+          if(isUnlocker&&ecoName&&householdSetup){
+            if(partnerHasUnlocker&&canShareHH){
+              // Partner ALSO has an unlocker AND points can be shared — this card's transfer role is redundant
+              const freeEarner=ecoData.earners.find(e=>!ecoData.unlockers.includes(e));
+              const freeEarnerName=freeEarner?freeEarner.replace(/[®℠]/g,"").replace(/ Credit Card/,"").trim():"a free earner card";
+              const bestDg=downgrades.find(d=>d.annualFee===0)||downgrades[0];
+              const dgName=bestDg?bestDg.cardName:freeEarnerName;
+              const dgFee=bestDg?bestDg.annualFee:0;
+              const savings=card.fee-dgFee;
+              totalValue-=card.fee;
+              reasons.push((p2Name||"Partner")+"'s "+(partnerUnlockerCard.short||partnerUnlockerCard.name)+" already unlocks "+ecoName.split(" ")[0]+" transfer partners");
+              reasons.push(ecoName.split(" ")[0]+" allows household point combining — your points flow to "+(p2Name||"partner")+"'s account for the same transfer access");
+              if(savings>0) reasons.push("Downgrade to "+dgName+" ($"+dgFee+"/yr) and save $"+savings+"/yr with zero loss in transfer access");
+            } else if(partnerHasUnlocker&&!canShareHH){
+              // Partner has unlocker but can't share — both need their own
+              reasons.push("You both have "+ecoName.split(" ")[0]+" transfer access, but "+ecoName.split(" ")[0]+" doesn't allow household point combining — you each need your own unlocker");
+            } else if(isOnlyUnlocker){
+              // Only unlocker in household — card is essential
+              totalValue+=200;
+              reasons.push("This is your household's only "+ecoName.split(" ")[0]+" transfer unlocker (+$200 strategic value)");
+              warnings.push("Canceling drops ALL household "+ecoName+" points to cash value");
+            }
+          } else if(isUnlocker&&ecoName&&!householdSetup){
+            // Solo user — unlocker has strategic value
+            if(isOnlyUnlocker){
+              totalValue+=200;
+              reasons.push("This is your only "+ecoName.split(" ")[0]+" transfer unlocker (+$200 strategic value)");
+              warnings.push("Canceling drops ALL your "+ecoName+" points to cash value");
+            }
           }
 
           // Q7: Point balance risk
