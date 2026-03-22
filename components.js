@@ -2098,6 +2098,11 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
                     </div>
                   </div>
                 </div>
+                {dg.note&&(
+                  <div style={{padding:"6px 10px",borderRadius:8,background:"rgba(13,115,119,.05)",border:"1px solid rgba(13,115,119,.10)",marginBottom:8}}>
+                    <p style={{fontSize:11,color:"var(--acc)",margin:0,fontWeight:600,lineHeight:1.5}}>💡 {dg.note}</p>
+                  </div>
+                )}
                 {applyUrl&&(
                   <div>
                     <a href={applyUrl} target="_blank" rel="noopener noreferrer"
