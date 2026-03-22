@@ -2757,7 +2757,7 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
           // Amex/Bilt — can't share, warn about point stranding
           let detail=`Unlike Chase, ${ecoName} does NOT let household members combine or transfer points between each other. ${pos(soloOwner)} ${currency} points are locked to ${their(soloOwner)} account.`;
           if(onlyOneCard&&isMR){
-            detail+=` CRITICAL: If ${they(soloOwner)} cancel ${their(soloOwner)} ${solo[0].short||solo[0].name} without downgrading to a free Amex card (like EveryDay, $0/yr), ${they(soloOwner)} permanently lose ALL ${their(soloOwner)} Membership Rewards points.`;
+            detail+=` CRITICAL: If ${they(soloOwner)} cancel ${their(soloOwner)} ${solo[0]?.short||solo[0]?.name||"card"} without downgrading to a free Amex card (like EveryDay, $0/yr), ${they(soloOwner)} permanently lose ALL ${their(soloOwner)} Membership Rewards points.`;
           } else if(onlyOneCard){
             detail+=` If ${they(soloOwner)} cancel ${their(soloOwner)} only ${ecoName} card, ${they(soloOwner)} lose all accumulated ${ecoName} points.`;
           }
@@ -2766,7 +2766,7 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
         } else if(hasUnlocker){
           // Can share — note that other partner could add a free earner
           results.push({color:"teal",icon:"🟢",headline:`${ecoName} — ${soloOwner} Only`,
-            detail:`Only ${soloOwner} ${has(soloOwner)} ${ecoName} cards. Since ${ecoName} lets household members ${combineWord} points, ${otherOwner} could add a free ${freeEarnerName} ($0/yr) and ${combineWord} those points via ${pos(soloOwner)} ${soloUnlockers[0].short||soloUnlockers[0].name} — boosting household earn with no extra annual fee.`,
+            detail:`Only ${soloOwner} ${has(soloOwner)} ${ecoName} cards. Since ${ecoName} lets household members ${combineWord} points, ${otherOwner} could add a free ${freeEarnerName} ($0/yr) and ${combineWord} those points via ${pos(soloOwner)} ${soloUnlockers[0]?.short||soloUnlockers[0]?.name||"card"} — boosting household earn with no extra annual fee.`,
             badge:"Tip",cards:solo});
         }
         return;
@@ -2794,8 +2794,8 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
           const dg=expCard&&expCard.downgradePaths&&expCard.downgradePaths[0];
           const dgName=dg?dg.cardName:freeEarnerName;
           const dgFee=dg?dg.annualFee:0;
-          let detail=`You only need ONE unlocker card between you to unlock transfer partners for ALL your household ${ecoName} points. ${ecoName} lets household members at the same address ${combineWord} points, so ${pos(dropOwner)} points flow to ${pos(keepOwner)} ${cheapest.short||cheapest.name} for transfer partner access at ${transferVal} each instead of ${cashVal} cash.`;
-          detail+=` ${They(dropOwner)} can downgrade ${their(dropOwner)} ${expCard.short||expCard.name} to ${dgName} ($${dgFee}/yr) and save $${savings}/yr — ${they(dropOwner)}'ll still earn points and ${combineWord} them with ${pos(keepOwner)} account.`;
+          let detail=`You only need ONE unlocker card between you to unlock transfer partners for ALL your household ${ecoName} points. ${ecoName} lets household members at the same address ${combineWord} points, so ${pos(dropOwner)} points flow to ${pos(keepOwner)} ${cheapest?.short||cheapest?.name||"card"} for transfer partner access at ${transferVal} each instead of ${cashVal} cash.`;
+          detail+=` ${They(dropOwner)} can downgrade ${their(dropOwner)} ${expCard?.short||expCard?.name||"card"} to ${dgName} ($${dgFee}/yr) and save $${savings}/yr — ${they(dropOwner)}'ll still earn points and ${combineWord} them with ${pos(keepOwner)} account.`;
           detail+=` Just make sure at least one of you always keeps an unlocker card (${eco.unlockers.map(u=>u.replace(/®|℠/g,"").replace(/ Credit Card/,"").trim()).join(", ")}).`;
           results.push({color:"red",icon:"🔴",headline:`${ecoName} — Only Need One Unlocker`,detail,savings,badge:"Potential savings",cards:allCards});
         }
@@ -2805,10 +2805,10 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
           const earnerOwner=p1EarnOnly.length>0?"You":pn;
           const unlockerCard=p1Unlockers.length>0?p1Unlockers[0]:p2Unlockers[0];
           const earnerCards=p1EarnOnly.length>0?p1EarnOnly:p2EarnOnly;
-          const earnerNames=earnerCards.map(c=>c.short||c.name).join(" and ");
-          let detail=`${pos(unlockerOwner)} ${unlockerCard.short||unlockerCard.name} unlocks transfer partners for the entire household. ${pos(earnerOwner)} ${earnerNames} earn${earnerCards.length===1?"s":""} ${ecoName} points, and since ${ecoName} lets household members ${combineWord} points, those points flow to ${pos(unlockerOwner)} ${unlockerCard.short||unlockerCard.name} where they're worth ${transferVal} each instead of ${cashVal} cash.`;
-          detail+=` Your current setup is already the sweet spot — one unlocker (${pos(unlockerOwner)} ${unlockerCard.short||unlockerCard.name} at $${unlockerCard.fee}/yr) plus earner${earnerCards.length>1?"s":""} (${pos(earnerOwner)} ${earnerNames} at $${earnerCards.reduce((s,c)=>s+c.fee,0)}/yr). You don't need two unlocker cards.`;
-          detail+=` Don't cancel ${pos(unlockerOwner)} ${unlockerCard.short||unlockerCard.name} unless ${earnerOwner} ${earnerOwner==="You"?"get your":"gets their"} own unlocker first, or ALL household ${ecoName} points drop to ${cashVal} cash.`;
+          const earnerNames=earnerCards.map(c=>c?.short||c?.name||"card").join(" and ");
+          let detail=`${pos(unlockerOwner)} ${unlockerCard?.short||unlockerCard?.name||"card"} unlocks transfer partners for the entire household. ${pos(earnerOwner)} ${earnerNames} earn${earnerCards.length===1?"s":""} ${ecoName} points, and since ${ecoName} lets household members ${combineWord} points, those points flow to ${pos(unlockerOwner)} ${unlockerCard?.short||unlockerCard?.name||"card"} where they're worth ${transferVal} each instead of ${cashVal} cash.`;
+          detail+=` Your current setup is already the sweet spot — one unlocker (${pos(unlockerOwner)} ${unlockerCard?.short||unlockerCard?.name||"card"} at $${unlockerCard?.fee||0}/yr) plus earner${earnerCards.length>1?"s":""} (${pos(earnerOwner)} ${earnerNames} at $${earnerCards.reduce((s,c)=>s+(c?.fee||0),0)}/yr). You don't need two unlocker cards.`;
+          detail+=` Don't cancel ${pos(unlockerOwner)} ${unlockerCard?.short||unlockerCard?.name||"card"} unless ${earnerOwner} ${earnerOwner==="You"?"get your":"gets their"} own unlocker first, or ALL household ${ecoName} points drop to ${cashVal} cash.`;
           results.push({color:"teal",icon:"🟢",headline:`${ecoName} — Optimized`,detail,badge:"Optimized",cards:[...p1InEco,...p2InEco]});
         }
         // ── Case B variant: One unlocker only, other side has no eco earners ──
@@ -2817,7 +2817,7 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
           const otherOwner=p1Unlockers.length>0?pn:"You";
           const unlockerCard=p1Unlockers.length>0?p1Unlockers[0]:p2Unlockers[0];
           results.push({color:"teal",icon:"🟢",headline:`${ecoName} — ${unlockerOwner} Unlocks`,
-            detail:`${pos(unlockerOwner)} ${unlockerCard.short||unlockerCard.name} unlocks ${ecoName} transfer partners. ${otherOwner} could add a free ${freeEarnerName} ($0/yr) and ${combineWord} those points through ${pos(unlockerOwner)} account for ${transferVal} per point value — no extra annual fee needed.`,
+            detail:`${pos(unlockerOwner)} ${unlockerCard?.short||unlockerCard?.name||"card"} unlocks ${ecoName} transfer partners. ${otherOwner} could add a free ${freeEarnerName} ($0/yr) and ${combineWord} those points through ${pos(unlockerOwner)} account for ${transferVal} per point value — no extra annual fee needed.`,
             badge:"Tip",cards:p1Unlockers.length>0?p1InEco:p2InEco});
         }
         // Add deadline warning if applicable
@@ -2834,7 +2834,7 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
         if(isMR){
           [["You",p1InEco],[pn,p2InEco]].forEach(([owner,cards])=>{
             if(cards.length===1){
-              detail+=` CRITICAL: If ${they(owner)} cancel ${their(owner)} ${cards[0].short||cards[0].name} without downgrading to a free Amex card (like EveryDay, $0/yr), ${they(owner)} permanently lose ALL ${their(owner)} Membership Rewards points.`;
+              detail+=` CRITICAL: If ${they(owner)} cancel ${their(owner)} ${cards[0]?.short||cards[0]?.name||"card"} without downgrading to a free Amex card (like EveryDay, $0/yr), ${they(owner)} permanently lose ALL ${their(owner)} Membership Rewards points.`;
             }
           });
         }
@@ -2880,8 +2880,8 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
         const lowerCard=p1Status.tier>=p2Status.tier?p2Status.card:p1Status.card;
         const sameLevel=p1Status.tier===p2Status.tier;
         let detail=sameLevel
-          ?`You both have ${chain} ${higherStatus} — yours from the ${p1Status.card.short||p1Status.card.name}, ${pn}'s from the ${p2Status.card.short||p2Status.card.name}. ${cfg.redundancyNote} ${cfg.sharing}`
-          :`${higherOwner} ${has(higherOwner)} ${chain} ${higherStatus} (${higherCard.short||higherCard.name}), ${lowerOwner} ${has(lowerOwner)} ${chain} ${lowerStatus} (${lowerCard.short||lowerCard.name}). ${cfg.redundancyNote} ${cfg.sharing}`;
+          ?`You both have ${chain} ${higherStatus} — yours from the ${p1Status.card?.short||p1Status.card?.name||"card"}, ${pn}'s from the ${p2Status.card?.short||p2Status.card?.name||"card"}. ${cfg.redundancyNote} ${cfg.sharing}`
+          :`${higherOwner} ${has(higherOwner)} ${chain} ${higherStatus} (${higherCard?.short||higherCard?.name||"card"}), ${lowerOwner} ${has(lowerOwner)} ${chain} ${lowerStatus} (${lowerCard?.short||lowerCard?.name||"card"}). ${cfg.redundancyNote} ${cfg.sharing}`;
         results.push({color:"teal",icon:"🟢",headline:`${chain} Status — Both Covered`,detail,badge:"Optimized",
           cards:[p1Status.card,p2Status.card].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i)});
       }
@@ -2907,8 +2907,8 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
       if(shared.length>0){
         const p1Only=[...p1LoungeNames].filter(l=>!p2LoungeNames.has(l));
         const p2Only=[...p2LoungeNames].filter(l=>!p1LoungeNames.has(l));
-        const p1CardNames=p1Lounges.map(l=>l.card.short||l.card.name).join(", ");
-        const p2CardNames=p2Lounges.map(l=>l.card.short||l.card.name).join(", ");
+        const p1CardNames=p1Lounges.map(l=>l.card?.short||l.card?.name||"card").join(", ");
+        const p2CardNames=p2Lounges.map(l=>l.card?.short||l.card?.name||"card").join(", ");
         let detail=`You both have ${shared.join(" and ")} access — yours through ${p1CardNames}, ${pn}'s through ${p2CardNames}. Lounge access is per-cardholder, so this is useful when you travel separately — NOT redundant.`;
         if(p1Only.length>0) detail+=` You also get ${p1Only.join(", ")} which ${pn} doesn't have.`;
         if(p2Only.length>0) detail+=` ${pn} also gets ${p2Only.join(", ")} which you don't have.`;
@@ -2984,7 +2984,7 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
             const topRate=topCard.earn&&topCard.earn[catKey]?topCard.earn[catKey]:"top";
             suggs.push({
               type:"gap",
-              text:`Neither partner has a strong ${catLabel.toLowerCase()} card. The ${topCard.short||topCard.name} earns ${topRate}x on ${catLabel.toLowerCase()}.`,
+              text:`Neither partner has a strong ${catLabel.toLowerCase()} card. The ${topCard?.short||topCard?.name||"card"} earns ${topRate}x on ${catLabel.toLowerCase()}.`,
               card:topCard
             });
           }
@@ -2994,7 +2994,8 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
 
     // Check for redundant ecosystems where one could downgrade
     insights.filter(r=>r.color==="red"&&r.savings).forEach(r=>{
-      const card=r.cards[0];
+      const card=r.cards&&r.cards[0];
+      if(!card) return;
       const paths=card.downgradePaths;
       if(paths&&paths.length>0){
         const best=paths[0];
@@ -3004,8 +3005,8 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
           :"";
         suggs.push({
           type:"downgrade",
-          text:`${p2Name||"P2"} should downgrade their ${card.short||card.name} to ${best.cardName} — ${p2Name?"they":"P2"} save${p2Name?"s":""} $${card.fee-best.annualFee}/yr.${sharingNote}`,
-          card:null
+          text:`${p2Name||"P2"} should downgrade their ${card?.short||card?.name||"card"} to ${best.cardName} — ${p2Name?"they":"P2"} save${p2Name?"s":""} $${card.fee-best.annualFee}/yr.${sharingNote}`,
+          card:card||null
         });
       }
     });
@@ -3245,9 +3246,9 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
                   {ins.savings&&typeof ins.savings==="string"&&(
                     <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,background:"rgba(22,163,74,.08)",border:"1px solid rgba(22,163,74,.15)",color:"var(--grn2)",whiteSpace:"nowrap"}}>{ins.savings}</span>
                   )}
-                  {ins.cards&&ins.cards.length>0&&ins.cards.map(c=>{
+                  {ins.cards&&ins.cards.length>0&&ins.cards.filter(Boolean).map(c=>{
                     const p=getIssuerPalette(c.issuer);
-                    return <span key={c.id} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:p.tint,color:p.text,border:`1px solid ${p.text}15`}}>{c.short||c.name}</span>;
+                    return <span key={c.id} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:p.tint,color:p.text,border:`1px solid ${p.text}15`}}>{c?.short||c?.name||"Card"}</span>;
                   })}
                 </div>
               </div>
@@ -3271,8 +3272,8 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
                 {s.card&&(
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:applyUrl?10:0}}>
                     <div style={{width:30,height:18,borderRadius:4,background:`linear-gradient(135deg,${s.card.c1},${s.card.c2})`,flexShrink:0,boxShadow:"0 1px 3px rgba(0,0,0,.1)"}}/>
-                    <span style={{fontSize:12,fontWeight:600,color:"var(--tx)"}}>{s.card.short||s.card.name}</span>
-                    <span style={{fontSize:10,color:"var(--tx3)"}}>{s.card.fee===0?"No fee":"$"+s.card.fee+"/yr"}</span>
+                    <span style={{fontSize:12,fontWeight:600,color:"var(--tx)"}}>{s.card?.short||s.card?.name||"Card"}</span>
+                    <span style={{fontSize:10,color:"var(--tx3)"}}>{s.card?.fee===0?"No fee":"$"+(s.card?.fee||0)+"/yr"}</span>
                   </div>
                 )}
                 {applyUrl&&(
@@ -3320,7 +3321,7 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
                       {row.p1Best?(
                         <div>
                           <div style={{fontSize:11,fontWeight:row.winner==="p1"?700:400,color:row.winner==="p1"?"var(--grn2)":"var(--tx3)"}}>{row.p1Rate}x</div>
-                          <div style={{fontSize:11,color:"#6b7280",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}>{row.p1Best.short||row.p1Best.name}</div>
+                          <div style={{fontSize:11,color:"#6b7280",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}>{row.p1Best?.short||row.p1Best?.name||"Card"}</div>
                         </div>
                       ):<span style={{color:"var(--tx4)"}}>—</span>}
                     </td>
@@ -3328,7 +3329,7 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
                       {row.p2Best?(
                         <div>
                           <div style={{fontSize:11,fontWeight:row.winner==="p2"?700:400,color:row.winner==="p2"?"var(--grn2)":"var(--tx3)"}}>{row.p2Rate}x</div>
-                          <div style={{fontSize:11,color:"#6b7280",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}>{row.p2Best.short||row.p2Best.name}</div>
+                          <div style={{fontSize:11,color:"#6b7280",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}>{row.p2Best?.short||row.p2Best?.name||"Card"}</div>
                         </div>
                       ):<span style={{color:"var(--tx4)"}}>—</span>}
                     </td>
