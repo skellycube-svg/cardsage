@@ -23,7 +23,7 @@ const BCAT={
 // signup (the welcome bonus offer), and earn (reward rates for each spending category).
 const CARDS=[
 // ── CHASE ──────────────────────────────────────────────────────────────────────
-{id:"csr",name:"Chase Sapphire Reserve",short:"Sapphire Reserve",issuer:"Chase",isBiz:false,fee:795,network:"Visa",cur:"Chase Ultimate Rewards",c1:"#1a1a2e",c2:"#4a3728",
+{id:"csr",name:"Chase Sapphire Reserve",short:"Sapphire Reserve",issuer:"Chase",isBiz:false,fee:795,network:"Visa",cur:"Chase Ultimate Rewards",c1:"#1a1a2e",c2:"#4a3728",hiddenValue:HIDDEN_VALUES["Chase Sapphire Reserve"],
  partners:["Hyatt","United","Southwest","Singapore Airlines","Air France/KLM","British Airways","Virgin Atlantic","Marriott","Iberia","Emirates","Air Canada"],
  annual:[{n:"$300 Travel Credit",v:300,d:"Auto-applied to ANY travel — Uber, parking, tolls, Airbnb, rental cars. Very broad.",cat:"travel",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:""},{n:"$500 The Edit Hotel Credit",v:500,d:"$500 annually for prepaid bookings at The Edit by Chase Travel luxury hotels (2-night minimum).",cat:"travel",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:"https://www.chase.com/personal/sapphire-travel"},{n:"$150 Dining Credit",v:150,d:"$150 Jan–Jun + $150 Jul–Dec at Sapphire Reserve Exclusive Tables restaurants.",cat:"dining",type:"credit",reset:"semi-annual",enroll:false,enrollUrl:"",useUrl:""},{n:"$150 StubHub Credit",v:150,d:"$150 Jan–Jun + $150 Jul–Dec for purchases on StubHub.com and viagogo.com.",cat:"entertainment",type:"credit",reset:"semi-annual",enroll:false,enrollUrl:"",useUrl:"https://www.stubhub.com"},{n:"$288 Apple TV+ & Music",v:288,d:"Complimentary Apple TV+ and Apple Music subscriptions (through 6/22/2027).",cat:"entertainment",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:""},{n:"IHG Platinum Elite Status",v:null,d:"Complimentary IHG One Rewards Platinum Elite status through December 31, 2027. Activate by linking your IHG membership in your Chase account.",cat:"status",type:"perk",reset:"annual",enroll:true,enrollUrl:"https://account.chase.com/sapphire/reserve/benefits",useUrl:"https://www.ihg.com"},{n:"$250 Hotel Credit",v:250,d:"Up to $250 in statement credits (through 12/31/2026) on prepaid Chase Travel hotel stays at IHG, Montage, Pendry, Omni, Virgin Hotels, Minor Hotels, and Pan Pacific. 2-night minimum.",cat:"travel",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:"https://www.chase.com/personal/sapphire-travel"},{n:"$120 Peloton Credit",v:120,d:"Up to $120 in annual statement credits toward Peloton memberships.",cat:"statement",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:"https://www.onepeloton.com"},{n:"Global Entry/TSA PreCheck",v:120,d:"Up to $120 reimbursement for Global Entry, TSA PreCheck, or NEXUS every 4 years.",cat:"travel",type:"credit",reset:"annual",enroll:false,enrollUrl:"https://ttp.cbp.dhs.gov",useUrl:""},{n:"Priority Pass Lounge",v:null,d:"Unlimited visits at 1,300+ Priority Pass lounges + Chase Sapphire Lounge network. Guests $35 each.",cat:"status",type:"perk",reset:"annual",enroll:false,enrollUrl:"",useUrl:"https://www.prioritypass.com"},{n:"Purchase Protection",v:null,d:"Covers new purchases against damage or theft for 120 days, up to $10,000 per claim ($50,000/year).",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Extended Warranty",v:null,d:"Adds 1 extra year to manufacturer warranties of 3 years or less.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Trip Cancellation/Interruption",v:null,d:"Up to $10,000 per person, $20,000 per trip for non-refundable travel expenses.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Trip Delay Reimbursement",v:null,d:"Up to $500 per traveler after 6-hour delay for meals, lodging, and essentials.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Baggage Delay Insurance",v:null,d:"Up to $100/day for 5 days for essentials when baggage is delayed 6+ hours.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Lost Luggage Reimbursement",v:null,d:"Up to $3,000 per traveler for lost, damaged, or stolen baggage.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Primary Car Rental Insurance",v:null,d:"Primary CDW coverage up to $75,000 for theft/collision on rental vehicles.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Travel Accident Insurance",v:null,d:"Up to $1,000,000 in accidental death/dismemberment coverage on common carriers.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""}],
  monthly:[{n:"DoorDash Credit",v:25,d:"$25/month in DoorDash promos: $5 on restaurant orders + two $10 on groceries/retail ($300/year). Includes complimentary DashPass ($120 value). Credits expire monthly — use them or lose them!",cat:"dining",type:"credit",reset:"monthly",enroll:false,enrollUrl:"",useUrl:"https://www.doordash.com"},{n:"$10 Lyft Credit",v:10,d:"$10/month in Lyft in-app credits ($120/year) + 5x points on Lyft rides.",cat:"travel",type:"credit",reset:"monthly",enroll:false,enrollUrl:"",useUrl:"https://www.lyft.com"}],
@@ -34,7 +34,7 @@ const CARDS=[
  ifYouCancel:{"pointsFate":"Points don't expire but you lose ability to transfer to airline/hotel partners unless you have another Sapphire or Ink Preferred card. Redeem or transfer before canceling.","loseAccess":["Priority Pass lounge access","$300 annual travel credit","DoorDash DashPass + credits","Lyft Pink membership","10x on hotels via Chase Travel","Trip cancellation/delay insurance","Primary rental car insurance"]},
  portalEarn:{portal:"Chase Travel",portalUrl:"https://ultimaterewardspoints.chase.com",rates:{f:"5x",h:"10x",car:"10x",t:"3x"},note:"10x on hotels & car rentals, 5x on flights booked through Chase Travel portal. 3x on all other travel booked directly."},
  confidence:"verified"},
-{id:"csp",name:"Chase Sapphire Preferred",short:"Sapphire Preferred",issuer:"Chase",isBiz:false,fee:95,network:"Visa",cur:"Chase Ultimate Rewards",c1:"#1a3a5c",c2:"#0f2236",
+{id:"csp",name:"Chase Sapphire Preferred",short:"Sapphire Preferred",issuer:"Chase",isBiz:false,fee:95,network:"Visa",cur:"Chase Ultimate Rewards",c1:"#1a3a5c",c2:"#0f2236",hiddenValue:HIDDEN_VALUES["Chase Sapphire Preferred"],
  partners:["Hyatt","United","Southwest","Singapore Airlines","Air France/KLM","British Airways","Virgin Atlantic","Marriott","Iberia","Emirates","Air Canada"],
  annual:[{n:"$50 Hotel Credit",v:50,d:"$50 on hotel stays via Chase Travel portal annually.",cat:"travel",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:"https://www.chase.com/personal/sapphire-travel"},{n:"Purchase Protection",v:null,d:"Covers new purchases against damage or theft for 120 days, up to $500 per claim ($50,000/year).",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Extended Warranty",v:null,d:"Adds 1 extra year to manufacturer warranties of 3 years or less.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Trip Cancellation/Interruption",v:null,d:"Up to $10,000 per person, $20,000 per trip for non-refundable travel expenses.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Trip Delay Reimbursement",v:null,d:"Up to $500 per traveler after 12-hour delay for meals, lodging, and essentials.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Baggage Delay Insurance",v:null,d:"Up to $100/day for 5 days for essentials when baggage is delayed 6+ hours.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Lost Luggage Reimbursement",v:null,d:"Up to $3,000 per traveler for lost, damaged, or stolen baggage.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Primary Car Rental Insurance",v:null,d:"Primary CDW coverage up to $60,000 for theft/collision on rental vehicles.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Travel Accident Insurance",v:null,d:"Up to $500,000 in accidental death/dismemberment coverage on common carriers.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""}],
  monthly:[],strat:["chase-trifecta"],signup:"75,000 pts after $5k in 3 mo",
@@ -56,7 +56,7 @@ const CARDS=[
  retentionOffers:[],
  downgradePaths:[],
  ifYouCancel:null},
-{id:"hyatt",name:"World of Hyatt Card",short:"Hyatt Card",issuer:"Chase",isBiz:false,fee:95,network:"Visa",cur:"Hyatt Points",c1:"#1a1a1a",c2:"#2d1a3a",
+{id:"hyatt",name:"World of Hyatt Card",short:"Hyatt Card",issuer:"Chase",isBiz:false,fee:95,network:"Visa",cur:"Hyatt Points",c1:"#1a1a1a",c2:"#2d1a3a",hiddenValue:HIDDEN_VALUES["World of Hyatt Card"],
  partners:["World of Hyatt"],
  annual:[{n:"Free Night Award",v:150,d:"1 free night at any Category 1–4 Hyatt property each year.",cat:"awards",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:"https://www.hyatt.com"},{n:"Discoverist Status",v:null,d:"Automatic Discoverist — early check-in, late checkout, bonus points.",cat:"status",type:"perk",reset:"annual",enroll:false,enrollUrl:"",useUrl:""},{n:"Purchase Protection",v:null,d:"Covers new purchases against damage or theft for 120 days, up to $500 per claim.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Extended Warranty",v:null,d:"Adds 1 extra year to manufacturer warranties of 3 years or less.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Trip Cancellation/Interruption",v:null,d:"Up to $5,000 per person, $10,000 per trip for non-refundable travel expenses.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Baggage Delay Insurance",v:null,d:"Up to $100/day for 3 days for essentials when baggage is delayed 6+ hours.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Lost Luggage Reimbursement",v:null,d:"Up to $3,000 per traveler for lost, damaged, or stolen baggage.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""}],
  monthly:[],strat:[],signup:"30,000 pts after $3k in 3 mo",
@@ -71,7 +71,7 @@ const CARDS=[
  retentionOffers:["$50–$100 statement credit","3,000–5,000 bonus Rapid Rewards points"],
  downgradePaths:[{"cardName":"Southwest Rapid Rewards Plus","annualFee":69,"whatYouKeep":"Rapid Rewards points, anniversary bonus (reduced to 3,000)","whatYouLose":"$75 Southwest credit, 4 upgraded boardings, reduced anniversary bonus (7,500→3,000)","affiliateKey":null}],
  ifYouCancel:{"pointsFate":"Southwest points don't expire as long as you have earning/redeeming activity every 24 months.","loseAccess":["7,500 anniversary points","$75 annual Southwest credit","4 upgraded boardings per year","25% back on inflight purchases"]}},
-{id:"marriott-boundless",name:"Marriott Bonvoy Boundless®",short:"Marriott Boundless",issuer:"Chase",isBiz:false,fee:95,network:"Visa",cur:"Marriott Bonvoy Points",c1:"#8B1A1A",c2:"#5c0f0f",
+{id:"marriott-boundless",name:"Marriott Bonvoy Boundless®",short:"Marriott Boundless",issuer:"Chase",isBiz:false,fee:95,network:"Visa",cur:"Marriott Bonvoy Points",c1:"#8B1A1A",c2:"#5c0f0f",hiddenValue:HIDDEN_VALUES["Marriott Bonvoy Boundless®"],
  annual:[{n:"Free Night Award",v:150,d:"1 free night at hotels up to 35,000 points annually.",cat:"awards",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:""},{n:"Silver Elite Status",v:null,d:"Automatic Silver Elite status.",cat:"status",type:"perk",reset:"annual",enroll:false,enrollUrl:"",useUrl:""}],
  monthly:[],strat:[],signup:"5 Free Nights after $5k in 3 mo",
  earn:{d:"2x",g:"6x",gas:"2x",t:"3x",s:"1x",a:"1x",tr:"1x",p:"1x",o:"2x"},confidence:"verified",
@@ -107,7 +107,7 @@ const CARDS=[
  downgradePaths:[],
  ifYouCancel:null},
 // ── AMEX ───────────────────────────────────────────────────────────────────────
-{id:"amex-plat",name:"The Platinum Card® from American Express",short:"Amex Platinum",issuer:"American Express",isBiz:false,fee:895,network:"Amex",cur:"Amex Membership Rewards",c1:"#1c1c1c",c2:"#4a4a4a",
+{id:"amex-plat",name:"The Platinum Card® from American Express",short:"Amex Platinum",issuer:"American Express",isBiz:false,fee:895,network:"Amex",cur:"Amex Membership Rewards",c1:"#1c1c1c",c2:"#4a4a4a",hiddenValue:HIDDEN_VALUES["The Platinum Card® from American Express"],
  partners:["Air France/KLM Flying Blue","ANA","British Airways","Avianca LifeMiles","Cathay Pacific (5:4)","Delta","Emirates (5:4)","Singapore Airlines","Virgin Atlantic","Hilton","Marriott"],
  annual:[
   {n:"$200 Airline Fee Credit",v:200,d:"Select ONE airline. Covers incidental fees (bags, upgrades). Must select your airline!",cat:"travel",type:"credit",reset:"annual",enroll:true,enrollUrl:"https://www.americanexpress.com/en-us/benefits/",useUrl:""},
@@ -133,7 +133,7 @@ const CARDS=[
  ifYouCancel:{"pointsFate":"If this is your ONLY MR-earning card, you lose ALL Membership Rewards points. Transfer or downgrade to EveryDay/Green first to preserve points.","loseAccess":["$200 airline incidental credit","$200 hotel credit (FHR/THC)","$200 Uber credit","$155 Walmart+ credit","Priority Pass + Centurion Lounge access","$100 Saks credit","Clear Plus membership","Global Entry/TSA PreCheck credit","5x on flights booked direct","Cell phone protection","Extensive travel insurance"]},
  portalEarn:{portal:"Amex Travel",portalUrl:"https://travel.amex.com",rates:{f:"5x",h:"5x",t:"1x"},note:"5x on flights and prepaid hotels booked through Amex Travel. Only 1x on travel booked directly outside the portal."},
  confidence:"verified"},
-{id:"amex-gold",name:"American Express® Gold Card",short:"Amex Gold",issuer:"American Express",isBiz:false,fee:325,network:"Amex",cur:"Amex Membership Rewards",c1:"#8B6914",c2:"#5c4411",
+{id:"amex-gold",name:"American Express® Gold Card",short:"Amex Gold",issuer:"American Express",isBiz:false,fee:325,network:"Amex",cur:"Amex Membership Rewards",c1:"#8B6914",c2:"#5c4411",hiddenValue:HIDDEN_VALUES["American Express® Gold Card"],
  partners:["Air France/KLM Flying Blue","ANA","British Airways","Avianca LifeMiles","Cathay Pacific (5:4)","Delta","Emirates (5:4)","Singapore Airlines","Virgin Atlantic","Hilton","Marriott"],
  annual:[{n:"$50 Resy Credit",v:50,d:"$50 Jan–Jun + $50 Jul–Dec for in-person dining at U.S. Resy restaurants. Must enroll!",cat:"dining",type:"credit",reset:"semi-annual",enroll:true,enrollUrl:"https://www.americanexpress.com/en-us/benefits/",useUrl:"https://www.resy.com"},{n:"$84 Dunkin' Credit",v:84,d:"Up to $7/month at Dunkin' locations. Must enroll!",cat:"dining",type:"credit",reset:"annual",enroll:true,enrollUrl:"https://www.americanexpress.com/en-us/benefits/",useUrl:""},{n:"Purchase Protection",v:null,d:"Covers new purchases against damage or theft for 90 days, up to $10,000 per claim ($50,000/year).",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Extended Warranty",v:null,d:"Adds 1 extra year to manufacturer warranties of 5 years or less, up to $10,000 per item.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Return Protection",v:null,d:"Returns eligible items within 90 days if retailer won't accept, up to $300/item ($1,000/year).",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Trip Delay Reimbursement",v:null,d:"Up to $300 per trip after 12-hour delay for meals, lodging, and essentials.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Secondary Car Rental Insurance",v:null,d:"Secondary coverage up to $50,000 for theft/damage to rental vehicles when you decline the CDW.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Baggage Insurance",v:null,d:"Up to $1,250 for carry-on, $500 for checked bags per person for lost/damaged/stolen luggage.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""}],
  monthly:[{n:"$10 Dining Credit",v:10,d:"At Grubhub, Cheesecake Factory, Goldbelly, Wine.com, Five Guys. Must enroll!",cat:"dining",type:"credit",reset:"monthly",enroll:true,enrollUrl:"https://www.americanexpress.com/en-us/benefits/",useUrl:""},{n:"$10 Uber Cash",v:10,d:"For Uber rides or Uber Eats. Expires monthly!",cat:"statement",type:"credit",reset:"monthly",enroll:false,enrollUrl:"",useUrl:"https://www.uber.com"},{n:"$7 Dunkin' Credit",v:7,d:"$7/month at Dunkin' locations. Must enroll!",cat:"dining",type:"credit",reset:"monthly",enroll:true,enrollUrl:"https://www.americanexpress.com/en-us/benefits/",useUrl:""}],
@@ -151,7 +151,7 @@ const CARDS=[
  retentionOffers:[],
  downgradePaths:[],
  ifYouCancel:null},
-{id:"hilton-aspire",name:"Hilton Honors American Express Aspire Card",short:"Hilton Aspire",issuer:"American Express",isBiz:false,fee:550,network:"Amex",cur:"Hilton Honors Points",c1:"#1a3a6e",c2:"#0f2244",
+{id:"hilton-aspire",name:"Hilton Honors American Express Aspire Card",short:"Hilton Aspire",issuer:"American Express",isBiz:false,fee:550,network:"Amex",cur:"Hilton Honors Points",c1:"#1a3a6e",c2:"#0f2244",hiddenValue:HIDDEN_VALUES["Hilton Honors American Express Aspire Card"],
  annual:[{n:"Hilton Resort Credit",v:200,d:"$200 semi-annual credit on qualifying hotel charges at Hilton Resorts. Use by June 30 (H1) and December 31 (H2).",cat:"travel",type:"credit",reset:"semi-annual",label:"per 6 months",enrollUrl:"",useUrl:"https://www.hilton.com"},{n:"$50 Flight Credit",v:50,d:"Up to $50/quarter ($200/year) toward flights booked directly with airlines or via amextravel.com.",cat:"travel",type:"credit",reset:"quarterly",enroll:false,enrollUrl:"",useUrl:""},{n:"$100 Waldorf/Conrad Credit",v:100,d:"$100 credit on qualifying stays at Waldorf Astoria and Conrad hotels (2-night minimum).",cat:"travel",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:"https://www.hilton.com"},{n:"Free Weekend Night",v:200,d:"1 free weekend night award each year at any Hilton.",cat:"awards",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:"https://www.hilton.com"},{n:"Diamond Status",v:null,d:"Automatic Diamond — complimentary breakfast, lounge access, upgrades.",cat:"status",type:"perk",reset:"annual",enroll:false,enrollUrl:"",useUrl:""},{n:"$209 CLEAR+ Credit",v:209,d:"Up to $209/year for a CLEAR+ membership (enrollment required).",cat:"travel",type:"credit",reset:"annual",enroll:true,enrollUrl:"https://www.clearme.com",useUrl:""},{n:"Purchase Protection",v:null,d:"Covers new purchases against damage or theft for 90 days, up to $10,000 per claim ($50,000/year).",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Extended Warranty",v:null,d:"Adds 1 extra year to manufacturer warranties of 5 years or less, up to $10,000 per item.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Return Protection",v:null,d:"Returns eligible items within 90 days if retailer won't accept, up to $300/item ($1,000/year).",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Trip Cancellation/Interruption",v:null,d:"Up to $10,000 per trip, $20,000 per card per 12 months for non-refundable travel expenses.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Secondary Car Rental Insurance",v:null,d:"Secondary coverage up to $75,000 for theft/damage to rental vehicles when you decline the CDW.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""}],
  monthly:[],strat:[],signup:"175,000 pts after $6k in 6 mo",
  earn:{d:"7x",g:"3x",gas:"3x",t:"7x",s:"3x",a:"3x",tr:"3x",p:"3x",o:"3x"},confidence:"verified",
@@ -180,7 +180,7 @@ const CARDS=[
  downgradePaths:[],
  ifYouCancel:null},
 // ── CAPITAL ONE ────────────────────────────────────────────────────────────────
-{id:"venture-x",name:"Capital One Venture X Rewards Credit Card",short:"Venture X",issuer:"Capital One",isBiz:false,fee:395,network:"Visa",cur:"Capital One Miles",c1:"#8B1010",c2:"#5c0808",
+{id:"venture-x",name:"Capital One Venture X Rewards Credit Card",short:"Venture X",issuer:"Capital One",isBiz:false,fee:395,network:"Visa",cur:"Capital One Miles",c1:"#8B1010",c2:"#5c0808",hiddenValue:HIDDEN_VALUES["Capital One Venture X Rewards Credit Card"],
  partners:["Air France/KLM Flying Blue","Turkish Miles&Smiles","Avianca LifeMiles","Singapore Airlines","British Airways","Wyndham","Choice Hotels"],
  annual:[{n:"$300 Travel Credit",v:300,d:"$300 annual credit on Capital One Travel portal bookings.",cat:"travel",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:"https://travel.capitalone.com"},{n:"10,000 Anniversary Miles",v:100,d:"10,000 bonus miles each account anniversary — worth $100 in travel.",cat:"awards",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:""},{n:"Capital One Lounge Access",v:null,d:"Access to Capital One Lounges + 1,300+ Priority Pass lounges. C1 Lounge guests: $45/adult, $25/child. Priority Pass guests: $35 each. AU lounge access: $125/year. Free guest access at $75k+ annual spend.",cat:"status",type:"perk",reset:"annual",enroll:false,enrollUrl:"",useUrl:"https://www.prioritypass.com"},{n:"Cell Phone Protection",v:null,d:"Up to $800 coverage ($50 deductible) when you pay phone bill with card. 2 claims per 12 months.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Purchase Protection",v:null,d:"Covers new purchases against damage or theft for 120 days, up to $10,000 per claim ($50,000/year).",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Return Protection",v:null,d:"90-day return protection on qualifying purchases if retailer won't accept the return.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Extended Warranty",v:null,d:"Adds 1 extra year to manufacturer warranties of 3 years or less, up to $10,000 per claim.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Trip Cancellation/Interruption",v:null,d:"Up to $2,000 per person for prepaid, non-refundable travel expenses due to covered reasons.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Trip Delay Reimbursement",v:null,d:"Up to $500 per person after 6-hour delay or required overnight stay for meals, lodging.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Lost Luggage Reimbursement",v:null,d:"Up to $3,000 per trip for lost or damaged checked baggage.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Primary Car Rental Insurance",v:null,d:"Primary CDW coverage up to $75,000 for theft/collision on rental vehicles.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Travel Accident Insurance",v:null,d:"Up to $1,000,000 in accidental death/dismemberment coverage on common carriers.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""}],
  monthly:[],strat:["c1-duo"],signup:"75,000 miles after $4k in 3 mo",
@@ -212,7 +212,7 @@ const CARDS=[
  downgradePaths:[],
  ifYouCancel:null},
 // ── CITI ───────────────────────────────────────────────────────────────────────
-{id:"citi-premier",name:"Citi Strata Premier℠ Card",short:"Citi Strata Premier",issuer:"Citi",isBiz:false,fee:95,network:"Mastercard",cur:"Citi ThankYou Points",c1:"#003087",c2:"#001a52",
+{id:"citi-premier",name:"Citi Strata Premier℠ Card",short:"Citi Strata Premier",issuer:"Citi",isBiz:false,fee:95,network:"Mastercard",cur:"Citi ThankYou Points",c1:"#003087",c2:"#001a52",hiddenValue:HIDDEN_VALUES["Citi Strata Premier℠ Card"],
  partners:["Air France/KLM Flying Blue","Avianca LifeMiles","Turkish Miles&Smiles","Singapore Airlines","Cathay Pacific","Qatar Airways","Emirates","Virgin Atlantic"],
  annual:[{n:"$100 Hotel Savings",v:100,d:"$100 off hotel stay of $500+ via Citi Travel annually.",cat:"travel",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:""}],
  monthly:[],strat:["citi-duo"],signup:"60,000 pts after $4k in 3 mo",
@@ -233,7 +233,7 @@ const CARDS=[
  downgradePaths:[],
  ifYouCancel:null},
 // ── BILT ───────────────────────────────────────────────────────────────────────
-{id:"bilt",name:"Bilt Mastercard®",short:"Bilt",issuer:"Cardless",isBiz:false,fee:0,network:"Mastercard",cur:"Bilt Points",c1:"#0f0f0f",c2:"#2d2d2d",
+{id:"bilt",name:"Bilt Mastercard®",short:"Bilt",issuer:"Cardless",isBiz:false,fee:0,network:"Mastercard",cur:"Bilt Points",c1:"#0f0f0f",c2:"#2d2d2d",hiddenValue:HIDDEN_VALUES["Bilt Mastercard®"],
  partners:["Air France/KLM Flying Blue","American Airlines","British Airways","Emirates","Singapore Airlines","Turkish","United","Hyatt","IHG"],
  annual:[{n:"Cell Phone Protection",v:null,d:"Up to $800 coverage ($25 deductible) when you pay phone bill with card. 2 claims per 12 months.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Purchase Protection",v:null,d:"Covers new purchases against damage or theft for 90 days, up to $1,000 per claim ($10,000/year).",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Extended Warranty",v:null,d:"Adds 1 extra year to manufacturer warranties of 3 years or less, up to $1,000 per claim.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Trip Cancellation/Interruption",v:null,d:"Up to $5,000 per person for non-refundable common carrier tickets due to covered reasons.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Auto Rental CDW",v:null,d:"Coverage up to $50,000 for theft/collision damage on rental vehicles up to 31 days.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""}],monthly:[],strat:[],signup:"No signup bonus",
  earn:{d:"1x",g:"1x",gas:"1x",t:"1x",s:"1x",a:"1x",tr:"1x",p:"1x",o:"1x"},confidence:"verified",
@@ -1201,6 +1201,206 @@ const ISSUER_PHONES={
 /* RETENTION SCRIPT — universal template for calling to request a retention offer */
 const RETENTION_SCRIPT="Hi, I'm calling about my [CARD_NAME]. My annual fee is coming up and I'm considering whether to keep the card. I've enjoyed being a cardholder, but I want to make sure I'm getting good value for the fee. Is there anything you can offer — like a statement credit or bonus points — that might help me decide to keep it?";
 
+/* ── HIDDEN VALUE DATA ─────────────────────────────────────────────────────── */
+
+const HIDDEN_VALUE_CATEGORIES={
+  transferPartners:{label:"Transfer Partner Access",icon:"🔄",description:"Points can be transferred to airline/hotel partners at ratios that often deliver 2-5x the value of cash back redemptions."},
+  insurance:{label:"Built-in Insurance",icon:"🛡️",description:"Coverage you'd otherwise pay for separately — rental car, trip delay, lost luggage, purchase protection, cell phone."},
+  eliteStatus:{label:"Hotel/Airline Elite Status",icon:"⭐",description:"Complimentary elite status means room upgrades, late checkout, bonus points, and priority service."},
+  loungeAccess:{label:"Airport Lounge Access",icon:"✈️",description:"Free food, drinks, WiFi, and quiet space at the airport. A single lounge visit is worth $30-50."},
+  concierge:{label:"Concierge & Experiences",icon:"🎩",description:"24/7 concierge service, exclusive event access, and restaurant reservations at hard-to-book spots."},
+  purchaseProtection:{label:"Purchase & Return Protection",icon:"🔒",description:"Items bought with the card are protected against damage, theft, and sometimes price drops."},
+  creditScore:{label:"Credit Profile Benefits",icon:"📊",description:"Keeping old cards open maintains credit history length and available credit, both boosting your score."}
+};
+
+const TRANSFER_PARTNER_DATA={
+  "Chase Ultimate Rewards":{cashValue:1.0,portalValue:1.25,transferValue:2.05,bestCase:5.0,topPartners:[
+    {name:"World of Hyatt",ratio:"1:1",cpp:"2-3cpp",sweetSpot:"Cat 1-4 in expensive cities"},
+    {name:"United",ratio:"1:1",cpp:"1.5-2cpp",sweetSpot:"Saver awards long-haul"},
+    {name:"Southwest",ratio:"1:1",cpp:"1.3-1.5cpp",sweetSpot:"Companion Pass stacking"},
+    {name:"Virgin Atlantic",ratio:"1:1",cpp:"2-4cpp",sweetSpot:"ANA first class via Virgin"},
+    {name:"Air France/KLM",ratio:"1:1",cpp:"1.5-2.5cpp",sweetSpot:"Promo awards to Europe"},
+    {name:"British Airways",ratio:"1:1",cpp:"1.5-3cpp",sweetSpot:"Short-haul domestic, Qatar Qsuite"},
+    {name:"IHG",ratio:"1:1",cpp:"0.5-0.7cpp",sweetSpot:"4th night free"},
+    {name:"Marriott",ratio:"1:1",cpp:"0.7-1cpp",sweetSpot:"5th night free, off-peak"}
+  ]},
+  "Amex Membership Rewards":{cashValue:0.6,portalValue:1.0,transferValue:2.2,bestCase:6.0,topPartners:[
+    {name:"ANA",ratio:"1:1",cpp:"3-6cpp",sweetSpot:"RT first/biz to Japan"},
+    {name:"Virgin Atlantic",ratio:"1:1",cpp:"2-4cpp",sweetSpot:"ANA first, Delta domestic"},
+    {name:"Air France/KLM",ratio:"1:1",cpp:"1.5-2.5cpp",sweetSpot:"Promo Europe"},
+    {name:"Singapore KrisFlyer",ratio:"1:1",cpp:"2-3cpp",sweetSpot:"Suites, partner awards"},
+    {name:"British Airways",ratio:"1:1",cpp:"1.5-3cpp",sweetSpot:"Short-haul, Qatar Qsuite"},
+    {name:"Hilton",ratio:"1:2",cpp:"1.2-1.4cpp",sweetSpot:"Aspirational, 5th night free"},
+    {name:"Marriott",ratio:"1:1",cpp:"0.7-1cpp",sweetSpot:"5th night free"}
+  ]},
+  "Capital One Miles":{cashValue:1.0,portalValue:1.0,transferValue:1.85,bestCase:5.0,topPartners:[
+    {name:"Turkish Miles&Smiles",ratio:"1:1",cpp:"3-6.6cpp",sweetSpot:"United domestic 7,500mi, Star Alliance biz"},
+    {name:"Air Canada Aeroplan",ratio:"1:1",cpp:"1.5-2.5cpp",sweetSpot:"Mixed-cabin, stopover rules"},
+    {name:"British Airways",ratio:"1:1",cpp:"1.5-3cpp",sweetSpot:"Short-haul, Qatar Qsuite"},
+    {name:"Avianca LifeMiles",ratio:"1:1",cpp:"1.5-2cpp",sweetSpot:"Star Alliance awards"},
+    {name:"Wyndham",ratio:"1:1",cpp:"1.1cpp",sweetSpot:"Flat-rate higher-end brands"}
+  ]},
+  "Citi ThankYou Points":{cashValue:1.0,portalValue:1.0,transferValue:1.9,bestCase:6.6,topPartners:[
+    {name:"Turkish",ratio:"1:1",cpp:"3-6.6cpp",sweetSpot:"United domestic 7,500mi"},
+    {name:"Air France/KLM",ratio:"1:1",cpp:"1.5-2.5cpp",sweetSpot:"Promo Europe"},
+    {name:"Avianca",ratio:"1:1",cpp:"1.5-2cpp",sweetSpot:"Star Alliance, no fuel surcharges"},
+    {name:"Virgin Atlantic",ratio:"1:1",cpp:"2-4cpp",sweetSpot:"ANA first, Delta"},
+    {name:"Choice Privileges",ratio:"1:2",cpp:"1.2-2cpp",sweetSpot:"Tokyo Comfort Hotels 6,000pts/night"},
+    {name:"Wyndham",ratio:"1:1",cpp:"1.1cpp",sweetSpot:"Flat-rate"}
+  ]},
+  "Bilt Points":{cashValue:1.0,portalValue:1.25,transferValue:2.0,bestCase:5.0,topPartners:[
+    {name:"World of Hyatt",ratio:"1:1",cpp:"2-3cpp",sweetSpot:"Cat 1-4 expensive cities"},
+    {name:"Turkish",ratio:"1:1",cpp:"3-6.6cpp",sweetSpot:"United domestic 7,500mi"},
+    {name:"AA AAdvantage",ratio:"1:1",cpp:"1.5-2cpp",sweetSpot:"Web specials, off-peak"},
+    {name:"Air France/KLM",ratio:"1:1",cpp:"1.5-2.5cpp",sweetSpot:"Promo awards"},
+    {name:"Virgin Atlantic",ratio:"1:1",cpp:"2-4cpp",sweetSpot:"ANA first"},
+    {name:"IHG",ratio:"1:1",cpp:"0.5-0.7cpp",sweetSpot:"4th night free"}
+  ]}
+};
+
+const INSURANCE_VALUES={
+  primaryRentalCar:{label:"Primary Rental Car Insurance",description:"Primary CDW coverage — pays first, before your personal auto insurance. Saves you $15-30/day on rental company insurance.",estimatedAnnualValue:"$150-500/yr",valueNote:"Primary coverage is significantly more valuable than secondary since you don't need to file through your own insurer first."},
+  secondaryRentalCar:{label:"Secondary Rental Car Insurance",description:"Secondary CDW coverage — pays after your personal auto insurance. Still saves you from rental company insurance charges.",estimatedAnnualValue:"$100-300/yr",valueNote:"Less valuable than primary since it only kicks in after your own policy, but still saves on rental company CDW."},
+  tripDelay:{label:"Trip Delay Reimbursement",description:"Covers meals, lodging, and essentials when your flight is delayed. Trigger times range from 3 hours (Citi, best) to 12 hours.",estimatedAnnualValue:"$0-500/yr",valueNote:"One significant delay can return an entire year's annual fee. Citi's 3-hour trigger is the best in the industry."},
+  tripCancellation:{label:"Trip Cancellation/Interruption",description:"Reimburses non-refundable travel expenses when trips are canceled for covered reasons like illness, severe weather, or jury duty.",estimatedAnnualValue:"$0-5,000/yr",valueNote:"A single canceled international trip can easily recoup years of annual fees."},
+  lostLuggage:{label:"Lost Luggage Reimbursement",description:"Covers the value of lost, damaged, or stolen baggage and contents beyond airline liability limits.",estimatedAnnualValue:"$0-500/yr",valueNote:"Airlines' own liability maxes out quickly. This coverage fills the gap."},
+  cellPhoneProtection:{label:"Cell Phone Protection",description:"Covers damage or theft of your cell phone (up to $800/claim) when you pay your monthly phone bill with the card. $25-50 deductible.",estimatedAnnualValue:"$0-800/yr",valueNote:"One cracked screen claim can save $200-400. Replaces AppleCare or carrier insurance."},
+  purchaseProtection:{label:"Purchase Protection",description:"Covers eligible new purchases against damage or theft for 90-120 days from the purchase date.",estimatedAnnualValue:"$0-1,000/yr",valueNote:"Covers items your homeowner's/renter's insurance might not, often with no deductible."},
+  extendedWarranty:{label:"Extended Warranty Protection",description:"Extends manufacturer warranties by 1-2 additional years. Stop buying extended warranties at checkout.",estimatedAnnualValue:"$50-300/yr",valueNote:"Every time you decline an extended warranty at checkout, this benefit has you covered for free."},
+  returnProtection:{label:"Return Protection",description:"Allows you to return items the merchant won't take back, typically within 90 days. Amex offers the best version.",estimatedAnnualValue:"$0-500/yr",valueNote:"Amex will refund up to $300 per item when a merchant won't accept a return. Most valuable for online shopping."}
+};
+
+const HIDDEN_VALUES={
+  "Chase Sapphire Reserve":{
+    transferEcosystem:"Chase Ultimate Rewards",
+    intangibleNote:"The Reserve's real value is almost never captured by a benefits checklist. Primary rental car insurance alone saves $15-30/day on every rental. Hyatt transfers at 2-3cpp turn 25,000 points into a $500-750 hotel stay. Priority Pass visits are worth $30-50 each. Trip delay coverage kicks in after 6 hours. With 14 transfer partners, active travelers regularly extract $1,500-2,000+ in annual value — well beyond the stated credits.",
+    hiddenPerks:[
+      {category:"insurance",perk:"Primary Rental Car Insurance",estimatedValue:"$150-500/yr",details:"Primary CDW coverage up to $75,000. Pays first — skip the rental counter insurance."},
+      {category:"insurance",perk:"Trip Delay Reimbursement",estimatedValue:"$0-500/yr",details:"$500 per traveler after 6-hour delay for meals, lodging, and essentials."},
+      {category:"insurance",perk:"Trip Cancellation/Interruption",estimatedValue:"$0-5,000/yr",details:"Up to $10,000 per person for non-refundable travel expenses."},
+      {category:"insurance",perk:"Lost Luggage Reimbursement",estimatedValue:"$0-500/yr",details:"Up to $3,000 per traveler for lost, damaged, or stolen baggage."},
+      {category:"purchaseProtection",perk:"Purchase Protection (120 days)",estimatedValue:"$0-500/yr",details:"Covers new purchases against damage or theft for 120 days, up to $10,000/claim."},
+      {category:"purchaseProtection",perk:"Extended Warranty +1 Year",estimatedValue:"$50-200/yr",details:"Adds 1 year to manufacturer warranties of 3 years or less. Stop buying extended warranties."},
+      {category:"transferPartners",perk:"14 Transfer Partners (2-5x Value)",estimatedValue:"$500-2,000+/yr",details:"Hyatt at 2-3cpp, Virgin Atlantic for ANA first at 5cpp, United saver awards. Transforms cashback into premium travel."},
+      {category:"loungeAccess",perk:"Priority Pass + Chase Sapphire Lounges",estimatedValue:"$120-500/yr",details:"1,500+ lounges worldwide. Each visit worth $30-50 in food, drinks, and WiFi."},
+      {category:"concierge",perk:"Visa Infinite Concierge",estimatedValue:"$0-200/yr",details:"24/7 concierge for restaurant reservations, travel planning, and event tickets."},
+      {category:"creditScore",perk:"High Credit Limit",estimatedValue:"Significant",details:"Premium cards typically carry high limits, lowering overall utilization ratio."}
+    ]
+  },
+  "Chase Sapphire Preferred":{
+    transferEcosystem:"Chase Ultimate Rewards",
+    intangibleNote:"The Preferred is the cheapest way ($95/yr) to unlock Chase's 14 transfer partners. Without a Sapphire or Ink Preferred card, all your Freedom/Freedom Unlimited points are stuck at 1 cent each. With the CSP, 100,000 Ultimate Rewards points transform from $1,000 in cash back to $2,000-3,000 in travel value through Hyatt, United, and other partners. This single unlock often justifies the fee by itself.",
+    hiddenPerks:[
+      {category:"transferPartners",perk:"Unlocks Transfers for ALL Chase UR Points",estimatedValue:"$500-2,000+/yr",details:"Every Freedom, Freedom Unlimited, and Ink point in your household becomes transferable. This is the #1 reason to keep this card."},
+      {category:"insurance",perk:"Primary Rental Car Insurance",estimatedValue:"$150-500/yr",details:"Primary CDW up to $60,000 — same primary coverage as the Reserve."},
+      {category:"insurance",perk:"Trip Delay Reimbursement",estimatedValue:"$0-500/yr",details:"$500 per traveler after 12-hour delay."},
+      {category:"insurance",perk:"Trip Cancellation/Interruption",estimatedValue:"$0-5,000/yr",details:"Up to $10,000 per person for non-refundable travel expenses."},
+      {category:"purchaseProtection",perk:"Purchase Protection (120 days)",estimatedValue:"$0-500/yr",details:"Covers new purchases against damage or theft for 120 days, up to $500/claim."},
+      {category:"purchaseProtection",perk:"Extended Warranty +1 Year",estimatedValue:"$50-200/yr",details:"Adds 1 year to manufacturer warranties of 3 years or less."},
+      {category:"creditScore",perk:"Chase Relationship Keeper",estimatedValue:"Significant",details:"Maintains your Chase credit relationship and keeps the door open for future premium card upgrades."}
+    ]
+  },
+  "The Platinum Card® from American Express":{
+    transferEcosystem:"Amex Membership Rewards",
+    intangibleNote:"The Platinum's stated credits only tell half the story. ANA first class round-trip to Tokyo costs 150,000 MR points for a ticket worth $20,000+ — that's 13+ cents per point. Centurion Lounges, Priority Pass, and Delta Sky Club access can save $300-1,000/year for frequent flyers. Hilton Gold ($200-800 value) and Marriott Gold ($100-500) come free. Fine Hotels & Resorts adds $550+/booking in value. The 20+ transfer partners make this the most versatile premium ecosystem.",
+    hiddenPerks:[
+      {category:"transferPartners",perk:"20+ Transfer Partners (2-6x Value)",estimatedValue:"$500-3,000+/yr",details:"ANA first at 6cpp, Virgin Atlantic for Delta/ANA, Singapore Suites, Air France promos. The deepest transfer partner network."},
+      {category:"loungeAccess",perk:"Centurion + Priority Pass + Delta Sky Clubs",estimatedValue:"$300-1,000/yr",details:"Centurion Lounges (premium food/drink), 1,500+ Priority Pass lounges, Delta Sky Clubs when flying Delta."},
+      {category:"eliteStatus",perk:"Hilton Gold Elite",estimatedValue:"$200-800/yr",details:"Room upgrades, daily F&B credit at select properties, 5th night free on rewards, 80% bonus points."},
+      {category:"eliteStatus",perk:"Marriott Gold Elite",estimatedValue:"$100-500/yr",details:"Room upgrades when available, late checkout, 25% bonus points, enhanced WiFi."},
+      {category:"concierge",perk:"Concierge + By Invitation Only Events",estimatedValue:"$0-500/yr",details:"24/7 Platinum Concierge, exclusive event access, Fine Hotels & Resorts adding $550+/booking."},
+      {category:"insurance",perk:"Secondary Rental Car Insurance",estimatedValue:"$100-300/yr",details:"Secondary CDW coverage worldwide."},
+      {category:"insurance",perk:"Trip/Cancel/Baggage Insurance Suite",estimatedValue:"$0-2,000/yr",details:"Trip delay, trip cancellation, baggage delay, and lost luggage coverage."},
+      {category:"purchaseProtection",perk:"Purchase + Return Protection",estimatedValue:"$0-1,000/yr",details:"Purchase protection 90 days + Amex return protection up to $300/item."},
+      {category:"purchaseProtection",perk:"Extended Warranty +2 Years",estimatedValue:"$100-300/yr",details:"Amex extends warranties by up to 2 additional years — best in the industry."},
+      {category:"creditScore",perk:"MR Ecosystem Preservation",estimatedValue:"Critical",details:"If this is your only MR-earning card, canceling strands all your Membership Rewards points. Downgrade to Green or keep BBP."}
+    ]
+  },
+  "American Express® Gold Card":{
+    transferEcosystem:"Amex Membership Rewards",
+    intangibleNote:"The Gold Card's 4x on dining and groceries can easily earn 50,000+ MR points per year. At cash value, that's $500 — but transferred to ANA or Virgin Atlantic, those same points become $1,100-3,000 in premium flights. That $600+ gap is hidden value the ROI bar can't capture. Same 20+ transfer partners as the Platinum at a much lower fee.",
+    hiddenPerks:[
+      {category:"transferPartners",perk:"20+ Transfer Partners (2-6x Value)",estimatedValue:"$600-2,000+/yr",details:"Same partner list as Platinum. 50k MR from dining/groceries = $500 cash or $1,100+ via transfers."},
+      {category:"purchaseProtection",perk:"Purchase Protection",estimatedValue:"$0-1,000/yr",details:"Covers purchases against damage or theft for 90 days."},
+      {category:"purchaseProtection",perk:"Return Protection",estimatedValue:"$0-500/yr",details:"Amex return protection up to $300/item when merchant won't accept returns."},
+      {category:"purchaseProtection",perk:"Extended Warranty +1 Year",estimatedValue:"$50-200/yr",details:"Adds 1 year to manufacturer warranties."},
+      {category:"concierge",perk:"Global Dining Access by Resy",estimatedValue:"$0-200/yr",details:"Priority reservations and exclusive dining experiences at top restaurants."},
+      {category:"creditScore",perk:"MR Ecosystem Preservation",estimatedValue:"Critical",details:"Keeps your Membership Rewards points transferable. Without an MR card, points may be stranded."}
+    ]
+  },
+  "Capital One Venture X Rewards Credit Card":{
+    transferEcosystem:"Capital One Miles",
+    intangibleNote:"After the $300 travel credit and 10,000 anniversary miles ($100 value), the Venture X effectively costs $0/year. Everything beyond that is pure upside: Turkish Miles&Smiles transfers turn 7,500 miles into $300-500 United flights (4-6.6cpp). Capital One's own lounges in DFW, DEN, and IAD rival Centurion quality. No ecosystem lock-in means your miles work across 15+ partners.",
+    hiddenPerks:[
+      {category:"transferPartners",perk:"15+ Transfer Partners (2-5x Value)",estimatedValue:"$500-2,000+/yr",details:"Turkish at 3-6.6cpp, Air Canada stopover rules, British Airways short-haul. No lock-in to one alliance."},
+      {category:"loungeAccess",perk:"Capital One + Priority Pass + Plaza Premium",estimatedValue:"$200-600/yr",details:"Capital One's own premium lounges + 1,300+ Priority Pass + Plaza Premium network."},
+      {category:"insurance",perk:"Primary Rental Car Insurance",estimatedValue:"$150-500/yr",details:"Primary CDW coverage. Same primary status as Chase Sapphire Reserve."},
+      {category:"insurance",perk:"Trip Delay/Cancel/Baggage Suite",estimatedValue:"$0-1,500/yr",details:"Trip delay, trip cancellation, and lost baggage coverage."},
+      {category:"purchaseProtection",perk:"Extended Warranty +1 Year",estimatedValue:"$50-200/yr",details:"Adds 1 year to manufacturer warranties."},
+      {category:"concierge",perk:"Visa Infinite Concierge",estimatedValue:"$0-200/yr",details:"24/7 concierge for travel, dining, and event planning."}
+    ]
+  },
+  "Citi Strata Premier℠ Card":{
+    transferEcosystem:"Citi ThankYou Points",
+    intangibleNote:"The Strata Premier unlocks Citi's transfer partners for all your ThankYou points. Turkish Miles&Smiles at 1:1 means 7,500 points gets you a $300-500 United domestic flight — over 4cpp. Choice Privileges at 1:2 ratio unlocks Tokyo Comfort Hotels at just 6,000 points/night. The 3-hour trip delay trigger is the best in the industry — most cards require 6-12 hours.",
+    hiddenPerks:[
+      {category:"transferPartners",perk:"Unlocks Transfers for All TY Points",estimatedValue:"$500-2,000+/yr",details:"Turkish 7,500mi for United domestics, Choice for Tokyo hotels, Air France promos. This is why you keep this card."},
+      {category:"insurance",perk:"Trip Delay — 3hr Trigger (Best in Industry)",estimatedValue:"$0-500/yr",details:"$500 reimbursement kicks in after just 3 hours. Most competitors require 6-12 hours."},
+      {category:"insurance",perk:"Trip Cancellation/Interruption",estimatedValue:"$0-2,500/yr",details:"Covers non-refundable travel expenses for covered cancellation reasons."},
+      {category:"insurance",perk:"Rental Car Insurance (Worldwide)",estimatedValue:"$100-300/yr",details:"CDW coverage on rental cars worldwide."},
+      {category:"purchaseProtection",perk:"Purchase Protection + Warranty",estimatedValue:"$50-500/yr",details:"Damage/theft protection plus extended warranty coverage."},
+      {category:"creditScore",perk:"TY Transfer Access Preservation",estimatedValue:"Critical",details:"If this is your only Premier/Prestige card, canceling locks your ThankYou points to cash-back only."}
+    ]
+  },
+  "Marriott Bonvoy Boundless®":{
+    transferEcosystem:null,
+    intangibleNote:"The Boundless gives you automatic Gold Elite status — worth $100-500/year in room upgrades, late checkouts, and 25% bonus points. The 15 elite night credits each year put you nearly halfway to Platinum (50 nights). If you stay 35 more nights, Platinum unlocks suite upgrades, lounge access, and breakfast.",
+    hiddenPerks:[
+      {category:"eliteStatus",perk:"Marriott Gold Elite Status",estimatedValue:"$100-500/yr",details:"25% bonus points, room upgrades when available, 2pm late checkout, enhanced WiFi."},
+      {category:"eliteStatus",perk:"15 Elite Night Credits Toward Platinum",estimatedValue:"$0-500/yr",details:"Start each year 15 nights closer to Platinum (50 nights). Platinum = suite upgrades, lounge, breakfast."},
+      {category:"purchaseProtection",perk:"Purchase Protection",estimatedValue:"$50-300/yr",details:"Visa Signature purchase protection on eligible items."}
+    ]
+  },
+  "Hilton Honors American Express Aspire Card":{
+    transferEcosystem:null,
+    intangibleNote:"Diamond status is the real prize here. Suite upgrades, daily food & beverage credits of $15-25/night at most properties, executive lounge access, and 100% bonus points add up to $500-2,000/year for regular Hilton guests. The 5th night free on ALL award stays is a flat 20% discount on points redemptions. Priority Pass and Amex's insurance suite round it out.",
+    hiddenPerks:[
+      {category:"eliteStatus",perk:"Hilton Diamond Status",estimatedValue:"$500-2,000/yr",details:"Suite upgrades, daily F&B credit $15-25/night, executive lounge access, 100% bonus points. The most valuable hotel status you can get from a credit card."},
+      {category:"eliteStatus",perk:"5th Night Free on ALL Award Stays",estimatedValue:"$100-500/yr",details:"Book 5 nights on points, get the 5th free. Flat 20% discount on every award stay."},
+      {category:"loungeAccess",perk:"Priority Pass Select",estimatedValue:"$120-500/yr",details:"1,300+ airport lounges worldwide. Each visit worth $30-50."},
+      {category:"insurance",perk:"Secondary Rental Car + Trip Delay",estimatedValue:"$0-500/yr",details:"Secondary CDW, trip delay, and baggage coverage."},
+      {category:"purchaseProtection",perk:"Purchase + Return Protection",estimatedValue:"$0-500/yr",details:"Amex purchase protection and return protection up to $300/item."}
+    ]
+  },
+  "World of Hyatt Card":{
+    transferEcosystem:null,
+    intangibleNote:"Hyatt points are the most valuable hotel currency at a consistent 2-3 cents per point. This card gives you Discoverist status plus 2 qualifying night credits toward Globalist — the holy grail of hotel status. If you achieve Globalist (60 nights), you unlock suite upgrades, club lounge access, and free breakfast worth $2,000-5,000/year.",
+    hiddenPerks:[
+      {category:"eliteStatus",perk:"Discoverist Status + 2 Qualifying Nights",estimatedValue:"$50-200/yr",details:"Discoverist gets you preferred rooms, late checkout, and bottled water. The 2 qualifying nights count toward Globalist."},
+      {category:"eliteStatus",perk:"Path to Globalist (If Achieved)",estimatedValue:"$2,000-5,000/yr if achieved",details:"Globalist = confirmed suite upgrades, club lounge, free breakfast, guest of honor. The most valuable hotel status in the industry."},
+      {category:"purchaseProtection",perk:"Purchase Protection",estimatedValue:"$50-300/yr",details:"Visa Signature purchase protection on eligible items."}
+    ]
+  },
+  "Bilt Mastercard®":{
+    transferEcosystem:"Bilt Points",
+    intangibleNote:"Bilt is the only card that earns points on rent — period. At $2,000/month rent, that's 24,000 points/year. Transferred to Hyatt at 2-3cpp, that's a $600+ hotel night from money you were going to spend anyway. Turkish transfers at 3-6.6cpp turn rent payments into premium flights. Cell phone protection ($800/claim) replaces AppleCare. Rent reporting to all 3 bureaus builds credit for free.",
+    hiddenPerks:[
+      {category:"transferPartners",perk:"Premium Transfer Partners (2-5x Value)",estimatedValue:"$500-2,000+/yr",details:"Hyatt 1:1 (2-3cpp), Turkish 1:1 (3-6.6cpp), AA, Virgin Atlantic. Rent payments become premium travel."},
+      {category:"insurance",perk:"Cell Phone Protection ($800/claim)",estimatedValue:"$0-800/yr",details:"Covers damage or theft when you pay your phone bill with Bilt. $25 deductible. Replaces AppleCare."},
+      {category:"insurance",perk:"Trip Delay + Purchase + Rental Car",estimatedValue:"$0-500/yr",details:"Trip delay reimbursement, purchase protection, and rental car coverage."},
+      {category:"purchaseProtection",perk:"Mastercard World Elite Protections",estimatedValue:"$0-500/yr",details:"Extended warranty, price protection, and ID theft protection."},
+      {category:"creditScore",perk:"Rent Reported to Credit Bureaus",estimatedValue:"Significant",details:"Bilt reports rent payments to Equifax, Experian, and TransUnion. Builds credit from your largest monthly expense."}
+    ]
+  }
+};
+
+const UNIVERSAL_HIDDEN_VALUES=[
+  {title:"Credit History Length",description:"Canceling your oldest card shortens your average credit age, which may drop your score 10-30 points. If you're on the fence, downgrading to a no-fee version keeps the account open.",applies:"All cards"},
+  {title:"Credit Utilization Impact",description:"Closing a card reduces your total available credit, which raises your utilization ratio. A $20,000 limit represents significant headroom that keeps your score healthy.",applies:"All cards"},
+  {title:"Transfer Partner Ecosystem Lock-in",description:"If this is your only card in the UR/MR/TY/Bilt ecosystem, canceling may strand or devalue ALL your points. They might lose transfer partner access or become cash-back only.",applies:"Transferable points ecosystem cards"},
+  {title:"Insurance You Didn't Know You Had",description:"Most premium cards include trip delay, rental car, purchase protection, and extended warranty coverage. A single claim can return an entire year's worth of annual fees.",applies:"Most cards with annual fees"},
+  {title:"Extended Warranty Savings",description:"Stop buying extended warranties at checkout — your card likely extends manufacturer warranties by 1-2 years automatically. This saves $50-300/year for frequent shoppers.",applies:"Most Visa Signature, World Elite Mastercard, and Amex cards"}
+];
 
 /* OVERLAP_GROUPS — curated map of household-redundant benefits.
    Each group has: label, keywords (matched against benefit names), a tip for

@@ -1453,6 +1453,8 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   const [openBen,setOpenBen]=useState(null);
   const [showRetention,setShowRetention]=useState(false);
   const [showCancel,setShowCancel]=useState(false);
+  const [showHiddenValue,setShowHiddenValue]=useState(false);
+  const [expandedHiddenPerk,setExpandedHiddenPerk]=useState(null);
 
   const card=useMemo(()=>CARDS.find(c=>c.id===selectedId),[selectedId]);
 
@@ -1569,23 +1571,27 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
 
   const palette=getIssuerPalette(card.issuer);
   const allChecked=totalSlots>0&&checkedCount>=totalSlots;
-  const worthItDesc=allChecked
-    ?"You've made the most of this card. The fee pays for itself."
-    :"The fee already pays for itself — and you still have unclaimed benefits.";
-  const onTrackDesc=allChecked
-    ?"You've used every benefit, but the direct value ($"+usedValue.toLocaleString()+") still falls short of the $"+card.fee.toLocaleString()+" fee. Consider the intangible perks below, or explore downgrade options."
-    :usedRoiPct>=50
-      ?"You've captured over half the fee in benefits. Check off a few more to make it worth it."
-      :"You've got benefits left to use. Check them off as you redeem them.";
-  const atRiskDesc=allChecked
-    ?"You've used every benefit, but the direct value ($"+usedValue.toLocaleString()+") still falls short of the $"+card.fee.toLocaleString()+" fee. Consider the intangible perks below, or explore downgrade options."
-    :potentialRoiPct>=100
-      ?"This card can pay for itself — you just haven't used enough benefits yet. Check off what you've redeemed below."
-      :"You're not getting enough value from this card. Consider downgrading or calling for a retention offer.";
+  const noneChecked=checkedCount===0;
+  const hasHV=!!card.hiddenValue;
+  const hvSuffix=hasHV?" Consider the hidden value below — transfer partners and insurance may close the gap.":"";
+
+  // 5-state messaging
+  let roiDesc;
+  if(noneChecked){
+    roiDesc="Check off the benefits you actually use to see your real ROI.";
+  } else if(allChecked&&usedValue>=card.fee){
+    roiDesc="You're getting full value from this card! 🎉";
+  } else if(allChecked&&usedValue<card.fee){
+    roiDesc="You're using everything this card offers."+hvSuffix;
+  } else if(!allChecked&&usedValue>=card.fee){
+    roiDesc="You've already justified the fee — and you're not even using everything!";
+  } else {
+    roiDesc="Check off more benefits you use to see if this card pays for itself.";
+  }
   const verdictConfig={
-    "worth-it":{label:"Worth It",icon:"check",bg:"rgba(22,163,74,.06)",border:"rgba(22,163,74,.2)",color:"var(--grn2)",desc:worthItDesc},
-    "on-track":{label:"On Track",icon:"zap",bg:"rgba(13,115,119,.06)",border:"rgba(13,115,119,.2)",color:"var(--acc)",desc:onTrackDesc},
-    "at-risk":{label:"At Risk",icon:"alert-triangle",bg:"rgba(220,38,38,.06)",border:"rgba(220,38,38,.2)",color:"var(--red2)",desc:atRiskDesc}
+    "worth-it":{label:"Worth It",icon:"check",bg:"rgba(22,163,74,.06)",border:"rgba(22,163,74,.2)",color:"var(--grn2)",desc:roiDesc},
+    "on-track":{label:"On Track",icon:"zap",bg:"rgba(13,115,119,.06)",border:"rgba(13,115,119,.2)",color:"var(--acc)",desc:roiDesc},
+    "at-risk":{label:"At Risk",icon:"alert-triangle",bg:"rgba(220,38,38,.06)",border:"rgba(220,38,38,.2)",color:"var(--red2)",desc:roiDesc}
   };
   const vc=verdictConfig[verdict];
 
@@ -1676,7 +1682,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           </div>
           <div style={{flex:1}}>
             <div style={{fontSize:18,fontWeight:800,color:vc.color,fontFamily:"'Inter',sans-serif"}}>{vc.label}</div>
-            <div style={{fontSize:11,color:"var(--tx3)"}}>{usedRoiPct}% captured{potentialRoiPct>usedRoiPct?` · ${potentialRoiPct}% available`:""}</div>
+            <div style={{fontSize:11,color:"var(--tx3)"}}>{checkedCount===0?"Check off benefits you use to see your real ROI":`You've captured $${usedValue.toLocaleString()} of your $${card.fee.toLocaleString()} annual fee`}</div>
           </div>
           <div style={{textAlign:"right"}}>
             <div style={{fontSize:28,fontWeight:900,fontFamily:"'Source Code Pro',monospace",color:vc.color}}>{usedRoiPct}%</div>
@@ -1709,6 +1715,105 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── BEYOND THE NUMBERS — HIDDEN VALUE ── */}
+      {card.hiddenValue&&(
+        <div style={{marginBottom:16}}>
+          <button onClick={()=>{setShowHiddenValue(!showHiddenValue);setExpandedHiddenPerk(null);}}
+            style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"rgba(13,115,119,.04)",border:"1px solid rgba(13,115,119,.12)",borderRadius:14,cursor:"pointer",padding:"14px 16px",textAlign:"left"}}>
+            <span style={{fontSize:20,lineHeight:1,flexShrink:0}}>💎</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Hidden Value — What the Math Doesn't Capture</div>
+              <div style={{fontSize:11,color:"var(--tx3)"}}>Transfer partners, insurance, status perks & more</div>
+            </div>
+            <span style={{transition:"transform .2s",transform:showHiddenValue?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
+          </button>
+          {showHiddenValue&&(
+            <div style={{marginTop:12,padding:"16px",borderRadius:14,background:"rgba(13,115,119,.03)",border:"1px solid rgba(13,115,119,.10)",borderLeft:"4px solid var(--acc)"}}>
+              {/* Intangible note */}
+              <p style={{fontSize:13,color:"var(--tx2)",margin:"0 0 16px",lineHeight:1.7,fontStyle:"italic"}}>{card.hiddenValue.intangibleNote}</p>
+
+              {/* Transfer Partner mini-card */}
+              {card.hiddenValue.transferEcosystem&&TRANSFER_PARTNER_DATA[card.hiddenValue.transferEcosystem]&&(()=>{
+                const eco=TRANSFER_PARTNER_DATA[card.hiddenValue.transferEcosystem];
+                const multiplier=(eco.transferValue/eco.cashValue).toFixed(1);
+                return (
+                  <div style={{padding:"12px 14px",borderRadius:12,background:"rgba(13,115,119,.06)",border:"1px solid rgba(13,115,119,.15)",marginBottom:16}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                      <span style={{fontSize:14}}>🔄</span>
+                      <div style={{fontSize:12,fontWeight:700,color:"var(--acc)"}}>Transfer Partner Value</div>
+                    </div>
+                    <p style={{fontSize:12,color:"var(--tx2)",margin:"0 0 10px",lineHeight:1.6}}>
+                      Your {card.hiddenValue.transferEcosystem} points are worth <strong>{eco.cashValue}¢ as cash</strong>, but <strong style={{color:"var(--acc)"}}>{eco.transferValue}¢ via transfer partners</strong> — a <strong style={{color:"var(--grn2)"}}>{multiplier}x uplift</strong>.
+                    </p>
+                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                      {eco.topPartners.slice(0,4).map((tp,i)=>(
+                        <div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:11}}>
+                          <span style={{width:6,height:6,borderRadius:99,background:"var(--acc)",flexShrink:0}}/>
+                          <span style={{fontWeight:600,color:"var(--tx)",minWidth:90}}>{tp.name}</span>
+                          <span style={{color:"var(--grn2)",fontWeight:700,fontFamily:"'Source Code Pro',monospace",minWidth:55}}>{tp.cpp}</span>
+                          <span style={{color:"var(--tx3)",fontStyle:"italic"}}>{tp.sweetSpot}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Hidden perks grouped by category */}
+              {(()=>{
+                const grouped={};
+                (card.hiddenValue.hiddenPerks||[]).forEach(p=>{
+                  if(!grouped[p.category])grouped[p.category]=[];
+                  grouped[p.category].push(p);
+                });
+                return Object.entries(grouped).map(([catKey,perks])=>{
+                  const cat=HIDDEN_VALUE_CATEGORIES[catKey]||{label:catKey,icon:"📋"};
+                  return (
+                    <div key={catKey} style={{marginBottom:12}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                        <span style={{fontSize:13}}>{cat.icon}</span>
+                        <span style={{fontSize:11,fontWeight:700,letterSpacing:.5,color:"var(--tx2)",textTransform:"uppercase"}}>{cat.label}</span>
+                      </div>
+                      {perks.map((p,j)=>{
+                        const perkKey=catKey+"-"+j;
+                        const isExpanded=expandedHiddenPerk===perkKey;
+                        return (
+                          <div key={j} onClick={()=>setExpandedHiddenPerk(isExpanded?null:perkKey)}
+                            style={{padding:"8px 10px",borderRadius:8,background:"var(--bg)",border:"1px solid var(--br)",marginBottom:4,cursor:"pointer"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                              <div style={{flex:1,fontSize:12,fontWeight:600,color:"var(--tx)"}}>{p.perk}</div>
+                              <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"rgba(13,115,119,.08)",color:"var(--acc)",whiteSpace:"nowrap",fontFamily:"'Source Code Pro',monospace"}}>{p.estimatedValue}</span>
+                              <span style={{transition:"transform .15s",transform:isExpanded?"rotate(90deg)":"rotate(0deg)",display:"inline-flex"}}><Icon name="chevron-right" size={12} color="var(--tx3)"/></span>
+                            </div>
+                            {isExpanded&&<p style={{fontSize:11,color:"var(--tx2)",margin:"6px 0 0",lineHeight:1.6}}>{p.details}</p>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                });
+              })()}
+
+              {/* Universal hidden values */}
+              <div style={{marginTop:8,paddingTop:12,borderTop:"1px solid var(--br)"}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"var(--tx3)",textTransform:"uppercase",marginBottom:8}}>Also Consider</div>
+                {UNIVERSAL_HIDDEN_VALUES.filter(u=>
+                  u.applies==="All cards"||(u.applies.includes("ecosystem")&&card.hiddenValue.transferEcosystem)||(u.applies.includes("annual fees")&&card.fee>0)||(u.applies.includes("Visa Signature")||u.applies.includes("Mastercard")||u.applies.includes("Amex"))
+                ).slice(0,3).map((u,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:6}}>
+                    <span style={{fontSize:10,color:"var(--acc)",marginTop:2,flexShrink:0}}>▸</span>
+                    <div>
+                      <span style={{fontSize:11,fontWeight:600,color:"var(--tx)"}}>{u.title}: </span>
+                      <span style={{fontSize:11,color:"var(--tx3)"}}>{u.description}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
