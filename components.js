@@ -6455,6 +6455,10 @@ function App(){
   const [p2Name,setP2Name]=useLS(CS_CONFIG.LS_KEYS.p2Name,"");
   const [householdSetup,setHouseholdSetup]=useLS(CS_CONFIG.LS_KEYS.householdSetup,false);
   const [anniversaryDates,setAnniversaryDates]=useLS(CS_CONFIG.LS_KEYS.anniversaryDates,{});
+  const [feedbackOpen,setFeedbackOpen]=useState(false);
+  const [feedbackText,setFeedbackText]=useState("");
+  const [feedbackSent,setFeedbackSent]=useState(false);
+  const [feedbackSending,setFeedbackSending]=useState(false);
   const [firstYearCards,setFirstYearCards]=useLS(CS_CONFIG.LS_KEYS.firstYearCards,[]);
   const [resetBadges,setResetBadges]=useState(new Set());
   const [stratModal,setStratModal]=useState(null);
@@ -6680,12 +6684,12 @@ function App(){
       <NewsletterSubscribe/>
       <div style={{padding:"32px 24px 28px",background:"var(--s3)",marginTop:24}}>
         <div style={{display:"flex",flexWrap:"wrap",justifyContent:"space-between",gap:"6px 16px",marginBottom:10,maxWidth:1000,margin:"0 auto 10px"}}>
-          <a href={"mailto:"+CS_CONFIG.CONTACT_EMAIL+"?subject=FeeWorth%20Data%20Error%20Report&body=Card%20name%3A%20%0AWhat%27s%20wrong%3A%20%0AWhat%20it%20should%20say%3A%20"}
-             style={{fontSize:11,color:"var(--tx3)",textDecoration:"none"}}
-             onMouseEnter={e=>e.currentTarget.style.color="var(--acc)"}
-             onMouseLeave={e=>e.currentTarget.style.color="var(--tx3)"}>
-            See outdated info? Let us know →
-          </a>
+          <span style={{fontSize:11,color:feedbackSent?"var(--grn2)":"var(--tx3)",textDecoration:"none",cursor:"pointer",transition:"color .2s"}}
+             onClick={()=>{if(!feedbackSent)setFeedbackOpen(!feedbackOpen);}}
+             onMouseEnter={e=>{if(!feedbackSent)e.currentTarget.style.color="var(--acc)";}}
+             onMouseLeave={e=>{if(!feedbackSent)e.currentTarget.style.color="var(--tx3)";}}>
+            {feedbackSent?"Thanks! We\u2019ll review this shortly.":"See outdated info? Let us know \u2192"}
+          </span>
           <a href="./privacy-policy.html" target="_blank"
              style={{fontSize:11,color:"var(--tx3)",textDecoration:"none"}}
              onMouseEnter={e=>e.currentTarget.style.color="var(--acc)"}
@@ -6705,6 +6709,33 @@ function App(){
             Affiliate Disclosure
           </a>
         </div>
+        {feedbackOpen&&!feedbackSent&&(
+          <div style={{maxWidth:1000,margin:"0 auto 10px",overflow:"hidden",transition:"all .2s"}}>
+            <textarea value={feedbackText} onChange={e=>setFeedbackText(e.target.value)}
+              placeholder="Tell us what's outdated or incorrect..."
+              rows={3}
+              style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",fontSize:12,fontFamily:"Inter,sans-serif",
+                border:"1px solid var(--br2)",borderRadius:8,background:"var(--bg)",color:"var(--tx)",
+                resize:"vertical",outline:"none",marginBottom:6}}
+              onFocus={e=>e.currentTarget.style.borderColor="var(--acc)"}
+              onBlur={e=>e.currentTarget.style.borderColor="var(--br2)"}/>
+            <button onClick={async()=>{
+              if(!feedbackText.trim())return;
+              setFeedbackSending(true);
+              try{
+                await emailjs.send("YOUR_SERVICE_ID","YOUR_TEMPLATE_ID",{message:feedbackText,from_page:window.location.href},"YOUR_PUBLIC_KEY");
+                setFeedbackSent(true);setFeedbackText("");setFeedbackOpen(false);
+                setTimeout(()=>setFeedbackSent(false),4000);
+              }catch(err){console.error("Feedback send failed:",err);alert("Failed to send. Please try again.");}
+              setFeedbackSending(false);
+            }}
+              disabled={feedbackSending||!feedbackText.trim()}
+              style={{padding:"6px 18px",fontSize:11,fontWeight:700,color:"#fff",background:feedbackSending||!feedbackText.trim()?"var(--tx4)":"var(--acc)",
+                border:"none",borderRadius:99,cursor:feedbackSending?"wait":"pointer",transition:"background .2s"}}>
+              {feedbackSending?"Sending...":"Submit"}
+            </button>
+          </div>
+        )}
         <div style={{fontSize:11,color:"var(--tx3)",lineHeight:1.5,maxWidth:1000,margin:"0 auto"}}>
           FeeWorth may earn a commission from card applications. This does not influence our recommendations.
         </div>

@@ -55,6 +55,7 @@ const CDN_ORIGINS = [
   'https://unpkg.com',
   'https://fonts.googleapis.com',
   'https://fonts.gstatic.com',
+  'https://cdn.jsdelivr.net',
 ];
 
 // ── INSTALL: Download and cache all app files ────────────────────────────
