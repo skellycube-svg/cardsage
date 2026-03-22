@@ -6723,7 +6723,7 @@ function App(){
               if(!feedbackText.trim())return;
               setFeedbackSending(true);
               try{
-                await emailjs.send("YOUR_SERVICE_ID","YOUR_TEMPLATE_ID",{message:feedbackText,from_page:window.location.href},"YOUR_PUBLIC_KEY");
+                await emailjs.send("service_jq89dig","template_ojxqunw",{message:feedbackText,from_page:window.location.href},"sbpCDiM6phLK4xj_y");
                 setFeedbackSent(true);setFeedbackText("");setFeedbackOpen(false);
                 setTimeout(()=>setFeedbackSent(false),4000);
               }catch(err){console.error("Feedback send failed:",err);alert("Failed to send. Please try again.");}
