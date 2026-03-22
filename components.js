@@ -1644,15 +1644,15 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   // 5-state messaging
   let roiDesc;
   if(noneChecked){
-    roiDesc="Check off the benefits you actually use to see your real ROI.";
-  } else if(allChecked&&usedValue>=card.fee){
-    roiDesc="You're getting full value from this card! 🎉";
-  } else if(allChecked&&usedValue<card.fee){
-    roiDesc="You're using everything this card offers."+hvSuffix;
-  } else if(!allChecked&&usedValue>=card.fee){
-    roiDesc="You've already justified the fee — and you're not even using everything!";
+    roiDesc="Check off benefits you use to see your real ROI.";
+  } else if(usedValue>=card.fee&&allChecked){
+    roiDesc="This card is paying for itself.";
+  } else if(usedValue>=card.fee){
+    roiDesc="This card is paying for itself — and you haven't even checked everything off.";
+  } else if(allChecked){
+    roiDesc="You're using everything available."+hvSuffix;
   } else {
-    roiDesc="Check off more benefits you use to see if this card pays for itself.";
+    roiDesc="Check off more benefits you use.";
   }
   const verdictConfig={
     "worth-it":{label:"Worth It",icon:"check",bg:"rgba(22,163,74,.06)",border:"rgba(22,163,74,.2)",color:"var(--grn2)",desc:roiDesc},
@@ -1840,29 +1840,21 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
 
       {/* ── ROI PROGRESS + VERDICT ── */}
       <div className="surf fu" style={{marginBottom:16,border:`1px solid ${vc.border}`,background:vc.bg}}>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-          <div style={{width:44,height:44,borderRadius:12,background:vc.color+"15",display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <Icon name={vc.icon} size={22} color={vc.color}/>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <Icon name={vc.icon} size={18} color={vc.color}/>
+            <span style={{fontSize:16,fontWeight:800,color:vc.color,fontFamily:"'Inter',sans-serif"}}>{vc.label}</span>
           </div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:18,fontWeight:800,color:vc.color,fontFamily:"'Inter',sans-serif"}}>{vc.label}</div>
-            <div style={{fontSize:11,color:"var(--tx3)"}}>{checkedCount===0?"Check off benefits you use to see your real ROI":`You've captured $${usedValue.toLocaleString()} of your $${card.fee.toLocaleString()} annual fee`}</div>
-          </div>
-          <div style={{textAlign:"right"}}>
-            <div style={{fontSize:28,fontWeight:900,fontFamily:"'Source Code Pro',monospace",color:vc.color}}>{usedRoiPct}%</div>
-            {potentialRoiPct>usedRoiPct&&<div style={{fontSize:10,color:"var(--tx3)",fontWeight:600}}>{potentialRoiPct}% possible</div>}
-          </div>
+          <span style={{fontSize:16,fontWeight:800,fontFamily:"'Source Code Pro',monospace",color:vc.color}}>{usedRoiPct}% ROI</span>
         </div>
-        {/* Dual-tone progress bar: solid = captured, striped = available but unused */}
-        <div className="prog-track" style={{height:10,marginBottom:6,position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:0,left:0,height:"100%",width:Math.min(potentialRoiPct,100)+"%",
-            background:"repeating-linear-gradient(135deg,rgba(13,115,119,.15),rgba(13,115,119,.15) 3px,rgba(13,115,119,.06) 3px,rgba(13,115,119,.06) 6px)",
-            borderRadius:"inherit",transition:"width .5s ease"}}/>
-          <div className="prog-fill" style={{position:"absolute",top:0,left:0,height:"100%",width:Math.min(usedRoiPct,100)+"%",background:vc.color,borderRadius:"inherit",transition:"width .5s ease"}}/>
+        <div style={{fontSize:12,color:"var(--tx2)",marginBottom:8}}>
+          {totalCredits>0
+            ?<>${'$'}{usedValue.toLocaleString()} used of {'$'}{totalCredits.toLocaleString()} in benefits you'd consider</>
+            :"No dollar-value benefits to track"}
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10,fontSize:10,color:"var(--tx3)"}}>
-          <span style={{display:"inline-flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:vc.color,display:"inline-block"}}/> Value captured (${usedValue.toLocaleString()})</span>
-          {potentialRoiPct>usedRoiPct&&<span style={{display:"inline-flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"repeating-linear-gradient(135deg,rgba(13,115,119,.2),rgba(13,115,119,.2) 2px,rgba(13,115,119,.08) 2px,rgba(13,115,119,.08) 4px)",display:"inline-block"}}/> Available unused (${(totalCredits-usedValue).toLocaleString()})</span>}
+        {/* Progress bar: captured ÷ realistic total */}
+        <div className="prog-track" style={{height:10,marginBottom:8,position:"relative",overflow:"hidden"}}>
+          <div className="prog-fill" style={{position:"absolute",top:0,left:0,height:"100%",width:totalCredits>0?Math.min((usedValue/totalCredits)*100,100)+"%":"0%",background:vc.color,borderRadius:"inherit",transition:"width .5s ease"}}/>
         </div>
         <p style={{fontSize:12,color:"var(--tx2)",margin:0,lineHeight:1.5}}>{vc.desc}</p>
       </div>
@@ -1891,7 +1883,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           </div>
           <div style={{flex:1}}>
             <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Benefit Tracker</div>
-            <div style={{fontSize:11,color:"var(--tx3)"}}>{checkedCount}/{totalSlots} used · ${usedValue.toLocaleString()} redeemed{isFirstYear&&roiTrackable.length<trackable.length?" (excl. renewal benefits)":""}</div>
+            <div style={{fontSize:11,color:"var(--tx3)"}}>{checkedCount}/{totalSlots} checked · ${usedValue.toLocaleString()} of ${totalCredits.toLocaleString()} captured{skippedBens.length>0?` · ${skippedBens.length} skipped`:""}</div>
           </div>
           <span style={{transition:"transform .2s",transform:showBenefits?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
         </button>
@@ -1965,10 +1957,10 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
                     )}
                     {!isMulti&&b.v&&<div style={{fontSize:11,color:"var(--grn2)",fontWeight:700}}>Up to ${b.isMonthly?b.v+"/mo ($"+b.v*12+"/yr)":b.v+(b.reset==="annual"?"/yr":"")}</div>}
                   </div>
-                  <button onClick={e=>toggleSkip(b.key,e)} title="Skip this benefit"
-                    style={{flexShrink:0,background:"none",border:"none",cursor:"pointer",padding:4,marginTop:2,opacity:0.35,transition:"opacity .15s"}}
-                    onMouseEnter={e=>e.currentTarget.style.opacity=1} onMouseLeave={e=>e.currentTarget.style.opacity=0.35}>
-                    <Icon name="x" size={13} color="var(--tx3)"/>
+                  <button onClick={e=>toggleSkip(b.key,e)} title="Skip — won't count toward your potential"
+                    style={{flexShrink:0,background:"none",border:"1px solid var(--br2)",borderRadius:6,cursor:"pointer",padding:"3px 6px",marginTop:2,opacity:0.5,transition:"opacity .15s"}}
+                    onMouseEnter={e=>e.currentTarget.style.opacity=1} onMouseLeave={e=>e.currentTarget.style.opacity=0.5}>
+                    <Icon name="x" size={12} color="var(--tx3)"/>
                   </button>
                   <span style={{flexShrink:0,transition:"transform .15s",display:"inline-flex",transform:isOpen?"rotate(90deg)":"rotate(0deg)",marginTop:4}}><Icon name="chevron-right" size={14} color="var(--tx3)"/></span>
                 </div>
@@ -2033,19 +2025,22 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           {skippedBens.length>0&&(
             <>
               <div style={{borderTop:"1px solid var(--br)",margin:"6px 0",paddingTop:10}}>
-                <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,color:"#9ca3af",textTransform:"uppercase",marginBottom:6}}>SKIPPED</div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,color:"#9ca3af",textTransform:"uppercase"}}>SKIPPED ({skippedBens.length})</div>
+                  <div style={{fontSize:10,color:"#9ca3af",fontStyle:"italic"}}>Not counted toward your potential</div>
+                </div>
               </div>
               {skippedBens.map((b,i)=>(
-                <div key={b.key} style={{borderBottom:i<skippedBens.length-1?"1px solid var(--br)":"none",padding:"8px 0",opacity:0.4}}>
+                <div key={b.key} style={{borderBottom:i<skippedBens.length-1?"1px solid var(--br)":"none",padding:"8px 0",opacity:0.45}}>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
                     <div style={{flex:1,minWidth:0}}>
                       <span style={{fontSize:12,fontWeight:500,color:"var(--tx)",textDecoration:"line-through"}}>{b.n}</span>
-                      <span style={{fontSize:10,fontStyle:"italic",color:"#9ca3af",marginLeft:6}}>skipped</span>
-                      {b.v&&<div style={{fontSize:10,color:"var(--tx3)"}}>${b.v}{b.isMonthly?"/mo":b.reset==="quarterly"?"/quarter":b.reset==="semi-annual"?"/6 mo":"/yr"}</div>}
+                      {b.v&&<span style={{fontSize:10,color:"var(--tx3)",marginLeft:6}}>${annualBenValue(b)}/yr</span>}
                     </div>
-                    <button onClick={e=>toggleSkip(b.key,e)} title="Un-skip"
-                      style={{flexShrink:0,background:"none",border:"none",cursor:"pointer",padding:4}}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                    <button onClick={e=>toggleSkip(b.key,e)} title="Restore this benefit"
+                      style={{flexShrink:0,background:"rgba(13,115,119,.06)",border:"1px solid rgba(13,115,119,.15)",borderRadius:6,cursor:"pointer",padding:"3px 8px",display:"flex",alignItems:"center",gap:4}}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                      <span style={{fontSize:10,fontWeight:600,color:"var(--acc)"}}>Restore</span>
                     </button>
                   </div>
                 </div>
