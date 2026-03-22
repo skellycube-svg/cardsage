@@ -1837,22 +1837,23 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
 
       {/* ── ROI PROGRESS + VERDICT ── */}
       <div className="surf fu" style={{marginBottom:16,border:`1px solid ${vc.border}`,background:vc.bg}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:totalCredits>0?10:4}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <Icon name={vc.icon} size={18} color={vc.color}/>
             <span style={{fontSize:16,fontWeight:800,color:vc.color,fontFamily:"'Inter',sans-serif"}}>{vc.label}</span>
           </div>
-          <span style={{fontSize:16,fontWeight:800,fontFamily:"'Source Code Pro',monospace",color:vc.color}}>{usedRoiPct}% ROI</span>
+          {totalCredits>0&&<span style={{fontSize:16,fontWeight:800,fontFamily:"'Source Code Pro',monospace",color:vc.color}}>{usedRoiPct}% ROI</span>}
         </div>
-        <div style={{fontSize:12,color:"var(--tx2)",marginBottom:8}}>
-          {totalCredits>0
-            ?<>${'$'}{usedValue.toLocaleString()} used of {'$'}{totalCredits.toLocaleString()} in benefits you'd consider</>
-            :"No dollar-value benefits to track"}
-        </div>
-        {/* Progress bar: captured ÷ realistic total */}
-        <div className="prog-track" style={{height:10,marginBottom:8,position:"relative",overflow:"hidden"}}>
-          <div className="prog-fill" style={{position:"absolute",top:0,left:0,height:"100%",width:totalCredits>0?Math.min((usedValue/totalCredits)*100,100)+"%":"0%",background:vc.color,borderRadius:"inherit",transition:"width .5s ease"}}/>
-        </div>
+        {totalCredits>0&&(
+          <>
+            <div style={{fontSize:12,color:"var(--tx2)",marginBottom:8}}>
+              ${ usedValue.toLocaleString()} used of ${ totalCredits.toLocaleString()} in benefits you'd consider
+            </div>
+            <div className="prog-track" style={{height:10,marginBottom:8,position:"relative",overflow:"hidden"}}>
+              <div className="prog-fill" style={{position:"absolute",top:0,left:0,height:"100%",width:Math.min((usedValue/totalCredits)*100,100)+"%",background:vc.color,borderRadius:"inherit",transition:"width .5s ease"}}/>
+            </div>
+          </>
+        )}
         <p style={{fontSize:12,color:"var(--tx2)",margin:0,lineHeight:1.5}}>{vc.desc}</p>
       </div>
 

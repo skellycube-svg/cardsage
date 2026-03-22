@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://feeworth.com/sitemap.xml
+Sitemap: https://www.feeworth.com/sitemap.xml
