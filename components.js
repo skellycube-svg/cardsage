@@ -6622,8 +6622,20 @@ function App(){
     const fb=window.CS_FB;
     if(!fb) return;
     const unsub=fb.onAuthStateChanged(fb.auth,async u=>{
+      const wasSignedIn=!!userRef.current;
       setUser(u);
-      if(!u){ mountedRef.current=true; return; }
+      if(!u){
+        // If the user just signed out (not initial load), clear all state so
+        // they see a clean landing page with no stale data from the prior account.
+        if(wasSignedIn){
+          setMyCards([]);setCheckedArr([]);setSkippedArr([]);
+          setP2Cards([]);setP2Name("");setHouseholdSetup(false);
+          setAnniversaryDates({});setFirstYearCards([]);
+          setTab("home");
+        }
+        mountedRef.current=true;
+        return;
+      }
       // Load cloud data and merge with whatever's in localStorage
       try{
         const snap=await fb.getDoc(fb.doc(fb.db,'users',u.uid));
