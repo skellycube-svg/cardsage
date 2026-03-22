@@ -730,7 +730,7 @@ function SharePortfolioModal({netValue,totalFees,totalCredits,numCards,activeStr
 // sorted by nearest renewal date with ROI progress bars and verdict badges,
 // and a collapsed section for no-annual-fee cards.
 // Props: myCards, setMyCards, checkedSet, setTab, setStratModal.
-function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversaryDates,user,p2Cards=[],p2Name="",householdSetup=false}){
+function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversaryDates,user,p2Cards=[],p2Name="",householdSetup=false,firstYearCards=[]}){
   const [showShare,setShowShare]=useState(false);
   const [showFreeCards,setShowFreeCards]=useState(false);
   const [showP2Free,setShowP2Free]=useState(false);
@@ -739,8 +739,9 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
 
   // Helper to compute annual credit value for a card
   const cardCreditVal=c=>{
-    const ann=c.annual.reduce((a,b)=>{if(!b.v)return a;if(b.reset==="quarterly")return a+b.v*4;if(b.reset==="semi-annual")return a+b.v*2;return a+b.v;},0);
-    return ann+c.monthly.reduce((a,b)=>a+((b.v||0)*12),0);
+    const isFirst=firstYearCards.includes(c.id);
+    const ann=c.annual.reduce((a,b)=>{if(!b.v)return a;if(b.requiresRenewal&&isFirst)return a;if(b.reset==="quarterly")return a+b.v*4;if(b.reset==="semi-annual")return a+b.v*2;return a+b.v;},0);
+    return ann+c.monthly.reduce((a,b)=>{if(b.requiresRenewal&&isFirst)return a;return a+((b.v||0)*12);},0);
   };
 
   const allHouseCards=useMemo(()=>[...cards,...p2Resolved],[cards,p2Resolved]);
@@ -749,9 +750,11 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
   // Compute used value for a card based on checked-off benefits
   function cardUsedValue(card){
     let total=0;
+    const isFirst=firstYearCards.includes(card.id);
     const allBens=[...card.annual.map(b=>({...b,isMonthly:false})),...card.monthly.map(b=>({...b,isMonthly:true}))];
     allBens.forEach(b=>{
       if(!b.v)return;
+      if(b.requiresRenewal&&isFirst)return;
       const pk=periodKeys(card.id,b,b.isMonthly);
       if(pk) pk.forEach(p=>{if(checkedSet.has(p.key))total+=b.v;});
       else if(checkedSet.has(benKey(card.id,b,b.isMonthly))) total+=annualBenValue(b);
@@ -760,7 +763,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
   }
 
   const totalFees=useMemo(()=>allHouseCards.reduce((s,c)=>s+c.fee,0),[allHouseCards]);
-  const totalCredits=useMemo(()=>allHouseCards.reduce((s,c)=>s+cardUsedValue(c),0),[allHouseCards,checkedSet]);
+  const totalCredits=useMemo(()=>allHouseCards.reduce((s,c)=>s+cardUsedValue(c),0),[allHouseCards,checkedSet,firstYearCards]);
   const netROI=totalCredits-totalFees;
 
   // Calculate per-card used credit values
@@ -774,8 +777,8 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
       return {card,usedVal,potentialVal,renewDays,roiPct,verdict,owner};
     });
   }
-  const cardStats=useMemo(()=>buildCardStats(cards,"you"),[cards,anniversaryDates,checkedSet]);
-  const p2CardStats=useMemo(()=>buildCardStats(p2Resolved,p2Name||"Partner"),[p2Resolved,anniversaryDates,p2Name,checkedSet]);
+  const cardStats=useMemo(()=>buildCardStats(cards,"you"),[cards,anniversaryDates,checkedSet,firstYearCards]);
+  const p2CardStats=useMemo(()=>buildCardStats(p2Resolved,p2Name||"Partner"),[p2Resolved,anniversaryDates,p2Name,checkedSet,firstYearCards]);
 
   // Split into fee cards (sorted by nearest renewal) and free cards
   const allStats=useMemo(()=>[...cardStats,...p2CardStats],[cardStats,p2CardStats]);
@@ -1474,7 +1477,7 @@ function BenefitsTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckD
 // The core FeeWorth feature — a deep-dive decision page for a single card.
 // Lets users pick a card, see benefit tracker, ROI verdict, retention scripts,
 // downgrade paths, cancellation consequences, and replacement suggestions.
-function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckDates,resetBadges=new Set(),skippedSet=new Set(),setSkippedBenefits,anniversaryDates={},setAnniversaryDates,p2Cards=[],p2Name="",householdSetup=false}){
+function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,setCheckDates,resetBadges=new Set(),skippedSet=new Set(),setSkippedBenefits,anniversaryDates={},setAnniversaryDates,p2Cards=[],p2Name="",householdSetup=false,firstYearCards=[],setFirstYearCards}){
   const cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
   const p2Resolved=useMemo(()=>householdSetup?p2Cards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean):[],[p2Cards,householdSetup]);
   const allCards=useMemo(()=>[...cards,...p2Resolved],[cards,p2Resolved]);
@@ -1524,36 +1527,41 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
     return list;
   },[card]);
 
-  const trackable=useMemo(()=>allBenefits.filter(b=>b.v!=null&&!skippedSet.has(b.key)),[allBenefits,skippedSet]);
-  const totalCredits=useMemo(()=>trackable.reduce((s,b)=>s+annualBenValue(b),0),[trackable]);
+  const isFirstYear=card?firstYearCards.includes(card.id):false;
+  const isRenewalBlocked=useCallback(b=>!!b.requiresRenewal&&isFirstYear,[isFirstYear]);
 
-  // Count checked periods
+  const trackable=useMemo(()=>allBenefits.filter(b=>b.v!=null&&!skippedSet.has(b.key)),[allBenefits,skippedSet]);
+  // ROI-eligible trackable excludes renewal-only benefits in first year
+  const roiTrackable=useMemo(()=>trackable.filter(b=>!isRenewalBlocked(b)),[trackable,isRenewalBlocked]);
+  const totalCredits=useMemo(()=>roiTrackable.reduce((s,b)=>s+annualBenValue(b),0),[roiTrackable]);
+
+  // Count checked periods (only ROI-eligible benefits)
   const checkedCount=useMemo(()=>{
     let count=0;
-    trackable.forEach(b=>{
+    roiTrackable.forEach(b=>{
       const pk=periodKeys(card?.id,b,b.isMonthly);
       if(pk) pk.forEach(p=>{if(checkedSet.has(p.key))count++;});
       else if(checkedSet.has(b.key)) count++;
     });
     return count;
-  },[trackable,checkedSet,card]);
+  },[roiTrackable,checkedSet,card]);
   const totalSlots=useMemo(()=>{
     let count=0;
-    trackable.forEach(b=>{
+    roiTrackable.forEach(b=>{
       const pk=periodKeys(card?.id,b,b.isMonthly);
       count+=pk?pk.length:1;
     });
     return count;
-  },[trackable,card]);
+  },[roiTrackable,card]);
   const usedValue=useMemo(()=>{
     let total=0;
-    trackable.forEach(b=>{
+    roiTrackable.forEach(b=>{
       const pk=periodKeys(card?.id,b,b.isMonthly);
       if(pk) pk.forEach(p=>{if(checkedSet.has(p.key))total+=b.v;});
       else if(checkedSet.has(b.key)) total+=annualBenValue(b);
     });
     return total;
-  },[trackable,checkedSet,card]);
+  },[roiTrackable,checkedSet,card]);
 
   const usedRoiPct=card&&card.fee>0?Math.round((usedValue/card.fee)*100):0;
   const potentialRoiPct=card&&card.fee>0?Math.round((totalCredits/card.fee)*100):0;
@@ -1796,6 +1804,32 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
         )}
       </div>
 
+      {/* ── FIRST YEAR TOGGLE ── */}
+      {card&&allBenefits.some(b=>b.requiresRenewal)&&(
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,marginBottom:16,
+          background:isFirstYear?"rgba(212,168,64,.06)":"rgba(13,115,119,.04)",
+          border:isFirstYear?"1px solid rgba(212,168,64,.2)":"1px solid rgba(13,115,119,.1)"}}>
+          <span style={{fontSize:14,flexShrink:0}}>{isFirstYear?"🆕":"🔄"}</span>
+          <div style={{flex:1,fontSize:12,color:"var(--tx2)"}}>
+            {isFirstYear
+              ?<><strong style={{color:"var(--gold)"}}>First year</strong> — renewal-only benefits (free nights, anniversary bonuses) are excluded from ROI</>
+              :<>This card has renewal-only benefits included in ROI</>}
+          </div>
+          <button onClick={()=>{
+            if(setFirstYearCards) setFirstYearCards(prev=>{
+              const s=new Set(prev);
+              s.has(card.id)?s.delete(card.id):s.add(card.id);
+              return [...s];
+            });
+          }} style={{flexShrink:0,padding:"4px 10px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",
+            background:isFirstYear?"rgba(212,168,64,.12)":"rgba(13,115,119,.08)",
+            color:isFirstYear?"var(--gold)":"var(--acc)",
+            border:isFirstYear?"1px solid rgba(212,168,64,.25)":"1px solid rgba(13,115,119,.2)"}}>
+            {isFirstYear?"First Year":"Renewal Year"}
+          </button>
+        </div>
+      )}
+
       {/* ── ROI PROGRESS + VERDICT ── */}
       <div className="surf fu" style={{marginBottom:16,border:`1px solid ${vc.border}`,background:vc.bg}}>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
@@ -1849,7 +1883,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           </div>
           <div style={{flex:1}}>
             <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Benefit Tracker</div>
-            <div style={{fontSize:11,color:"var(--tx3)"}}>{checkedCount}/{totalSlots} used · ${usedValue.toLocaleString()} redeemed</div>
+            <div style={{fontSize:11,color:"var(--tx3)"}}>{checkedCount}/{totalSlots} used · ${usedValue.toLocaleString()} redeemed{isFirstYear&&allBenefits.some(b=>b.requiresRenewal)?" (excl. renewal benefits)":""}</div>
           </div>
           <span style={{transition:"transform .2s",transform:showBenefits?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
         </button>
@@ -1857,14 +1891,33 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
         <div className="benefit-item" style={{borderLeftColor:palette.text,padding:"0 14px",marginTop:16}}>
           {/* Credits with checkboxes */}
           {creditBens.map((b,i)=>{
+            const blocked=isRenewalBlocked(b);
             const pk=periodKeys(card.id,b,b.isMonthly);
             const isMulti=!!pk;
-            const done=isMulti?pk.every(p=>checkedSet.has(p.key)):checkedSet.has(b.key);
+            const done=!blocked&&(isMulti?pk.every(p=>checkedSet.has(p.key)):checkedSet.has(b.key));
             const isOpen=openBen===b.key;
             const bc=BCAT[b.cat]||BCAT.statement;
             const rl=RESET_LABELS[b.reset];
             const wasReset=resetBadges.has(b.key);
             const periodLabel=b.reset==="quarterly"?"quarter":b.reset==="semi-annual"?"6 months":b.isMonthly?"month":"year";
+            if(blocked) return (
+              <div key={b.key} style={{borderBottom:i<creditBens.length-1?"1px solid var(--br)":"none",padding:"10px 0",opacity:0.45}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                  <div style={{width:22,height:22,borderRadius:6,border:"2px dashed var(--br2)",flexShrink:0,marginTop:2}}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:3}}>
+                      <span style={{fontSize:13,fontWeight:600,color:"var(--tx3)"}}>{b.n}</span>
+                      <span style={{padding:"1px 7px",borderRadius:99,fontSize:10,fontWeight:700,color:bc.color,background:bc.bg,opacity:0.6}}><Icon name={BCAT_ICON_MAP[b.cat]||"credit-card"} size={10} color={bc.color}/> {bc.label}</span>
+                    </div>
+                    {b.v&&<div style={{fontSize:11,color:"var(--tx3)"}}>Worth ${b.isMonthly?b.v+"/mo":""+b.v+"/yr"} — not counted in year-1 ROI</div>}
+                    <div style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:4,padding:"2px 8px",borderRadius:99,background:"rgba(212,168,64,.1)",border:"1px solid rgba(212,168,64,.2)"}}>
+                      <span style={{fontSize:10}}>🔒</span>
+                      <span style={{fontSize:10,fontWeight:600,color:"var(--gold)"}}>Available after your first renewal</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
             return (
               <div key={b.key} onClick={()=>toggleExpand(b.key)}
                 role="button" tabIndex={0}
@@ -1939,20 +1992,25 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
               )}
               {perkBens.map((b,i)=>{
                 const isOpen=openBen===b.key;
+                const blocked=isRenewalBlocked(b);
                 return (
-                  <div key={b.key} onClick={()=>toggleExpand(b.key)}
-                    style={{borderBottom:i<perkBens.length-1?"1px solid var(--br)":"none",padding:"8px 0",cursor:"pointer"}}>
+                  <div key={b.key} onClick={blocked?undefined:()=>toggleExpand(b.key)}
+                    style={{borderBottom:i<perkBens.length-1?"1px solid var(--br)":"none",padding:"8px 0",cursor:blocked?"default":"pointer",opacity:blocked?0.45:1}}>
                     <div style={{display:"flex",alignItems:"center",gap:10}}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d7377" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
                         <path d="M12 2l7 4v5c0 5.25-3.5 9.74-7 11-3.5-1.26-7-5.75-7-11V6l7-4z"/><path d="M9 12l2 2 4-4"/>
                       </svg>
                       <div style={{flex:1,minWidth:0}}>
                         <span style={{fontSize:12,fontWeight:500,color:"#6b7280"}}>{b.n}</span>
-                        {b.v&&<span style={{fontSize:10,color:"#9ca3af",marginLeft:6}}>up to ${b.v.toLocaleString()}</span>}
+                        {b.v&&!blocked&&<span style={{fontSize:10,color:"#9ca3af",marginLeft:6}}>up to ${b.v.toLocaleString()}</span>}
+                        {blocked&&<div style={{display:"inline-flex",alignItems:"center",gap:4,marginLeft:6,padding:"1px 6px",borderRadius:99,background:"rgba(212,168,64,.1)",border:"1px solid rgba(212,168,64,.2)"}}>
+                          <span style={{fontSize:9}}>🔒</span>
+                          <span style={{fontSize:9,fontWeight:600,color:"var(--gold)"}}>After renewal</span>
+                        </div>}
                       </div>
-                      <span style={{flexShrink:0,transition:"transform .15s",display:"inline-flex",transform:isOpen?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={12} color="#9ca3af"/></span>
+                      {!blocked&&<span style={{flexShrink:0,transition:"transform .15s",display:"inline-flex",transform:isOpen?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={12} color="#9ca3af"/></span>}
                     </div>
-                    {isOpen&&(
+                    {isOpen&&!blocked&&(
                       <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid var(--br)",marginLeft:26}}>
                         {b.d&&<p style={{fontSize:11,color:"#9ca3af",margin:0,lineHeight:1.5}}>{b.d}</p>}
                       </div>
@@ -5519,6 +5577,7 @@ function App(){
   const [p2Name,setP2Name]=useLS(CS_CONFIG.LS_KEYS.p2Name,"");
   const [householdSetup,setHouseholdSetup]=useLS(CS_CONFIG.LS_KEYS.householdSetup,false);
   const [anniversaryDates,setAnniversaryDates]=useLS(CS_CONFIG.LS_KEYS.anniversaryDates,{});
+  const [firstYearCards,setFirstYearCards]=useLS(CS_CONFIG.LS_KEYS.firstYearCards,[]);
   const [resetBadges,setResetBadges]=useState(new Set());
   const [stratModal,setStratModal]=useState(null);
   const [user,setUser]=useState(null);
@@ -5727,8 +5786,8 @@ function App(){
         </div>
       )}
       <div className="tab-content-wrap" style={{paddingTop:8}}>
-        {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup}/>}
-        {tab==="benefits"&&<RenewalAdvisorTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits} anniversaryDates={anniversaryDates} setAnniversaryDates={setAnniversaryDates} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup}/>}
+        {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>}
+        {tab==="benefits"&&<RenewalAdvisorTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits} anniversaryDates={anniversaryDates} setAnniversaryDates={setAnniversaryDates} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards} setFirstYearCards={setFirstYearCards}/>}
         {tab==="household"&&<HouseholdTab myCards={myCards} p2Cards={p2Cards} setP2Cards={setP2Cards} p2Name={p2Name} setP2Name={setP2Name} householdSetup={householdSetup} setHouseholdSetup={setHouseholdSetup} checkedSet={checkedSet} user={user} onAuthClick={()=>setAuthModal(true)} setTab={setTab}/>}
         {/* REMOVED IN FEEWORTH PIVOT — preserved for reference */}
         {/* {tab==="tips"&&    <TipsTab myCards={myCards}/>} */}

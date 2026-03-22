@@ -12,7 +12,7 @@ const CS_CONFIG = {
   // ── Versioning ──────────────────────────────────────────────────────────────
   // The current app version. Incrementing this forces all users' browsers to
   // download fresh files instead of using old cached copies.
-  CACHE_VERSION: 'v76',
+  CACHE_VERSION: 'v77',
 
   // ── Site Metadata ───────────────────────────────────────────────────────────
   // Basic info about the site — name, URL, contact email, and descriptions
@@ -111,7 +111,8 @@ const CS_CONFIG = {
     p2Cards: 'cs_p2_cards',
     p2Name: 'cs_p2_name',
     householdSetup: 'cs_household_setup',
-    anniversaryDates: 'cs_anniversary_dates'
+    anniversaryDates: 'cs_anniversary_dates',
+    firstYearCards: 'cs_first_year_cards'
   }
 };
 
