@@ -3256,7 +3256,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
 /* ── HOUSEHOLD TAB ────────────────────────────────────────────────────────── */
 // Couples/household optimizer — lets user manage P1 + P2 wallets,
 // detect redundant benefits, suggest optimizations, and show coverage map.
-function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetup,setHouseholdSetup,checkedSet,user,onAuthClick,setTab}){
+function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetup,setHouseholdSetup,checkedSet,user,onAuthClick,setTab,firstYearCards=[]}){
   const [addingP2,setAddingP2]=useState(false);
   const [p2Search,setP2Search]=useState("");
 
@@ -3264,16 +3264,18 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
   const p1Cards=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
   const p2Resolved=useMemo(()=>p2Cards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[p2Cards]);
 
-  // Per-card stats helper
+  // Per-card stats helper — uses captured credits (checked-off benefits) to match Dashboard
   function cardStat(card){
-    const annVal=card.annual.reduce((a,b)=>{
-      if(!b.v)return a;
-      if(b.reset==="quarterly")return a+b.v*4;
-      if(b.reset==="semi-annual")return a+b.v*2;
-      return a+b.v;
-    },0);
-    const monVal=card.monthly.reduce((a,b)=>a+((b.v||0)*12),0);
-    const totalVal=annVal+monVal;
+    let totalVal=0;
+    const isFirst=firstYearCards.includes(card.id);
+    const allBens=[...card.annual.map(b=>({...b,isMonthly:false})),...card.monthly.map(b=>({...b,isMonthly:true}))];
+    allBens.forEach(b=>{
+      if(!b.v)return;
+      if(b.requiresRenewal&&isFirst)return;
+      const pk=periodKeys(card.id,b,b.isMonthly);
+      if(pk) pk.forEach(p=>{if(checkedSet.has(p.key))totalVal+=b.v;});
+      else if(checkedSet.has(benKey(card.id,b,b.isMonthly))) totalVal+=annualBenValue(b);
+    });
     const roiPct=card.fee>0?Math.round((totalVal/card.fee)*100):null;
     const verdict=card.fee===0?null:roiPct>=100?"worth-it":roiPct>=50?"on-track":"at-risk";
     return {totalVal,roiPct,verdict};
@@ -3282,8 +3284,8 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
   // Household totals
   const p1Fees=useMemo(()=>p1Cards.reduce((s,c)=>s+c.fee,0),[p1Cards]);
   const p2Fees=useMemo(()=>p2Resolved.reduce((s,c)=>s+c.fee,0),[p2Resolved]);
-  const p1Credits=useMemo(()=>p1Cards.reduce((s,c)=>s+cardStat(c).totalVal,0),[p1Cards]);
-  const p2Credits=useMemo(()=>p2Resolved.reduce((s,c)=>s+cardStat(c).totalVal,0),[p2Resolved]);
+  const p1Credits=useMemo(()=>p1Cards.reduce((s,c)=>s+cardStat(c).totalVal,0),[p1Cards,checkedSet,firstYearCards]);
+  const p2Credits=useMemo(()=>p2Resolved.reduce((s,c)=>s+cardStat(c).totalVal,0),[p2Resolved,checkedSet,firstYearCards]);
   const hhFees=p1Fees+p2Fees;
   const hhCredits=p1Credits+p2Credits;
   const hhNet=hhCredits-hhFees;
@@ -6632,7 +6634,7 @@ function App(){
       <div className="tab-content-wrap" style={{paddingTop:8}}>
         {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>}
         {tab==="benefits"&&<RenewalAdvisorTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits} anniversaryDates={anniversaryDates} setAnniversaryDates={setAnniversaryDates} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards} setFirstYearCards={setFirstYearCards}/>}
-        {tab==="household"&&<HouseholdTab myCards={myCards} p2Cards={p2Cards} setP2Cards={setP2Cards} p2Name={p2Name} setP2Name={setP2Name} householdSetup={householdSetup} setHouseholdSetup={setHouseholdSetup} checkedSet={checkedSet} user={user} onAuthClick={()=>setAuthModal(true)} setTab={setTab}/>}
+        {tab==="household"&&<HouseholdTab myCards={myCards} p2Cards={p2Cards} setP2Cards={setP2Cards} p2Name={p2Name} setP2Name={setP2Name} householdSetup={householdSetup} setHouseholdSetup={setHouseholdSetup} checkedSet={checkedSet} user={user} onAuthClick={()=>setAuthModal(true)} setTab={setTab} firstYearCards={firstYearCards}/>}
         {/* REMOVED IN FEEWORTH PIVOT — preserved for reference */}
         {/* {tab==="tips"&&    <TipsTab myCards={myCards}/>} */}
         {/* {tab==="plan"&&    <PlanTab myCards={myCards}/>} */}
