@@ -2880,14 +2880,14 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             const avgRate=earnCats.reduce((s,[,v])=>s+parseFloat(String(v).replace(/[^0-9.]/g,"")),0)/earnCats.length;
             const cpp=tpd?tpd.transferValue/100:0.01;
             const annualEarnValue=Math.round(monthlySpend*12*avgRate*cpp);
-            if(annualEarnValue>0){totalValue+=annualEarnValue;reasons.push("Your spending earns ~$"+annualEarnValue+"/yr in points value ("+avgRate.toFixed(1)+"x avg at "+(tpd?tpd.transferValue:1)+"c/point)");}
+            if(annualEarnValue>0){totalValue+=annualEarnValue;reasons.push("Your spending earns ~$"+annualEarnValue+"/yr in points value (you earn "+avgRate.toFixed(1)+"x points on bonus categories, worth "+(tpd?tpd.transferValue:1)+"\u00a2 each through travel partners)");}
           }
 
           // Q2: Transfer partner multiplier
           // Skip transfer bonus if partner already has an unlocker with sharing — the transfer access is redundant for THIS card
           if(answers.transfer&&!(partnerHasUnlocker&&canShareHH)){
             const transferBonus=answers.transfer==="regular"?150:answers.transfer==="sometimes"?75:0;
-            if(transferBonus>0){totalValue+=transferBonus;reasons.push("Transfer partner usage adds ~$"+transferBonus+"/yr in extra value vs cash back");}
+            if(transferBonus>0){totalValue+=transferBonus;reasons.push("Transferring points to travel partners is worth ~$"+transferBonus+"/yr more than taking cash back (your points are worth ~"+(tpd?tpd.transferValue:"1.5")+"\u00a2 each vs "+(tpd?tpd.cashValue:"1")+"\u00a2 as cash)");}
             if(answers.transfer==="didnt_know"&&tpd){
               tips.push("If you started transferring to partners, your points could be worth "+tpd.transferValue+"c each instead of "+tpd.cashValue+"c. This alone could change the math.");
             }
@@ -2904,11 +2904,11 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             if(partnerHasUnlocker&&canShareHH){
               const discount=Math.round(totalValue*0.7);
               totalValue-=discount;
-              reasons.push("Partner covers overlapping benefits (-$"+discount+" household redundancy — transfer access is fully redundant)");
+              reasons.push("Your partner's card covers the same benefits (-$"+discount+") \u2014 since "+ecoName.split(" ")[0]+" lets household members combine points, you can downgrade this card without losing transfer access");
             } else {
               const discount=Math.round(totalValue*0.3);
               totalValue-=discount;
-              reasons.push("Partner covers overlapping benefits (-$"+discount+" household redundancy)");
+              reasons.push("Your partner's card covers overlapping benefits (-$"+discount+") \u2014 you're both paying for similar perks that only one of you needs");
             }
           }
 
@@ -2920,7 +2920,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
               const travelVal=Math.round(travelBenTotal*scale);
               const alreadyCounted=Math.min(travelBenTotal,trackerVal);
               const extra=Math.max(0,travelVal-alreadyCounted);
-              if(extra>0){totalValue+=extra;reasons.push("Travel benefits worth ~$"+travelVal+"/yr at your travel frequency");}
+              if(extra>0){totalValue+=extra;reasons.push("Travel benefits worth ~$"+travelVal+"/yr at your travel frequency (includes lounge access, travel credits, and trip protections you\u2019d otherwise pay for)");}
             }
           }
 
@@ -2931,7 +2931,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             if(loyaltyTotal>0){
               const weight=answers.loyalty==="very"?1:answers.loyalty==="somewhat"?0.5:0.3;
               const loyaltyVal=Math.round(loyaltyTotal*weight);
-              reasons.push(brandName+" loyalty perks worth ~$"+loyaltyVal+"/yr based on your usage");
+              reasons.push(brandName+" loyalty perks worth ~$"+loyaltyVal+"/yr based on your usage (free nights, elite status upgrades, and certificates that offset hotel costs)");
             }
           }
 
@@ -2940,22 +2940,56 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             const offerMatch=(retentionOffers[0]||"").match(/\$(\d+)/);
             const retVal=offerMatch?parseInt(offerMatch[1]):75;
             totalValue+=retVal;
-            reasons.push("Likely retention offer adds ~$"+retVal+" (typical: "+retentionOffers[0]+")");
+            reasons.push("Likely retention offer adds ~$"+retVal+" \u2014 if you call to cancel, the issuer typically offers statement credits or bonus points to keep you (e.g., "+retentionOffers[0]+")");
           } else if(answers.retention==="maybe"&&retentionOffers.length>0){
             const offerMatch=(retentionOffers[0]||"").match(/\$(\d+)/);
             const retVal=offerMatch?Math.round(parseInt(offerMatch[1])*0.5):40;
             totalValue+=retVal;
-            reasons.push("Possible retention offer could add ~$"+retVal);
+            reasons.push("Possible retention offer could add ~$"+retVal+" \u2014 if you call to cancel, the issuer may offer statement credits or bonus points to keep you (a \u2018retention offer\u2019)");
           }
 
           // Synergy value — skip if partner covers same ecosystem unlocker (synergy works through their card)
+          // Scale synergy value based on user's actual usage patterns instead of assuming full benefit
           if(synergies.length>0&&!(partnerHasUnlocker&&canShareHH&&isUnlocker)){
             const ownedSyns=synergies.filter(s=>{const pc=CARDS.find(c=>c.name===s.pairWith);return pc&&allHHIds.includes(pc.id);});
             if(ownedSyns.length>0){
-              const synMatch=(ownedSyns[0].estimatedUplift||"").match(/\$(\d+)/);
-              const synVal=synMatch?parseInt(synMatch[1]):100;
-              totalValue+=synVal;
-              reasons.push("Strategy synergy with "+ownedSyns[0].pairWith.replace(/[^a-zA-Z0-9 ]/g,"").trim()+" adds ~$"+synVal+"/yr");
+              const syn=ownedSyns[0];
+              const synMatch=(syn.estimatedUplift||"").match(/\$(\d+)/);
+              const baseSynVal=synMatch?parseInt(synMatch[1]):100;
+              const pairName=syn.pairWith.replace(/[®℠]/g,"").replace(/ Credit Card/,"").trim();
+              // Scale by synergy type and relevant user behavior
+              let synScale=0;let synNote="";
+              if(syn.type==="statusStacking"){
+                // Hotel status stacking — value depends on travel frequency
+                synScale=answers.travel==="frequent"?0.5:answers.travel==="sometimes"?0.25:0;
+                if(synScale>0){
+                  const synVal=Math.round(baseSynVal*synScale);
+                  totalValue+=synVal;
+                  reasons.push("Pairs well with "+pairName+" (~$"+synVal+"/yr value) \u2014 "+(syn.youGet||"hotel status benefits stack together for upgrades and elite perks"));
+                } else {
+                  reasons.push("This card pairs with your "+pairName+" for hotel status benefits \u2014 but since you travel infrequently, the added value is minimal");
+                }
+              } else if(syn.type==="ecosystemUnlocker"){
+                // Transfer unlocking — value depends on transfer partner usage
+                synScale=answers.transfer==="regular"?0.5:answers.transfer==="sometimes"?0.25:0;
+                if(synScale>0){
+                  const synVal=Math.round(baseSynVal*synScale);
+                  totalValue+=synVal;
+                  reasons.push("Pairs well with "+pairName+" (~$"+synVal+"/yr value) \u2014 "+(syn.youGet||"unlocks transfer partners so your points are worth 2-3x more than cash back"));
+                } else {
+                  reasons.push("This card pairs with your "+pairName+" to unlock transfer partners \u2014 but since you don\u2019t use transfers, the added value is minimal. Worth exploring: transferring to travel partners can double your point value");
+                }
+              } else {
+                // companionCombo / categoryCoverage — value depends on spending
+                synScale=answers.spending==="vhigh"||answers.spending==="high"?0.5:answers.spending==="med"||answers.spending==="low"?0.25:0;
+                if(synScale>0){
+                  const synVal=Math.round(baseSynVal*synScale);
+                  totalValue+=synVal;
+                  reasons.push("Pairs well with "+pairName+" (~$"+synVal+"/yr value) \u2014 "+(syn.youGet||"together they cover more spending categories at higher earn rates"));
+                } else {
+                  reasons.push("This card pairs with your "+pairName+" for earning optimization \u2014 but since you don\u2019t spend on this card, the combo benefit is minimal");
+                }
+              }
             }
           }
 
@@ -2975,24 +3009,24 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
               totalValue-=200;
               // Cap any remaining value low — non-transfer perks don't justify the fee
               if(totalValue>0) totalValue=Math.min(totalValue,Math.round(card.fee*0.3));
-              reasons.push((p2Name||"Partner")+"'s "+(partnerUnlockerCard.short||partnerUnlockerCard.name)+" already unlocks "+ecoName.split(" ")[0]+" transfer partners");
-              reasons.push(ecoName.split(" ")[0]+" allows household point combining — your points flow to "+(p2Name||"partner")+"'s account for the same transfer access");
-              if(savings>0) reasons.push("Downgrade to "+dgName+" ($"+dgFee+"/yr) and save $"+savings+"/yr with zero loss in transfer access");
+              reasons.push((p2Name||"Partner")+"'s "+(partnerUnlockerCard.short||partnerUnlockerCard.name)+" already unlocks "+ecoName.split(" ")[0]+" transfer partners \u2014 without it, all your "+ecoName.split(" ")[0]+" points are limited to "+(tpd?tpd.cashValue:"1")+"\u00a2 cash back instead of "+(tpd?tpd.transferValue:"2")+"\u00a2+ through airline/hotel transfers");
+              reasons.push(ecoName.split(" ")[0]+" lets household members combine points \u2014 your points flow to "+(p2Name||"partner")+"'s account for the same transfer access, so you don\u2019t need your own unlocker card");
+              if(savings>0) reasons.push("Downgrade to "+dgName+" ($"+dgFee+"/yr) and save $"+savings+"/yr \u2014 you keep earning points and they still transfer through "+(p2Name||"partner")+"'s card");
             } else if(partnerHasUnlocker&&!canShareHH){
               // Partner has unlocker but can't share — both need their own
-              reasons.push("You both have "+ecoName.split(" ")[0]+" transfer access, but "+ecoName.split(" ")[0]+" doesn't allow household point combining — you each need your own unlocker");
+              reasons.push("You both have "+ecoName.split(" ")[0]+" transfer access \u2014 unlike Chase or Capital One, "+ecoName.split(" ")[0]+" doesn\u2019t let household members combine points, so you each need your own unlocker card to transfer");
             } else if(isOnlyUnlocker){
               // Only unlocker in household — card is essential
               totalValue+=200;
-              reasons.push("This is your household's only "+ecoName.split(" ")[0]+" transfer unlocker (+$200 strategic value)");
-              warnings.push("Canceling drops ALL household "+ecoName+" points to cash value");
+              reasons.push("Only card in your household that unlocks "+ecoName.split(" ")[0]+" transfer partners (+$200 strategic value) \u2014 without it, all your "+ecoName.split(" ")[0]+" points are limited to "+(tpd?tpd.cashValue:"1")+"\u00a2 cash back instead of "+(tpd?tpd.transferValue:"2")+"\u00a2+ through airline/hotel transfers");
+              warnings.push("Canceling drops ALL household "+ecoName+" points to cash value \u2014 you\u2019d lose transfer partner access entirely");
             }
           } else if(isUnlocker&&ecoName&&!householdSetup){
             // Solo user — unlocker has strategic value
             if(isOnlyUnlocker){
               totalValue+=200;
-              reasons.push("This is your only "+ecoName.split(" ")[0]+" transfer unlocker (+$200 strategic value)");
-              warnings.push("Canceling drops ALL your "+ecoName+" points to cash value");
+              reasons.push("Only card you have that unlocks "+ecoName.split(" ")[0]+" transfer partners (+$200 strategic value) \u2014 without it, all your "+ecoName.split(" ")[0]+" points are limited to "+(tpd?tpd.cashValue:"1")+"\u00a2 cash back instead of "+(tpd?tpd.transferValue:"2")+"\u00a2+ through airline/hotel transfers");
+              warnings.push("Canceling drops ALL your "+ecoName+" points to cash value \u2014 you\u2019d lose transfer partner access entirely");
             }
           }
 
