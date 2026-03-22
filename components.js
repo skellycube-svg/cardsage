@@ -3782,7 +3782,7 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
   // Card list renderer for P1 or P2
   const renderCardList=(cards,label)=>(
     <div>
-      <div style={{fontSize:11,fontWeight:700,letterSpacing:1,color:"var(--tx3)",textTransform:"uppercase",marginBottom:8}}>{label}'s Cards</div>
+      <div style={{fontSize:11,fontWeight:700,letterSpacing:1,color:"var(--tx3)",textTransform:"uppercase",marginBottom:8}}>{label==="You"?"Your":label+"'s"} Cards</div>
       {cards.length===0?(
         <div style={{padding:"16px 0",fontSize:12,color:"var(--tx3)",fontStyle:"italic"}}>No cards added yet.</div>
       ):cards.map(card=>{
