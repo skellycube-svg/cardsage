@@ -2714,62 +2714,78 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
   const insights=useMemo(()=>{
     if(!p2Resolved.length)return[];
     const results=[];
-    const p1Set=new Set(myCards);
-    const p2Set=new Set(p2Cards);
 
     // Helper: collect all benefit names + hiddenPerk names for a card
     function allPerks(card){
       const names=[...card.annual,...card.monthly].map(b=>b.n);
-      if(card.hiddenValue&&card.hiddenValue.hiddenPerks){
-        card.hiddenValue.hiddenPerks.forEach(hp=>names.push(hp.perk));
-      }
+      if(card.hiddenValue&&card.hiddenValue.hiddenPerks) card.hiddenValue.hiddenPerks.forEach(hp=>names.push(hp.perk));
       return names;
     }
-
-    // Helper: check if a perk list matches any keyword
     function matchesKeywords(perkNames,keywords){
       return perkNames.some(n=>keywords.some(kw=>n.toLowerCase().includes(kw.toLowerCase())));
     }
 
     // Grammar helpers for "You" vs partner name
     const pn=p2Name||"Partner";
-    function pos(owner){return owner==="You"?"your":owner+"'s";}  // possessive: "your" or "Alex's"
-    function has(owner){return owner==="You"?"have":"has";}        // verb: "have" or "has"
-    function their(owner){return owner==="You"?"your":"their";}    // pronoun: "your" or "their"
-    function they(owner){return owner==="You"?"you":"they";}       // subject: "you" or "they"
+    function pos(o){return o==="You"?"your":o+"'s";}
+    function has(o){return o==="You"?"have":"has";}
+    function they(o){return o==="You"?"you":"they";}
+    function their(o){return o==="You"?"your":"their";}
+    function They(o){return o==="You"?"You":"They";}
 
-    // ── A. Ecosystem detection ──
-    const handledEco=new Set();
+    // ── 1. ECOSYSTEM INSIGHTS ──
     Object.entries(ECOSYSTEM_MAP).forEach(([currency,eco])=>{
       const rule=POINT_SHARING_RULES[currency];
       if(!rule)return;
       const p1InEco=p1Cards.filter(c=>c.cur===currency);
       const p2InEco=p2Resolved.filter(c=>c.cur===currency);
+      const ecoName=currency.split(" ")[0];
+      const combineWord=rule.method.toLowerCase().includes("combine")?"combine":"share";
+      const uplift=eco.valueUplift||"";
+      const cashVal=uplift.split("→")[0]?.trim()||"1¢";
+      const transferVal=uplift.split("→")[1]?.split("(")[0]?.trim()||"2-3¢";
+      const earnerList=eco.earners.filter(n=>!eco.unlockers.includes(n));
+      const freeEarnerName=earnerList[0]?earnerList[0].replace(/®|℠/g,"").replace(/Credit Card/,"").trim():"a free earner card";
+
+      // ── Case C: Only one side has cards in this ecosystem ──
       if(p1InEco.length===0||p2InEco.length===0){
-        // Only one side has cards — check for preservation warning if canShareHousehold:false
         const solo=p1InEco.length>0?p1InEco:p2InEco;
         const soloOwner=p1InEco.length>0?"You":pn;
-        if(!rule.canShareHousehold&&solo.length>0){
-          const ecoName=currency.split(" ")[0];
-          results.push({
-            color:"gold",icon:"⚠️",
-            headline:`${ecoName} Points Locked to ${soloOwner}`,
-            detail:`${ecoName} doesn't allow direct point transfers between household members. ${pos(soloOwner)} ${currency} points are locked to ${their(soloOwner)} account. If ${they(soloOwner)} cancel ${their(soloOwner)} only ${ecoName} card without downgrading to a free ${ecoName} card${eco.warning?" (like "+eco.cheapestUnlocker+")":""}, ${they(soloOwner)} lose ALL ${their(soloOwner)} ${ecoName} points.`,
-            cards:solo
-          });
+        const otherOwner=p1InEco.length>0?pn:"You";
+        if(solo.length===0)return;
+        const soloUnlockers=solo.filter(c=>eco.unlockers.includes(c.name));
+        const hasUnlocker=soloUnlockers.length>0;
+        const onlyOneCard=solo.length===1;
+        const isMR=currency==="Amex Membership Rewards";
+
+        if(!rule.canShareHousehold){
+          // Amex/Bilt — can't share, warn about point stranding
+          let detail=`Unlike Chase, ${ecoName} does NOT let household members combine or transfer points between each other. ${pos(soloOwner)} ${currency} points are locked to ${their(soloOwner)} account.`;
+          if(onlyOneCard&&isMR){
+            detail+=` CRITICAL: If ${they(soloOwner)} cancel ${their(soloOwner)} ${solo[0].short||solo[0].name} without downgrading to a free Amex card (like EveryDay, $0/yr), ${they(soloOwner)} permanently lose ALL ${their(soloOwner)} Membership Rewards points.`;
+          } else if(onlyOneCard){
+            detail+=` If ${they(soloOwner)} cancel ${their(soloOwner)} only ${ecoName} card, ${they(soloOwner)} lose all accumulated ${ecoName} points.`;
+          }
+          detail+=` Since ${otherOwner} ${otherOwner==="You"?"don't":"doesn't"} have an ${ecoName} card, ${they(otherOwner)} can't be a backup — ${pos(soloOwner)} card (or a downgrade) is essential.`;
+          results.push({color:"red",icon:"🔴",headline:`${ecoName} — Point Loss Risk`,detail,badge:"Warning",cards:solo});
+        } else if(hasUnlocker){
+          // Can share — note that other partner could add a free earner
+          results.push({color:"teal",icon:"🟢",headline:`${ecoName} — ${soloOwner} Only`,
+            detail:`Only ${soloOwner} ${has(soloOwner)} ${ecoName} cards. Since ${ecoName} lets household members ${combineWord} points, ${otherOwner} could add a free ${freeEarnerName} ($0/yr) and ${combineWord} those points via ${pos(soloOwner)} ${soloUnlockers[0].short||soloUnlockers[0].name} — boosting household earn with no extra annual fee.`,
+            badge:"Tip",cards:solo});
         }
         return;
       }
-      handledEco.add(currency);
+
+      // Both sides have cards in this ecosystem
       const p1Unlockers=p1InEco.filter(c=>eco.unlockers.includes(c.name));
       const p2Unlockers=p2InEco.filter(c=>eco.unlockers.includes(c.name));
-      const p1Earners=p1InEco.filter(c=>eco.earners.includes(c.name)&&!eco.unlockers.includes(c.name));
-      const p2Earners=p2InEco.filter(c=>eco.earners.includes(c.name)&&!eco.unlockers.includes(c.name));
-      const ecoName=currency.split(" ")[0];
+      const p1EarnOnly=p1InEco.filter(c=>eco.earners.includes(c.name)&&!eco.unlockers.includes(c.name));
+      const p2EarnOnly=p2InEco.filter(c=>eco.earners.includes(c.name)&&!eco.unlockers.includes(c.name));
 
       if(rule.canShareHousehold){
+        // ── Case A: Both have unlockers — redundancy ──
         if(p1Unlockers.length>0&&p2Unlockers.length>0){
-          // Both have unlockers — TRUE redundancy
           const allCards=[...p1Unlockers,...p2Unlockers];
           const cheapest=allCards.reduce((a,b)=>a.fee<=b.fee?a:b);
           const expensive=allCards.filter(c=>c.id!==cheapest.id);
@@ -2777,73 +2793,82 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
             const dg=c.downgradePaths&&c.downgradePaths[0];
             return s+(dg?c.fee-dg.annualFee:c.fee);
           },0);
-          // Build specific downgrade suggestion
+          const keepOwner=p1Unlockers.includes(cheapest)?"You":pn;
+          const dropOwner=p1Unlockers.includes(cheapest)?pn:"You";
           const expCard=expensive[0];
-          const expOwner=p1Unlockers.includes(expCard)?"You":pn;
           const dg=expCard&&expCard.downgradePaths&&expCard.downgradePaths[0];
-          const dgDetail=dg?` ${expOwner==="You"?"You":"They"} can downgrade the ${expCard.short||expCard.name} to ${dg.cardName} ($${dg.annualFee}/yr) and save $${expCard.fee-dg.annualFee}/yr — ${they(expOwner)}'ll still have full transfer partner access for both.`
-            :` The other can downgrade and still access transfers via point ${rule.method.toLowerCase().includes("combine")?"combining":"sharing"}.`;
-          const combineWord=rule.method.toLowerCase().includes("combine")?"combine":"share";
-          results.push({
-            color:"red",icon:"🔴",
-            headline:`Both Unlock ${ecoName} Transfers`,
-            detail:`You both have ${ecoName} transfer-unlocking cards. Since ${ecoName} lets household members ${combineWord} points, only one of you needs an unlocker.${dgDetail}`,
-            savings:savings>0?savings:null,
-            cards:allCards
-          });
-        } else if((p1Unlockers.length>0&&p2Earners.length>0)||(p2Unlockers.length>0&&p1Earners.length>0)){
-          // Smart combo — one unlocks, other earns
+          const dgName=dg?dg.cardName:freeEarnerName;
+          const dgFee=dg?dg.annualFee:0;
+          let detail=`You only need ONE unlocker card between you to unlock transfer partners for ALL your household ${ecoName} points. ${ecoName} lets household members at the same address ${combineWord} points, so ${pos(dropOwner)} points flow to ${pos(keepOwner)} ${cheapest.short||cheapest.name} for transfer partner access at ${transferVal} each instead of ${cashVal} cash.`;
+          detail+=` ${They(dropOwner)} can downgrade ${their(dropOwner)} ${expCard.short||expCard.name} to ${dgName} ($${dgFee}/yr) and save $${savings}/yr — ${they(dropOwner)}'ll still earn points and ${combineWord} them with ${pos(keepOwner)} account.`;
+          detail+=` Just make sure at least one of you always keeps an unlocker card (${eco.unlockers.map(u=>u.replace(/®|℠/g,"").replace(/ Credit Card/,"").trim()).join(", ")}).`;
+          results.push({color:"red",icon:"🔴",headline:`${ecoName} — Only Need One Unlocker`,detail,savings,badge:"Potential savings",cards:allCards});
+        }
+        // ── Case B: One unlocker + other has earners ──
+        else if((p1Unlockers.length>0&&p2EarnOnly.length>0)||(p2Unlockers.length>0&&p1EarnOnly.length>0)){
           const unlockerOwner=p1Unlockers.length>0?"You":pn;
-          const earnerOwner=p1Earners.length>0?"You":pn;
+          const earnerOwner=p1EarnOnly.length>0?"You":pn;
           const unlockerCard=p1Unlockers.length>0?p1Unlockers[0]:p2Unlockers[0];
-          const earnerCards=p1Earners.length>0?p1Earners:p2Earners;
+          const earnerCards=p1EarnOnly.length>0?p1EarnOnly:p2EarnOnly;
           const earnerNames=earnerCards.map(c=>c.short||c.name).join(" and ");
-          results.push({
-            color:"teal",icon:"✅",
-            headline:`${ecoName} Ecosystem — Smart Combo`,
-            detail:`${pos(earnerOwner)} ${earnerNames} earn${earnerCards.length===1?"s":""} ${ecoName} points, and since ${ecoName} lets household members ${rule.method.toLowerCase().includes("combine")?"combine":"share"} points, those points flow to ${pos(unlockerOwner)} ${unlockerCard.short||unlockerCard.name} for transfer partner access. Together you're maximizing the ${ecoName} ecosystem. If either of you is considering canceling, keep the ${unlockerCard.short||unlockerCard.name} — it's the key that unlocks transfers for both.`,
-            cards:[...p1InEco,...p2InEco]
-          });
+          let detail=`${pos(unlockerOwner)} ${unlockerCard.short||unlockerCard.name} unlocks transfer partners for the entire household. ${pos(earnerOwner)} ${earnerNames} earn${earnerCards.length===1?"s":""} ${ecoName} points, and since ${ecoName} lets household members ${combineWord} points, those points flow to ${pos(unlockerOwner)} ${unlockerCard.short||unlockerCard.name} where they're worth ${transferVal} each instead of ${cashVal} cash.`;
+          detail+=` Your current setup is already the sweet spot — one unlocker (${pos(unlockerOwner)} ${unlockerCard.short||unlockerCard.name} at $${unlockerCard.fee}/yr) plus earner${earnerCards.length>1?"s":""} (${pos(earnerOwner)} ${earnerNames} at $${earnerCards.reduce((s,c)=>s+c.fee,0)}/yr). You don't need two unlocker cards.`;
+          detail+=` Don't cancel ${pos(unlockerOwner)} ${unlockerCard.short||unlockerCard.name} unless ${earnerOwner} ${earnerOwner==="You"?"get your":"gets their"} own unlocker first, or ALL household ${ecoName} points drop to ${cashVal} cash.`;
+          results.push({color:"teal",icon:"🟢",headline:`${ecoName} — Optimized`,detail,badge:"Optimized",cards:[...p1InEco,...p2InEco]});
+        }
+        // ── Case B variant: One unlocker only, other side has no eco earners ──
+        else if((p1Unlockers.length>0&&p2EarnOnly.length===0&&p2Unlockers.length===0)||(p2Unlockers.length>0&&p1EarnOnly.length===0&&p1Unlockers.length===0)){
+          const unlockerOwner=p1Unlockers.length>0?"You":pn;
+          const otherOwner=p1Unlockers.length>0?pn:"You";
+          const unlockerCard=p1Unlockers.length>0?p1Unlockers[0]:p2Unlockers[0];
+          results.push({color:"teal",icon:"🟢",headline:`${ecoName} — ${unlockerOwner} Unlocks`,
+            detail:`${pos(unlockerOwner)} ${unlockerCard.short||unlockerCard.name} unlocks ${ecoName} transfer partners. ${otherOwner} could add a free ${freeEarnerName} ($0/yr) and ${combineWord} those points through ${pos(unlockerOwner)} account for ${transferVal} per point value — no extra annual fee needed.`,
+            badge:"Tip",cards:p1Unlockers.length>0?p1InEco:p2InEco});
         }
         // Add deadline warning if applicable
         if(rule.warning){
-          results.push({
-            color:"gold",icon:"⚠️",
-            headline:`${ecoName} Sharing Deadline`,
+          results.push({color:"gold",icon:"⚠️",headline:`${ecoName} — Sharing Ending Soon`,
             detail:rule.warning+" "+rule.implication,
-            cards:[...p1InEco,...p2InEco]
-          });
+            badge:"Warning",cards:[...p1InEco,...p2InEco]});
         }
       } else {
-        // Can't share — each needs their own
-        results.push({
-          color:"gold",icon:"⚠️",
-          headline:`${ecoName} Points Can't Be Shared`,
-          detail:rule.implication,
-          cards:[...p1InEco,...p2InEco]
-        });
+        // ── Can't share — both have cards but points are siloed ──
+        const isMR=currency==="Amex Membership Rewards";
+        let detail=`Unlike Chase, ${ecoName} does NOT let household members combine or transfer points between each other. Each of you needs your own card to access transfer partners — dropping one means that person's points drop from ${transferVal} to ${cashVal} cash value.`;
+        // Check if either side has only one MR card
+        if(isMR){
+          [["You",p1InEco],[pn,p2InEco]].forEach(([owner,cards])=>{
+            if(cards.length===1){
+              detail+=` CRITICAL: If ${they(owner)} cancel ${their(owner)} ${cards[0].short||cards[0].name} without downgrading to a free Amex card (like EveryDay, $0/yr), ${they(owner)} permanently lose ALL ${their(owner)} Membership Rewards points.`;
+            }
+          });
+        }
+        results.push({color:"red",icon:"🔴",headline:`${ecoName} — Can't Share Points`,detail,badge:"Warning",cards:[...p1InEco,...p2InEco]});
       }
     });
 
-    // ── B. Hotel elite status overlap ──
+    // ── 2. HOTEL/AIRLINE STATUS INSIGHTS ──
     const hotelStatusMap={
-      "Marriott":{keywords:["Marriott Gold","Gold Elite Status","Silver Elite","Platinum Elite","Titanium Elite"],tiers:{"Titanium Elite":5,"Platinum Elite":4,"Gold Elite":3,"Gold Elite Status":3,"Marriott Gold":3,"Silver Elite":2},
-        sharing:"Marriott allows free point transfers (100k/yr), so you can pool points between your accounts."},
-      "Hilton":{keywords:["Diamond Status","Diamond","Hilton Diamond","Gold Status","Hilton Gold","Silver Status"],tiers:{"Diamond Status":4,"Hilton Diamond Status":4,"Diamond":4,"Gold Status":3,"Hilton Gold Elite":3,"Hilton Gold":3,"Silver Status":2},
-        sharing:"Hilton lets you pool points with up to 10 members for free."},
-      "Hyatt":{keywords:["Globalist","Explorist Status","Discoverist Status","Discoverist"],tiers:{"Globalist":4,"Explorist Status":3,"Discoverist Status":2,"Discoverist":2},
-        sharing:"Hyatt lets you combine points by submitting a signed form."}
+      "Marriott":{keywords:["Marriott Gold","Gold Elite Status","Silver Elite","Platinum Elite","Titanium Elite"],
+        tiers:{"Titanium Elite":5,"Platinum Elite":4,"Gold Elite":3,"Gold Elite Status":3,"Marriott Gold":3,"Silver Elite":2},
+        sharing:"Marriott lets you pool points (100k/yr free transfer). Book stays under either name for that person's tier perks.",
+        redundancyNote:"Hotel elite status is per-person and can't be shared — each person needs their own card for their own status. If you always travel together, only the higher-status card matters for room perks, but the lower-status card may still be worth keeping for free night certificates or point earning."},
+      "Hilton":{keywords:["Diamond Status","Diamond","Hilton Diamond","Gold Status","Hilton Gold","Silver Status"],
+        tiers:{"Diamond Status":4,"Hilton Diamond Status":4,"Diamond":4,"Gold Status":3,"Hilton Gold Elite":3,"Hilton Gold":3,"Silver Status":2},
+        sharing:"Hilton lets you pool points with up to 10 members for free. Diamond benefits (breakfast, lounge, F&B credits) extend to guests in the room, so book under the Diamond member's name.",
+        redundancyNote:"Hotel elite status is per-person. When traveling together, book under the Diamond member's name — Diamond breakfast, lounge access, and daily F&B credits extend to guests in the room."},
+      "Hyatt":{keywords:["Globalist","Explorist Status","Discoverist Status","Discoverist"],
+        tiers:{"Globalist":4,"Explorist Status":3,"Discoverist Status":2,"Discoverist":2},
+        sharing:"Hyatt lets you combine points by submitting a signed form (plan ahead — not instant).",
+        redundancyNote:"Hotel elite status is per-person. When traveling together, book under the higher-tier member's name for suite upgrades and club lounge access."}
     };
     Object.entries(hotelStatusMap).forEach(([chain,cfg])=>{
       function findStatus(cards){
         let best=null,bestTier=0,bestCard=null;
         cards.forEach(card=>{
-          const perks=allPerks(card);
-          perks.forEach(p=>{
+          allPerks(card).forEach(p=>{
             Object.entries(cfg.tiers).forEach(([name,tier])=>{
-              if(p.toLowerCase().includes(name.toLowerCase())&&tier>bestTier){
-                bestTier=tier;best=name;bestCard=card;
-              }
+              if(p.toLowerCase().includes(name.toLowerCase())&&tier>bestTier){bestTier=tier;best=name;bestCard=card;}
             });
           });
         });
@@ -2859,18 +2884,15 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
         const higherCard=p1Status.tier>=p2Status.tier?p1Status.card:p2Status.card;
         const lowerCard=p1Status.tier>=p2Status.tier?p2Status.card:p1Status.card;
         const sameLevel=p1Status.tier===p2Status.tier;
-        results.push({
-          color:"teal",icon:"✅",
-          headline:`${chain} Status Stacking`,
-          detail:sameLevel
-            ?`You both have ${chain} ${higherStatus} — yours from the ${p1Status.card.short||p1Status.card.name}, ${pn}'s from the ${p2Status.card.short||p2Status.card.name}. Book ${chain} stays under either name for full perks. ${cfg.sharing}`
-            :`${higherOwner} ${has(higherOwner)} ${chain} ${higherStatus} (${higherCard.short||higherCard.name}), ${lowerOwner} ${has(lowerOwner)} ${chain} ${lowerStatus} (${lowerCard.short||lowerCard.name}). Book ${chain} stays under ${pos(higherOwner)} name when traveling together for the higher-tier perks. ${cfg.sharing}`,
-          cards:[p1Status.card,p2Status.card].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i)
-        });
+        let detail=sameLevel
+          ?`You both have ${chain} ${higherStatus} — yours from the ${p1Status.card.short||p1Status.card.name}, ${pn}'s from the ${p2Status.card.short||p2Status.card.name}. ${cfg.redundancyNote} ${cfg.sharing}`
+          :`${higherOwner} ${has(higherOwner)} ${chain} ${higherStatus} (${higherCard.short||higherCard.name}), ${lowerOwner} ${has(lowerOwner)} ${chain} ${lowerStatus} (${lowerCard.short||lowerCard.name}). ${cfg.redundancyNote} ${cfg.sharing}`;
+        results.push({color:"teal",icon:"🟢",headline:`${chain} Status — Both Covered`,detail,badge:"Optimized",
+          cards:[p1Status.card,p2Status.card].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i)});
       }
     });
 
-    // ── C. Lounge access overlap ──
+    // ── 3. LOUNGE ACCESS OVERLAP ──
     const loungeKw=["Priority Pass","Centurion Lounge","Capital One Lounge","Delta Sky Club","United Club","Admirals Club"];
     function findLounges(cards){
       const found=[];
@@ -2892,24 +2914,21 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
         const p2Only=[...p2LoungeNames].filter(l=>!p1LoungeNames.has(l));
         const p1CardNames=p1Lounges.map(l=>l.card.short||l.card.name).join(", ");
         const p2CardNames=p2Lounges.map(l=>l.card.short||l.card.name).join(", ");
-        let extra="";
-        if(p1Only.length>0) extra+=` You also get ${p1Only.join(", ")} which ${pn} doesn't have.`;
-        if(p2Only.length>0) extra+=` ${pn} also gets ${p2Only.join(", ")} which you don't have.`;
-        results.push({
-          color:"gold",icon:"ℹ️",
-          headline:"Overlapping Lounge Access",
-          detail:`You both have ${shared.join(" and ")} access — yours through ${p1CardNames}, ${pn}'s through ${p2CardNames}. This is actually useful when you travel separately.${extra} No action needed.`,
-          cards:[...p1Lounges.map(l=>l.card),...p2Lounges.map(l=>l.card)].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i)
-        });
+        let detail=`You both have ${shared.join(" and ")} access — yours through ${p1CardNames}, ${pn}'s through ${p2CardNames}. Lounge access is per-cardholder, so this is useful when you travel separately — NOT redundant.`;
+        if(p1Only.length>0) detail+=` You also get ${p1Only.join(", ")} which ${pn} doesn't have.`;
+        if(p2Only.length>0) detail+=` ${pn} also gets ${p2Only.join(", ")} which you don't have.`;
+        detail+=" If you always travel together, you could potentially drop one lounge card — but you'd lose coverage for solo trips.";
+        results.push({color:"teal",icon:"🟢",headline:"Lounge Access — Both Covered",detail,badge:"Optimized",
+          cards:[...p1Lounges.map(l=>l.card),...p2Lounges.map(l=>l.card)].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i)});
       }
     }
 
-    // ── D. Insurance overlap ──
+    // ── 4. INSURANCE OVERLAP ──
     const insuranceGroups={
       "Rental Car Insurance":{keywords:["Primary Car Rental","Secondary Car Rental","Primary CDW","rental vehicle","Rental Car Insurance","CDW coverage"],
-        tip:"Rental car insurance follows the cardholder, not the household. Both having coverage is useful for separate rentals — not redundant."},
+        tip:"Rental car insurance follows the cardholder, NOT the household. Both having coverage means you're each covered when renting separately — this is NOT redundant. Only the cardholder's card provides coverage for their rental."},
       "Trip Delay / Cancellation":{keywords:["Trip Cancellation","Trip Delay","Trip Interruption","Baggage Delay","Trip/Cancel/Baggage"],
-        tip:"Travel insurance covers the cardholder's trip. Both having it means both are covered when traveling separately — not redundant."}
+        tip:"Trip insurance covers the cardholder's trip when booked on that card. Both having it means both partners are protected when traveling separately — NOT redundant. You'd only have redundancy if you always travel together AND always book on the same card."}
     };
     Object.entries(insuranceGroups).forEach(([label,cfg])=>{
       const p1Has=p1Cards.some(c=>matchesKeywords(allPerks(c),cfg.keywords));
@@ -2917,28 +2936,23 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
       if(p1Has&&p2Has){
         const p1Match=p1Cards.filter(c=>matchesKeywords(allPerks(c),cfg.keywords));
         const p2Match=p2Resolved.filter(c=>matchesKeywords(allPerks(c),cfg.keywords));
-        results.push({
-          color:"teal",icon:"✅",
-          headline:`Both Have ${label}`,
-          detail:cfg.tip,
-          cards:[...p1Match,...p2Match].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i)
-        });
+        results.push({color:"teal",icon:"🟢",headline:`${label} — Both Covered`,detail:cfg.tip,badge:"Optimized",
+          cards:[...p1Match,...p2Match].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i)});
       }
     });
 
-    // ── E. Overlapping credits via OVERLAP_GROUPS (savings-bearing ones only) ──
+    // ── 5. OVERLAPPING CREDITS (savings-bearing) ──
     const p1Bens=[],p2Bens=[];
     p1Cards.forEach(card=>{[...card.annual,...card.monthly].forEach(b=>p1Bens.push({name:b.n,card}));});
     p2Resolved.forEach(card=>{[...card.annual,...card.monthly].forEach(b=>p2Bens.push({name:b.n,card}));});
     Object.entries(OVERLAP_GROUPS).forEach(([gid,group])=>{
-      // Skip groups now handled by dedicated detectors above
       if(["marriott-status","hilton-status","hyatt-status","rental-car-insurance","trip-delay-insurance"].includes(gid))return;
       const p1M=p1Bens.filter(b=>group.keywords.some(kw=>b.name.toLowerCase().includes(kw.toLowerCase())));
       const p2M=p2Bens.filter(b=>group.keywords.some(kw=>b.name.toLowerCase().includes(kw.toLowerCase())));
       if(p1M.length>0&&p2M.length>0){
         const allC=[...p1M.map(m=>m.card),...p2M.map(m=>m.card)].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i);
         if(group.savings){
-          results.push({color:"gold",icon:"ℹ️",headline:`Overlapping: ${group.label}`,detail:group.tip,savings:group.savings,cards:allC});
+          results.push({color:"gold",icon:"⚠️",headline:`Overlapping: ${group.label}`,detail:group.tip+" If you always travel/spend together, one of these credits may go unused.",savings:group.savings,badge:"Potential savings",cards:allC});
         }
       }
     });
@@ -3212,6 +3226,11 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
           ):insights.map((ins,i)=>{
             const borderColor=ins.color==="red"?"#ef4444":ins.color==="teal"?"#0d7377":"#d97706";
             const bgTint=ins.color==="red"?"rgba(239,68,68,.03)":ins.color==="teal"?"rgba(13,115,119,.03)":"rgba(217,119,6,.04)";
+            const badgeCfg=ins.badge==="Optimized"?{bg:"rgba(22,163,74,.08)",border:"rgba(22,163,74,.15)",color:"var(--grn2)",label:"🟢 Optimized"}
+              :ins.badge==="Potential savings"?{bg:"rgba(217,119,6,.08)",border:"rgba(217,119,6,.15)",color:"#d97706",label:"🟡 Potential savings"}
+              :ins.badge==="Warning"?{bg:"rgba(239,68,68,.08)",border:"rgba(239,68,68,.15)",color:"#ef4444",label:"🔴 Warning"}
+              :ins.badge==="Tip"?{bg:"rgba(13,115,119,.08)",border:"rgba(13,115,119,.15)",color:"var(--acc)",label:"💡 Tip"}
+              :null;
             return (
               <div key={i} className="surf fu" style={{marginBottom:8,borderLeft:`3px solid ${borderColor}`,background:bgTint}}>
                 <div style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:6}}>
@@ -3219,24 +3238,23 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
                   <div style={{flex:1}}>
                     <div style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>{ins.headline}</div>
                   </div>
-                  {ins.savings&&typeof ins.savings==="number"&&(
-                    <span style={{flexShrink:0,fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,background:"rgba(22,163,74,.08)",border:"1px solid rgba(22,163,74,.15)",color:"var(--grn2)",whiteSpace:"nowrap"}}>Save ${ins.savings}/yr</span>
+                  {badgeCfg&&(
+                    <span style={{flexShrink:0,fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,background:badgeCfg.bg,border:`1px solid ${badgeCfg.border}`,color:badgeCfg.color,whiteSpace:"nowrap"}}>{badgeCfg.label}</span>
                   )}
                 </div>
                 <p style={{fontSize:12,color:"var(--tx2)",margin:"0 0 8px",lineHeight:1.6}}>{ins.detail}</p>
-                {ins.savings&&typeof ins.savings==="string"&&(
-                  <div style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 10px",borderRadius:99,background:"rgba(22,163,74,.08)",border:"1px solid rgba(22,163,74,.15)",marginBottom:8}}>
-                    <span style={{fontSize:11,fontWeight:700,color:"var(--grn2)"}}>{ins.savings}</span>
-                  </div>
-                )}
-                {ins.cards&&ins.cards.length>0&&(
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    {ins.cards.map(c=>{
-                      const p=getIssuerPalette(c.issuer);
-                      return <span key={c.id} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:p.tint,color:p.text,border:`1px solid ${p.text}15`}}>{c.short||c.name}</span>;
-                    })}
-                  </div>
-                )}
+                <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                  {ins.savings&&typeof ins.savings==="number"&&(
+                    <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,background:"rgba(22,163,74,.08)",border:"1px solid rgba(22,163,74,.15)",color:"var(--grn2)",whiteSpace:"nowrap"}}>Save ${ins.savings}/yr</span>
+                  )}
+                  {ins.savings&&typeof ins.savings==="string"&&(
+                    <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,background:"rgba(22,163,74,.08)",border:"1px solid rgba(22,163,74,.15)",color:"var(--grn2)",whiteSpace:"nowrap"}}>{ins.savings}</span>
+                  )}
+                  {ins.cards&&ins.cards.length>0&&ins.cards.map(c=>{
+                    const p=getIssuerPalette(c.issuer);
+                    return <span key={c.id} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:p.tint,color:p.text,border:`1px solid ${p.text}15`}}>{c.short||c.name}</span>;
+                  })}
+                </div>
               </div>
             );
           })}
