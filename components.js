@@ -674,7 +674,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
     }
     const synergies=CARD_SYNERGIES[card.name]||[];
     const hasSynergies=synergies.length>0;
-    const isStrategic=hasTransferEco||isUnlocker||isEarnerInEco||hasSynergies;
+    const isStrategic=hasTransferEco||isUnlocker||isEarnerInEco;
     // Build context note
     let note=null;
     if(isUnlocker&&ecoName){
@@ -685,9 +685,6 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
       note="Earns "+earnerEcoName.split(" ")[0]+" points → flows to household transfer pool";
     } else if(hasTransferEco&&hv){
       note="Transfer partner access via "+hv.transferEcosystem.split(" ")[0];
-    } else if(hasSynergies){
-      const top=synergies[0];
-      note="Pairs with "+top.pairWith.replace(/®|℠/g,"").replace(/ Credit Card/,"").trim()+" for "+top.estimatedUplift+" uplift";
     }
     return {isStrategic,isUnlocker,isOnlyUnlocker,isEarnerInEco,hasTransferEco,ecoName,valueUplift,note};
   }
