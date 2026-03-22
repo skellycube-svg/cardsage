@@ -643,6 +643,55 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
   const totalCredits=useMemo(()=>allHouseCards.reduce((s,c)=>s+cardUsedValue(c),0),[allHouseCards,checkedSet,firstYearCards]);
   const netROI=totalCredits-totalFees;
 
+  // Detect strategic value for a card (transfer partner access, ecosystem unlocking, synergies)
+  function getStrategicValue(card){
+    const hv=HIDDEN_VALUES[card.name];
+    const hasTransferEco=!!(hv&&hv.transferEcosystem);
+    // Check if this card is an unlocker in any ecosystem
+    let isUnlocker=false;let ecoName=null;let valueUplift=null;
+    for(const[eco,data] of Object.entries(ECOSYSTEM_MAP)){
+      if(data.unlockers.includes(card.name)){isUnlocker=true;ecoName=eco;valueUplift=data.valueUplift;break;}
+    }
+    // Check if this card is an earner that flows to an unlocker the user owns
+    let isEarnerInEco=false;let earnerEcoName=null;
+    for(const[eco,data] of Object.entries(ECOSYSTEM_MAP)){
+      if(data.earners.includes(card.name)&&!data.unlockers.includes(card.name)){
+        // Check if user or household has an unlocker for this ecosystem
+        const allIds=[...myCards,...(householdSetup?p2Cards:[])];
+        const hasUnlocker=data.unlockers.some(uName=>CARDS.some(c=>allIds.includes(c.id)&&c.name===uName));
+        if(hasUnlocker){isEarnerInEco=true;earnerEcoName=eco;break;}
+      }
+    }
+    // Check if this is the ONLY unlocker in household for its ecosystem
+    let isOnlyUnlocker=false;
+    if(isUnlocker&&ecoName){
+      const eco=ECOSYSTEM_MAP[ecoName];
+      const allIds=[...myCards,...(householdSetup?p2Cards:[])];
+      const unlockerCount=eco.unlockers.filter(uName=>CARDS.some(c=>allIds.includes(c.id)&&c.name===uName)).length;
+      // Count how many of user's cards are unlockers (could be >1 if they have CSP + CSR)
+      const unlockerCardIds=allIds.filter(id=>{const c=CARDS.find(x=>x.id===id);return c&&eco.unlockers.includes(c.name);});
+      if(unlockerCardIds.length===1) isOnlyUnlocker=true;
+    }
+    const synergies=CARD_SYNERGIES[card.name]||[];
+    const hasSynergies=synergies.length>0;
+    const isStrategic=hasTransferEco||isUnlocker||isEarnerInEco||hasSynergies;
+    // Build context note
+    let note=null;
+    if(isUnlocker&&ecoName){
+      const tpd=TRANSFER_PARTNER_DATA[ecoName];
+      const valRange=tpd?tpd.transferValue+"¢":"2-3¢";
+      note=(isOnlyUnlocker?"🔑 ":"")+"Unlocks "+ecoName.split(" ")[0]+" transfer partners ("+valRange+"/point)"+(householdSetup?" for your household":"");
+    } else if(isEarnerInEco&&earnerEcoName){
+      note="Earns "+earnerEcoName.split(" ")[0]+" points → flows to household transfer pool";
+    } else if(hasTransferEco&&hv){
+      note="Transfer partner access via "+hv.transferEcosystem.split(" ")[0];
+    } else if(hasSynergies){
+      const top=synergies[0];
+      note="Pairs with "+top.pairWith.replace(/®|℠/g,"").replace(/ Credit Card/,"").trim()+" for "+top.estimatedUplift+" uplift";
+    }
+    return {isStrategic,isUnlocker,isOnlyUnlocker,isEarnerInEco,hasTransferEco,ecoName,valueUplift,note};
+  }
+
   // Calculate per-card used credit values
   function buildCardStats(cardList,owner){
     return cardList.map(card=>{
@@ -650,8 +699,15 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
       const potentialVal=cardCreditVal(card);
       let renewDays=card.fee>0?getRenewalDays(card.id,anniversaryDates):null;
       const roiPct=card.fee>0?Math.round((usedVal/card.fee)*100):null;
-      const verdict=card.fee===0?null:roiPct>=100?"worth-it":roiPct>=50?"on-track":"at-risk";
-      return {card,usedVal,potentialVal,renewDays,roiPct,verdict,owner};
+      const strat=getStrategicValue(card);
+      let verdict;
+      if(card.fee===0) verdict=null;
+      else if(roiPct>=100) verdict="worth-it";
+      else if(roiPct>=50&&strat.isStrategic) verdict="on-track";
+      else if(roiPct>=50) verdict="on-track";
+      else if(strat.isStrategic) verdict="strategic";
+      else verdict="at-risk";
+      return {card,usedVal,potentialVal,renewDays,roiPct,verdict,owner,strat};
     });
   }
   const cardStats=useMemo(()=>buildCardStats(cards,"you"),[cards,anniversaryDates,checkedSet,firstYearCards]);
@@ -659,7 +715,12 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
 
   // Split into fee cards (sorted by nearest renewal) and free cards
   const allStats=useMemo(()=>[...cardStats,...p2CardStats],[cardStats,p2CardStats]);
-  const sortByRenewal=(a,b)=>{const aD=a.renewDays!=null?a.renewDays:9999;const bD=b.renewDays!=null?b.renewDays:9999;return aD-bD;};
+  const verdictOrder={"at-risk":0,"on-track":1,"strategic":2,"worth-it":3};
+  const sortByRenewal=(a,b)=>{
+    const aO=verdictOrder[a.verdict]??2;const bO=verdictOrder[b.verdict]??2;
+    if(aO!==bO) return aO-bO;
+    const aD=a.renewDays!=null?a.renewDays:9999;const bD=b.renewDays!=null?b.renewDays:9999;return aD-bD;
+  };
   const feeCards=useMemo(()=>allStats.filter(cs=>cs.card.fee>0).sort(sortByRenewal),[allStats]);
   const freeCards=useMemo(()=>cardStats.filter(cs=>cs.card.fee===0),[cardStats]);
   const p2FreeCards=useMemo(()=>p2CardStats.filter(cs=>cs.card.fee===0),[p2CardStats]);
@@ -786,13 +847,13 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
           <div className="section-hdr" style={{marginBottom:12}}>
             <div className="section-title"><Icon name="calendar" size={14} color="var(--acc)"/> RENEWAL TIMELINE</div>
           </div>
-          {feeCards.map(({card,usedVal,renewDays,roiPct,verdict,owner})=>{
+          {feeCards.map(({card,usedVal,renewDays,roiPct,verdict,owner,strat})=>{
             const palette=getIssuerPalette(card.issuer);
-            const verdictLabel=verdict==="worth-it"?"Worth It":verdict==="on-track"?"On Track":"At Risk";
-            const verdictColor=verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--gold)":"var(--red2)";
-            const verdictBg=verdict==="worth-it"?"rgba(22,163,74,.1)":verdict==="on-track"?"rgba(13,115,119,.1)":"rgba(220,38,38,.1)";
+            const verdictLabel=verdict==="worth-it"?"Worth It":verdict==="on-track"?"On Track":verdict==="strategic"?"Strategic":"At Risk";
+            const verdictColor=verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--acc)":verdict==="strategic"?"#2563eb":"var(--red2)";
+            const verdictBg=verdict==="worth-it"?"rgba(22,163,74,.1)":verdict==="on-track"?"rgba(13,115,119,.1)":verdict==="strategic"?"rgba(37,99,235,.1)":"rgba(220,38,38,.1)";
             const barPct=Math.min(roiPct||0,100);
-            const barColor=verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--gold)":"var(--red2)";
+            const barColor=verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--acc)":verdict==="strategic"?"#2563eb":"var(--red2)";
             return(
               <div key={card.id+owner} className="surf fu" style={{marginBottom:8,cursor:"pointer",borderLeft:`4px solid ${palette.grad[0]}`,padding:"14px 16px"}}
                 onClick={()=>setTab("benefits")}>
@@ -800,6 +861,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
                       <span style={{fontSize:14,fontWeight:700,color:"var(--tx)",lineHeight:1.2}}>{card.short||card.name}</span>
+                      {strat.isOnlyUnlocker&&<span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:99,background:"rgba(37,99,235,.1)",color:"#2563eb",letterSpacing:.3,whiteSpace:"nowrap"}}>🔑 Household Key</span>}
                       {householdSetup&&<span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:99,background:owner==="you"?"rgba(13,115,119,.1)":"rgba(154,110,26,.1)",color:owner==="you"?"var(--acc)":"var(--gold)",letterSpacing:.3,textTransform:"uppercase",whiteSpace:"nowrap"}}>{owner==="you"?"You":owner}</span>}
                     </div>
                     <div style={{fontSize:11,color:"var(--tx3)",marginTop:2}}>{card.issuer} · ${card.fee}/yr</div>
@@ -822,7 +884,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
                   </div>
                 </div>
                 {/* ROI progress bar */}
-                <div style={{marginBottom:6}}>
+                <div style={{marginBottom:strat.note?4:6}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
                     <span style={{fontSize:11,fontWeight:600,color:"var(--tx2)"}}>${usedVal} of ${card.fee} captured</span>
                     <span style={{fontSize:11,fontWeight:700,color:verdictColor}}>{roiPct}%</span>
@@ -831,6 +893,11 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
                     <div className="prog-fill" style={{width:barPct+"%",background:barColor,borderRadius:99}}/>
                   </div>
                 </div>
+                {strat.note&&(
+                  <div style={{fontSize:11,color:verdict==="strategic"?"#2563eb":"var(--acc)",lineHeight:1.4,fontWeight:500}}>
+                    {strat.note}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -850,12 +917,22 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
           </button>
           {showFreeCards&&(
             <div style={{paddingLeft:4}}>
-              {freeCards.map(({card})=>{
+              {freeCards.map(({card,strat})=>{
                 const palette=getIssuerPalette(card.issuer);
                 return(
-                  <div key={card.id} className="surf" style={{marginBottom:6,borderLeft:`4px solid ${palette.grad[0]}`,padding:"10px 14px",opacity:.7}}>
-                    <div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{card.short||card.name}</div>
-                    <div style={{fontSize:11,color:"var(--tx3)",marginTop:1}}>{card.issuer} · $0/yr · No renewal decision needed</div>
+                  <div key={card.id} className="surf" style={{marginBottom:6,borderLeft:`4px solid ${palette.grad[0]}`,padding:"10px 14px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{card.short||card.name}</div>
+                        <div style={{fontSize:11,color:"var(--tx3)",marginTop:1}}>{card.issuer} · $0/yr</div>
+                      </div>
+                      <span style={{fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,color:"var(--tx3)",background:"rgba(107,114,128,.08)",whiteSpace:"nowrap"}}>✓ Free</span>
+                    </div>
+                    {strat.note&&(
+                      <div style={{fontSize:11,color:"var(--acc)",lineHeight:1.4,fontWeight:500,marginTop:4}}>
+                        {strat.note}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -875,12 +952,22 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
           </button>
           {showP2Free&&(
             <div style={{paddingLeft:4}}>
-              {p2FreeCards.map(({card})=>{
+              {p2FreeCards.map(({card,strat})=>{
                 const palette=getIssuerPalette(card.issuer);
                 return(
-                  <div key={card.id+"p2"} className="surf" style={{marginBottom:6,borderLeft:`4px solid ${palette.grad[0]}`,padding:"10px 14px",opacity:.7}}>
-                    <div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{card.short||card.name}</div>
-                    <div style={{fontSize:11,color:"var(--tx3)",marginTop:1}}>{card.issuer} · $0/yr · No renewal decision needed</div>
+                  <div key={card.id+"p2"} className="surf" style={{marginBottom:6,borderLeft:`4px solid ${palette.grad[0]}`,padding:"10px 14px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{card.short||card.name}</div>
+                        <div style={{fontSize:11,color:"var(--tx3)",marginTop:1}}>{card.issuer} · $0/yr</div>
+                      </div>
+                      <span style={{fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,color:"var(--tx3)",background:"rgba(107,114,128,.08)",whiteSpace:"nowrap"}}>✓ Free</span>
+                    </div>
+                    {strat.note&&(
+                      <div style={{fontSize:11,color:"var(--acc)",lineHeight:1.4,fontWeight:500,marginTop:4}}>
+                        {strat.note}
+                      </div>
+                    )}
                   </div>
                 );
               })}
