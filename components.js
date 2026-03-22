@@ -522,17 +522,18 @@ function NewsletterSubscribe(){
 // Checks cs_popup_dismissed in localStorage so it only appears once.
 // On desktop: centered overlay modal. On mobile: bottom sheet.
 // Reuses the Firestore subscription logic from NewsletterSubscribe.
-function NewsletterPopup(){
+function NewsletterPopup({user}){
   const [show,setShow]=useState(false);
   const [email,setEmail]=useState('');
   const [status,setStatus]=useState('');// 'success'|'exists'|'error'|''
   const [loading,setLoading]=useState(false);
 
   useEffect(()=>{
+    if(!user) return;
     if(localStorage.getItem('cs_popup_dismissed')) return;
     const t=setTimeout(()=>setShow(true),30000);
     return ()=>clearTimeout(t);
-  },[]);
+  },[user]);
 
   const dismiss=()=>{
     setShow(false);
@@ -6729,7 +6730,7 @@ function App(){
         )}
       </div>
       {stratModal&&<StratModal stratId={stratModal} myCards={myCards} onClose={()=>setStratModal(null)}/>}
-      <NewsletterPopup/>
+      <NewsletterPopup user={user}/>
       <NewsletterSubscribe/>
       <div style={{padding:"32px 24px 28px",background:"var(--s3)",marginTop:24}}>
         <div style={{display:"flex",flexWrap:"wrap",justifyContent:"space-between",gap:"6px 16px",marginBottom:10,maxWidth:1000,margin:"0 auto 10px"}}>
