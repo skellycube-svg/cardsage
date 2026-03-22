@@ -1805,7 +1805,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
       </div>
 
       {/* ── FIRST YEAR TOGGLE ── */}
-      {card&&allBenefits.some(b=>b.requiresRenewal)&&(
+      {card&&card.fee>0&&(
         <div style={{marginBottom:16,padding:"14px 16px",borderRadius:12,
           background:isFirstYear?"rgba(212,168,64,.05)":"rgba(13,115,119,.03)",
           border:isFirstYear?"1px solid rgba(212,168,64,.18)":"1px solid rgba(13,115,119,.1)"}}>
@@ -1828,8 +1828,12 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           </div>
           <div style={{fontSize:11,color:"var(--tx3)",marginTop:8,lineHeight:1.4}}>
             {isFirstYear
-              ?"Renewal-only benefits (free nights, anniversary bonuses) are excluded from your ROI."
-              :"All benefits including renewal-only perks are counted in your ROI."}
+              ?(allBenefits.some(b=>b.requiresRenewal)
+                ?"First year — renewal-only benefits (free nights, anniversary bonuses) are excluded from your ROI."
+                :"First year — some issuers waive the fee in year one. Your ROI may differ from renewal years.")
+              :(allBenefits.some(b=>b.requiresRenewal)
+                ?"All benefits including renewal-only perks are counted in your ROI."
+                :"Showing renewal-year ROI with full annual fee.")}
           </div>
         </div>
       )}
@@ -1887,7 +1891,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           </div>
           <div style={{flex:1}}>
             <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Benefit Tracker</div>
-            <div style={{fontSize:11,color:"var(--tx3)"}}>{checkedCount}/{totalSlots} used · ${usedValue.toLocaleString()} redeemed{isFirstYear&&allBenefits.some(b=>b.requiresRenewal)?" (excl. renewal benefits)":""}</div>
+            <div style={{fontSize:11,color:"var(--tx3)"}}>{checkedCount}/{totalSlots} used · ${usedValue.toLocaleString()} redeemed{isFirstYear&&roiTrackable.length<trackable.length?" (excl. renewal benefits)":""}</div>
           </div>
           <span style={{transition:"transform .2s",transform:showBenefits?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
         </button>
