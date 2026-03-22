@@ -1541,7 +1541,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   const replacement=useMemo(()=>{
     if(!card||card.fee===0)return null;
     const topCats=Object.entries(card.earn||{}).filter(([k,v])=>k!=="o"&&parseFloat(String(v).replace(/[^0-9.]/g,""))>1).map(([k])=>k);
-    const candidates=CARDS.filter(c=>c.id!==card.id&&!myCards.includes(c.id))
+    const candidates=CARDS.filter(c=>c.id!==card.id&&!myCards.includes(c.id)&&c.isBiz===card.isBiz)
       .map(c=>{
         const bens=[...c.annual,...c.monthly];
         const credits=bens.filter(b=>b.v!=null).reduce((s,b)=>s+annualBenValue(b),0);
