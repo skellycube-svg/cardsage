@@ -1496,8 +1496,9 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
     return total;
   },[trackable,checkedSet,card]);
 
-  const roiPct=card&&card.fee>0?Math.round((totalCredits/card.fee)*100):0;
-  const verdict=roiPct>=100?"worth-it":roiPct>=50?"on-track":"at-risk";
+  const usedRoiPct=card&&card.fee>0?Math.round((usedValue/card.fee)*100):0;
+  const potentialRoiPct=card&&card.fee>0?Math.round((totalCredits/card.fee)*100):0;
+  const verdict=usedRoiPct>=100?"worth-it":usedRoiPct>=50?"on-track":"at-risk";
 
   // Renewal days from user-set anniversary month
   const renewDays=useMemo(()=>{
@@ -1568,9 +1569,9 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
 
   const palette=getIssuerPalette(card.issuer);
   const verdictConfig={
-    "worth-it":{label:"Worth It",icon:"check",bg:"rgba(22,163,74,.06)",border:"rgba(22,163,74,.2)",color:"var(--grn2)",desc:"This card's benefits exceed its annual fee. Keep it."},
-    "on-track":{label:"On Track",icon:"zap",bg:"rgba(13,115,119,.06)",border:"rgba(13,115,119,.2)",color:"var(--acc)",desc:"You're using over half the fee's value. A few more benefits could make it worth it."},
-    "at-risk":{label:"At Risk",icon:"alert-triangle",bg:"rgba(220,38,38,.06)",border:"rgba(220,38,38,.2)",color:"var(--red2)",desc:"You're not getting enough value from this card. Consider downgrading or calling for a retention offer."}
+    "worth-it":{label:"Worth It",icon:"check",bg:"rgba(22,163,74,.06)",border:"rgba(22,163,74,.2)",color:"var(--grn2)",desc:"You've already redeemed more value than the annual fee. This card is paying for itself."},
+    "on-track":{label:"On Track",icon:"zap",bg:"rgba(13,115,119,.06)",border:"rgba(13,115,119,.2)",color:"var(--acc)",desc:"You've captured over half the fee in benefits. Check off a few more to make it worth it."},
+    "at-risk":{label:"At Risk",icon:"alert-triangle",bg:"rgba(220,38,38,.06)",border:"rgba(220,38,38,.2)",color:"var(--red2)",desc:potentialRoiPct>=100?"This card can pay for itself — you just haven't used enough benefits yet. Check off what you've redeemed below.":"You're not getting enough value from this card. Consider downgrading or calling for a retention offer."}
   };
   const vc=verdictConfig[verdict];
 
@@ -1661,15 +1662,41 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           </div>
           <div style={{flex:1}}>
             <div style={{fontSize:18,fontWeight:800,color:vc.color,fontFamily:"'Inter',sans-serif"}}>{vc.label}</div>
-            <div style={{fontSize:11,color:"var(--tx3)"}}>{roiPct}% of annual fee covered by benefits</div>
+            <div style={{fontSize:11,color:"var(--tx3)"}}>{usedRoiPct}% captured{potentialRoiPct>usedRoiPct?` · ${potentialRoiPct}% available`:""}</div>
           </div>
-          <div style={{fontSize:28,fontWeight:900,fontFamily:"'Source Code Pro',monospace",color:vc.color}}>{roiPct}%</div>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontSize:28,fontWeight:900,fontFamily:"'Source Code Pro',monospace",color:vc.color}}>{usedRoiPct}%</div>
+            {potentialRoiPct>usedRoiPct&&<div style={{fontSize:10,color:"var(--tx3)",fontWeight:600}}>{potentialRoiPct}% possible</div>}
+          </div>
         </div>
-        <div className="prog-track" style={{height:8,marginBottom:10}}>
-          <div className="prog-fill" style={{width:Math.min(roiPct,100)+"%",background:vc.color,transition:"width .5s ease"}}/>
+        {/* Dual-tone progress bar: solid = captured, striped = available but unused */}
+        <div className="prog-track" style={{height:10,marginBottom:6,position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:0,left:0,height:"100%",width:Math.min(potentialRoiPct,100)+"%",
+            background:"repeating-linear-gradient(135deg,rgba(13,115,119,.15),rgba(13,115,119,.15) 3px,rgba(13,115,119,.06) 3px,rgba(13,115,119,.06) 6px)",
+            borderRadius:"inherit",transition:"width .5s ease"}}/>
+          <div className="prog-fill" style={{position:"absolute",top:0,left:0,height:"100%",width:Math.min(usedRoiPct,100)+"%",background:vc.color,borderRadius:"inherit",transition:"width .5s ease"}}/>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10,fontSize:10,color:"var(--tx3)"}}>
+          <span style={{display:"inline-flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:vc.color,display:"inline-block"}}/> Value captured (${usedValue.toLocaleString()})</span>
+          {potentialRoiPct>usedRoiPct&&<span style={{display:"inline-flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"repeating-linear-gradient(135deg,rgba(13,115,119,.2),rgba(13,115,119,.2) 2px,rgba(13,115,119,.08) 2px,rgba(13,115,119,.08) 4px)",display:"inline-block"}}/> Available unused (${(totalCredits-usedValue).toLocaleString()})</span>}
         </div>
         <p style={{fontSize:12,color:"var(--tx2)",margin:0,lineHeight:1.5}}>{vc.desc}</p>
       </div>
+
+      {/* ── TRANSFER PARTNER VALUE NOTE ── */}
+      {card.partners&&card.partners.length>0&&(
+        <div style={{marginBottom:16,padding:"12px 14px",borderRadius:12,background:"rgba(13,115,119,.05)",border:"1px solid rgba(13,115,119,.12)"}}>
+          <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+            <span style={{fontSize:16,lineHeight:1,flexShrink:0,marginTop:1}}>💡</span>
+            <div>
+              <div style={{fontSize:12,fontWeight:700,color:"var(--acc)",marginBottom:4}}>Transfer Partners Add Hidden Value</div>
+              <p style={{fontSize:11,color:"var(--tx2)",margin:0,lineHeight:1.6}}>
+                {card.cur} transfer to {card.partners.slice(0,3).join(", ")}{card.partners.length>3?`, and ${card.partners.length-3} more`:""} — often worth 2-5x cash value for flights and hotel stays. If you transfer points to partners, the real ROI is likely much higher than shown above.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── BENEFIT TRACKER ── */}
       <div style={{marginBottom:16}}>
