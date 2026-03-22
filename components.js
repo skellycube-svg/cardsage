@@ -712,7 +712,36 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
 
   // Split into fee cards (sorted by nearest renewal) and free cards
   const allStats=useMemo(()=>[...cardStats,...p2CardStats],[cardStats,p2CardStats]);
-  const verdictOrder={"at-risk":0,"on-track":1,"strategic":2,"worth-it":3};
+
+  // Detect redundant household unlockers — when both partners have an unlocker in the same
+  // ecosystem and that ecosystem allows household point combining, only one is needed.
+  const redundancyMap=useMemo(()=>{
+    if(!householdSetup) return new Map();
+    const map=new Map();
+    for(const[ecoName,eco] of Object.entries(ECOSYSTEM_MAP)){
+      const rules=POINT_SHARING_RULES[ecoName];
+      if(!rules||!rules.canShareHousehold) continue;
+      const p1Unlockers=allStats.filter(s=>s.owner==="you"&&eco.unlockers.includes(s.card.name));
+      const p2Unlockers=allStats.filter(s=>s.owner!=="you"&&eco.unlockers.includes(s.card.name));
+      if(p1Unlockers.length===0||p2Unlockers.length===0) continue;
+      // Both partners have unlockers — pick the most valuable to keep
+      const all=[...p1Unlockers,...p2Unlockers];
+      all.sort((a,b)=>{
+        if(a.card.fee!==b.card.fee) return b.card.fee-a.card.fee;
+        if(a.usedVal!==b.usedVal) return b.usedVal-a.usedVal;
+        return a.owner==="you"?1:-1; // tie: keep partner's, flag user's
+      });
+      for(let i=1;i<all.length;i++){
+        const r=all[i];
+        const keeperOwnerName=all[0].owner==="you"?"Your":((p2Name||"Partner")+"'s");
+        const keeperCardName=all[0].card.short||all[0].card.name;
+        map.set(r.card.id+r.owner,{ecoName,keeperOwnerName,keeperCardName,fee:r.card.fee});
+      }
+    }
+    return map;
+  },[allStats,householdSetup,p2Name]);
+
+  const verdictOrder={"redundant":0,"at-risk":0,"on-track":1,"strategic":2,"worth-it":3};
   const sortByRenewal=(a,b)=>{
     const aO=verdictOrder[a.verdict]??2;const bO=verdictOrder[b.verdict]??2;
     if(aO!==bO) return aO-bO;
@@ -846,12 +875,14 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
           </div>
           {feeCards.map(({card,usedVal,renewDays,roiPct,verdict,owner,strat})=>{
             const palette=getIssuerPalette(card.issuer);
-            const verdictLabel=verdict==="worth-it"?"Worth It":verdict==="on-track"?"On Track":verdict==="strategic"?"Keeper":"Behind";
-            const verdictTip=verdict==="worth-it"?"Credits already exceed the annual fee":verdict==="on-track"?"Earning back the annual fee at a healthy pace":verdict==="strategic"?"Valuable for transfer partners, perks, or household strategy":"Credits captured haven\u2019t covered the fee yet";
-            const verdictColor=verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--acc)":verdict==="strategic"?"#2563eb":"var(--red2)";
-            const verdictBg=verdict==="worth-it"?"rgba(22,163,74,.1)":verdict==="on-track"?"rgba(13,115,119,.1)":verdict==="strategic"?"rgba(37,99,235,.1)":"rgba(220,38,38,.1)";
+            const rInfo=redundancyMap.get(card.id+owner);
+            const isRedundant=!!rInfo;
+            const verdictLabel=isRedundant?"Redundant":verdict==="worth-it"?"Worth It":verdict==="on-track"?"On Track":verdict==="strategic"?"Keeper":"Behind";
+            const verdictTip=isRedundant?(rInfo.keeperOwnerName+" "+rInfo.keeperCardName+" already unlocks "+rInfo.ecoName.split(" ")[0]+" transfer partners. Downgrade to save $"+rInfo.fee+"/yr."):verdict==="worth-it"?"Credits already exceed the annual fee":verdict==="on-track"?"Earning back the annual fee at a healthy pace":verdict==="strategic"?"Valuable for transfer partners, perks, or household strategy":"Credits captured haven\u2019t covered the fee yet";
+            const verdictColor=isRedundant?"#d97706":verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--acc)":verdict==="strategic"?"#2563eb":"var(--red2)";
+            const verdictBg=isRedundant?"rgba(217,119,6,.1)":verdict==="worth-it"?"rgba(22,163,74,.1)":verdict==="on-track"?"rgba(13,115,119,.1)":verdict==="strategic"?"rgba(37,99,235,.1)":"rgba(220,38,38,.1)";
             const barPct=Math.min(roiPct||0,100);
-            const barColor=verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--acc)":verdict==="strategic"?"#2563eb":"var(--red2)";
+            const barColor=isRedundant?"#d97706":verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--acc)":verdict==="strategic"?"#2563eb":"var(--red2)";
             return(
               <div key={card.id+owner} className="surf fu" style={{marginBottom:8,cursor:"pointer",borderLeft:`4px solid ${palette.grad[0]}`,padding:"14px 16px"}}
                 onClick={()=>setTab("benefits")}>
@@ -891,9 +922,9 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
                     <div className="prog-fill" style={{width:barPct+"%",background:barColor,borderRadius:99}}/>
                   </div>
                 </div>
-                {strat.note&&(
-                  <div style={{fontSize:11,color:verdict==="strategic"?"#2563eb":"var(--acc)",lineHeight:1.4,fontWeight:500}}>
-                    {strat.note}
+                {(isRedundant||strat.note)&&(
+                  <div style={{fontSize:11,color:isRedundant?"#d97706":verdict==="strategic"?"#2563eb":"var(--acc)",lineHeight:1.4,fontWeight:500}}>
+                    {isRedundant?("Redundant \u2014 "+rInfo.keeperOwnerName+" "+rInfo.keeperCardName+" already unlocks "+rInfo.ecoName.split(" ")[0]+" transfer partners. Downgrade to save $"+rInfo.fee+"/yr."):strat.note}
                   </div>
                 )}
               </div>
