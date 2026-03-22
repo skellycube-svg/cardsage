@@ -1502,6 +1502,95 @@ const ECOSYSTEM_MAP={
   }
 };
 
+/* TRANSFER_PATHS — maps loyalty program currencies to flexible-point programs
+   that can transfer into them. Used by the Renewal Advisor to show alternative
+   points paths when a user considers canceling a co-branded hotel/airline card. */
+const TRANSFER_PATHS={
+  "Marriott Bonvoy Points":{
+    program:"Marriott Bonvoy",
+    sources:[
+      {currency:"Chase Ultimate Rewards",ratio:"1:1",cards:["csp","csr","ink-preferred"]},
+      {currency:"Amex Membership Rewards",ratio:"1:1",cards:["amex-gold","amex-plat","amex-green","amex-everyday"]},
+      {currency:"Bilt Points",ratio:"1:1",cards:["bilt"]}
+    ]
+  },
+  "Hilton Honors Points":{
+    program:"Hilton Honors",
+    sources:[
+      {currency:"Amex Membership Rewards",ratio:"1:2",note:"1,000 MR = 2,000 Hilton",cards:["amex-gold","amex-plat","amex-green","amex-everyday"]}
+    ]
+  },
+  "Hyatt Points":{
+    program:"World of Hyatt",
+    sources:[
+      {currency:"Chase Ultimate Rewards",ratio:"1:1",cards:["csp","csr","ink-preferred"]},
+      {currency:"Bilt Points",ratio:"1:1",cards:["bilt"]}
+    ]
+  },
+  "IHG One Rewards Points":{
+    program:"IHG Rewards",
+    sources:[
+      {currency:"Chase Ultimate Rewards",ratio:"1:1",cards:["csp","csr","ink-preferred"]},
+      {currency:"Bilt Points",ratio:"1:1",cards:["bilt"]}
+    ]
+  },
+  "Wyndham Rewards Points":{
+    program:"Wyndham Rewards",
+    sources:[
+      {currency:"Chase Ultimate Rewards",ratio:"1:1",cards:["csp","csr","ink-preferred"]},
+      {currency:"Capital One Miles",ratio:"1:1",cards:["venture-x","venture"]},
+      {currency:"Citi ThankYou Points",ratio:"1:1",cards:["citi-strata"]}
+    ]
+  },
+  "Southwest Rapid Rewards":{
+    program:"Southwest Rapid Rewards",
+    sources:[
+      {currency:"Chase Ultimate Rewards",ratio:"1:1",cards:["csp","csr","ink-preferred"]}
+    ]
+  },
+  "United MileagePlus":{
+    program:"United MileagePlus",
+    sources:[
+      {currency:"Chase Ultimate Rewards",ratio:"1:1",cards:["csp","csr","ink-preferred"]},
+      {currency:"Bilt Points",ratio:"1:1",cards:["bilt"]}
+    ]
+  },
+  "British Airways Avios":{
+    program:"British Airways Avios",
+    sources:[
+      {currency:"Chase Ultimate Rewards",ratio:"1:1",cards:["csp","csr","ink-preferred"]},
+      {currency:"Amex Membership Rewards",ratio:"1:1",cards:["amex-gold","amex-plat","amex-green","amex-everyday"]},
+      {currency:"Capital One Miles",ratio:"1:1",cards:["venture-x","venture"]},
+      {currency:"Citi ThankYou Points",ratio:"1:1",cards:["citi-strata"]},
+      {currency:"Bilt Points",ratio:"1:1",cards:["bilt"]}
+    ]
+  },
+  "American Airlines AAdvantage":{
+    program:"American Airlines AAdvantage",
+    sources:[
+      {currency:"Citi ThankYou Points",ratio:"1:1",cards:["citi-strata"]},
+      {currency:"Bilt Points",ratio:"1:1",cards:["bilt"]}
+    ]
+  },
+  "Delta SkyMiles":{
+    program:"Delta SkyMiles",
+    sources:[
+      {currency:"Amex Membership Rewards",ratio:"1:1",cards:["amex-gold","amex-plat","amex-green","amex-everyday"]},
+      {currency:"Virgin Atlantic (indirect)",ratio:"varies",note:"Transfer Amex, Chase, or Bilt to Virgin Atlantic, then book Delta flights",cards:["amex-gold","amex-plat","csp","csr","bilt"]}
+    ]
+  },
+  "Air France/KLM Flying Blue":{
+    program:"Air France/KLM Flying Blue",
+    sources:[
+      {currency:"Chase Ultimate Rewards",ratio:"1:1",cards:["csp","csr","ink-preferred"]},
+      {currency:"Amex Membership Rewards",ratio:"1:1",cards:["amex-gold","amex-plat","amex-green","amex-everyday"]},
+      {currency:"Capital One Miles",ratio:"1:1",cards:["venture-x","venture"]},
+      {currency:"Citi ThankYou Points",ratio:"1:1",cards:["citi-strata"]},
+      {currency:"Bilt Points",ratio:"1:1",cards:["bilt"]}
+    ]
+  }
+};
+
 /* OVERLAP_GROUPS — curated map of household-redundant benefits.
    Each group has: label, keywords (matched against benefit names), a tip for
    households, and estimated annual savings if one person drops the overlap. */

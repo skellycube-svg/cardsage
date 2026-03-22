@@ -2175,6 +2175,69 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
         </div>
       )}
 
+      {/* ── ALTERNATIVE POINTS PATHS ── */}
+      {card&&TRANSFER_PATHS[card.cur]&&(()=>{
+        const tp=TRANSFER_PATHS[card.cur];
+        const allOwnedIds=new Set([...myCards,...p2Cards]);
+        return (
+          <div className="surf fu" style={{marginBottom:16}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+              <div style={{width:40,height:40,borderRadius:10,background:"rgba(13,115,119,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <Icon name="zap" size={20} color="var(--acc)"/>
+              </div>
+              <div>
+                <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Alternative Points Paths</div>
+                <div style={{fontSize:11,color:"var(--tx3)"}}>Other ways to earn {tp.program} points</div>
+              </div>
+            </div>
+            <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.6,marginBottom:14}}>
+              If you cancel this card, you can still earn <strong>{tp.program}</strong> points by transferring from:
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
+              {tp.sources.map((src,si)=>{
+                const ownedCards=src.cards.filter(id=>allOwnedIds.has(id));
+                const srcCards=src.cards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
+                return (
+                  <div key={si} style={{padding:"10px 12px",borderRadius:10,background:"var(--s3)",border:"1px solid var(--br)"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                      <span style={{fontSize:12,fontWeight:700,color:"var(--tx)"}}>{src.currency}</span>
+                      <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,
+                        background:src.ratio==="1:1"?"rgba(22,163,74,.08)":"rgba(13,115,119,.08)",
+                        color:src.ratio==="1:1"?"var(--grn2)":"var(--acc)",
+                        border:src.ratio==="1:1"?"1px solid rgba(22,163,74,.15)":"1px solid rgba(13,115,119,.15)"}}>{src.ratio}</span>
+                    </div>
+                    {src.note&&<div style={{fontSize:10,color:"var(--tx3)",marginBottom:6,fontStyle:"italic"}}>{src.note}</div>}
+                    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                      {srcCards.map(sc=>{
+                        const owned=allOwnedIds.has(sc.id);
+                        return (
+                          <span key={sc.id} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,
+                            background:owned?"rgba(22,163,74,.08)":"var(--bg)",
+                            color:owned?"var(--grn2)":"var(--tx3)",
+                            border:owned?"1px solid rgba(22,163,74,.2)":"1px solid var(--br2)"}}>
+                            {owned&&"✓ "}{sc.short||sc.name}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    {ownedCards.length>0&&(
+                      <div style={{marginTop:6,fontSize:11,color:"var(--grn2)",fontWeight:600}}>
+                        ✅ You already have {ownedCards.length===1?(CARDS.find(c=>c.id===ownedCards[0])?.short||ownedCards[0]):ownedCards.length+" cards"} that transfer{ownedCards.length===1?"s":""} to {tp.program}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{padding:"8px 12px",borderRadius:8,background:"rgba(154,110,26,.06)",border:"1px solid rgba(154,110,26,.12)"}}>
+              <p style={{fontSize:11,color:"var(--tx2)",margin:0,lineHeight:1.6}}>
+                <strong style={{color:"var(--gold)"}}>Trade-off:</strong> Transfer partners give you flexibility, but co-branded cards often earn at higher rates on that brand's spending (e.g., 6x at Marriott vs. 3x via Chase) and come with perks like free night certificates and elite status credits.
+              </p>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── RECOMMENDED REPLACEMENT ── */}
       {replacement&&verdict==="at-risk"&&(
         <div style={{marginBottom:24}}>
