@@ -1727,6 +1727,39 @@ const OVERLAP_GROUPS={
     keywords:["Cell Phone Protection","Wireless Phone"],
     tip:"Cell phone protection covers phones on the bill paid with that card. One card can cover the whole family plan.",
     savings:"$25–50/yr (secondary coverage value)"
+  },
+  "marriott-status":{
+    label:"Marriott Elite Status",
+    keywords:["Silver Elite","Gold Elite Status","Platinum Elite","Titanium Elite"],
+    tip:"Marriott elite status doesn't stack — you get the highest tier from any card. The second card's status is redundant, but the card may still be worth keeping for other benefits like free night certificates.",
+    savings:null,
+    isInfoNote:true
+  },
+  "hilton-status":{
+    label:"Hilton Elite Status",
+    keywords:["Diamond Status","Gold Status","Silver Status"],
+    tip:"Hilton status doesn't stack. The highest tier from any card applies. The second card's status is redundant, but the card may still earn valuable Hilton points.",
+    savings:null,
+    isInfoNote:true
+  },
+  "hyatt-status":{
+    label:"Hyatt Elite Status",
+    keywords:["Discoverist Status","Explorist Status","Globalist"],
+    tip:"Hyatt elite status applies the highest tier from your cards. Duplicate status is redundant, but the card may be worth keeping for the free night certificate.",
+    savings:null,
+    isInfoNote:true
+  },
+  "rental-car-insurance":{
+    label:"Rental Car Insurance",
+    keywords:["Primary Car Rental","Secondary Car Rental","Primary CDW","rental vehicle"],
+    tip:"Rental car insurance follows the cardholder, not the household. Both partners having coverage is actually useful for separate rentals. Not redundant.",
+    savings:null
+  },
+  "trip-delay-insurance":{
+    label:"Trip Delay / Cancellation Insurance",
+    keywords:["Trip Cancellation","Trip Delay","Trip Interruption","Baggage Delay"],
+    tip:"Travel insurance covers the cardholder's trip. Both partners having it means both are covered when traveling separately. Not redundant.",
+    savings:null
   }
 };
 

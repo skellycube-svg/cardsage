@@ -2860,22 +2860,36 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
     });
 
     Object.entries(OVERLAP_GROUPS).forEach(([groupId,group])=>{
-      if(!group.savings)return; // skip groups marked as not-redundant
       const p1Matches=p1Bens.filter(b=>group.keywords.some(kw=>b.name.toLowerCase().includes(kw.toLowerCase())));
       const p2Matches=p2Bens.filter(b=>group.keywords.some(kw=>b.name.toLowerCase().includes(kw.toLowerCase())));
       if(p1Matches.length>0&&p2Matches.length>0){
-        // Deduplicate by card — don't flag the same card twice (already caught above)
+        // Deduplicate by card
         const p1CardIds=new Set(p1Matches.map(m=>m.card.id));
         const p2CardIds=new Set(p2Matches.map(m=>m.card.id));
         const overlap=[...p2CardIds].some(id=>!p1CardIds.has(id))||[...p1CardIds].some(id=>!p2CardIds.has(id));
         if(overlap){
-          alerts.push({
-            type:"overlap",
-            label:`Overlapping: ${group.label}`,
-            detail:group.tip,
-            savings:group.savings,
-            cards:[...p1Matches.map(m=>m.card),...p2Matches.map(m=>m.card)].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i)
-          });
+          const allMatchCards=[...p1Matches.map(m=>m.card),...p2Matches.map(m=>m.card)].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i);
+          if(group.savings){
+            // True redundancy — flag with savings
+            alerts.push({
+              type:"overlap",
+              label:`Overlapping: ${group.label}`,
+              detail:group.tip,
+              savings:group.savings,
+              cards:allMatchCards
+            });
+          } else if(group.isInfoNote){
+            // Info note — hotel status etc., worth mentioning but not actionable
+            alerts.push({
+              type:"info-overlap",
+              label:`Shared: ${group.label}`,
+              detail:group.tip,
+              savings:null,
+              cards:allMatchCards,
+              isPositive:true
+            });
+          }
+          // groups with savings:null and no isInfoNote are truly not redundant — skip silently
         }
       }
     });
@@ -3125,40 +3139,64 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
       </div>
 
       {/* ── Redundancy Alerts ── */}
-      {redundancies.length>0&&(()=>{
+      {p2Resolved.length>0&&(()=>{
         const actionable=redundancies.filter(r=>!r.isPositive);
         const informational=redundancies.filter(r=>r.isPositive);
+        const hasAlerts=redundancies.length>0;
         return (
         <div style={{marginBottom:16}}>
           <button onClick={()=>setShowRedundancy(!showRedundancy)}
             style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"none",border:"none",cursor:"pointer",padding:0,marginBottom:10,textAlign:"left"}}>
-            <div style={{width:36,height:36,borderRadius:10,background:actionable.length>0?"rgba(220,38,38,.06)":"rgba(13,115,119,.06)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <Icon name={actionable.length>0?"alert-triangle":"shield-check"} size={18} color={actionable.length>0?"var(--red2)":"var(--acc)"}/>
+            <div style={{width:36,height:36,borderRadius:10,
+              background:actionable.length>0?"rgba(220,38,38,.06)":hasAlerts?"rgba(13,115,119,.06)":"rgba(22,163,74,.06)",
+              display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <Icon name={actionable.length>0?"alert-triangle":hasAlerts?"shield-check":"check-circle"} size={18}
+                color={actionable.length>0?"var(--red2)":hasAlerts?"var(--acc)":"var(--grn2)"}/>
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Household Point Sharing & Overlaps</div>
-              <div style={{fontSize:11,color:"var(--tx3)"}}>{actionable.length} action item{actionable.length!==1?"s":""}{informational.length>0?`, ${informational.length} info note${informational.length!==1?"s":""}`:""}</div>
+              <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Redundancy Alerts</div>
+              <div style={{fontSize:11,color:"var(--tx3)"}}>
+                {!hasAlerts?"No redundant coverage found"
+                  :actionable.length>0?`${actionable.length} overlap${actionable.length!==1?"s":""} found${informational.length>0?` · ${informational.length} info note${informational.length!==1?"s":""}`:""}`
+                  :`${informational.length} info note${informational.length!==1?"s":""}`}
+              </div>
             </div>
-            <span style={{transition:"transform .2s",transform:showRedundancy?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
+            {hasAlerts&&<span style={{transition:"transform .2s",transform:showRedundancy?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>}
           </button>
-          {showRedundancy&&(<>
+          {!hasAlerts&&(
+            <div className="surf fu" style={{borderLeft:"3px solid var(--grn2)",background:"rgba(22,163,74,.03)"}}>
+              <p style={{fontSize:12,color:"var(--grn2)",margin:0,lineHeight:1.6,fontWeight:600}}>
+                ✅ No redundant coverage — your household cards complement each other well.
+              </p>
+            </div>
+          )}
+          {hasAlerts&&showRedundancy&&(<>
             {redundancies.map((r,i)=>{
               const isWarning=r.type==="sharing-warning";
               const isPositive=r.isPositive;
-              const borderColor=isWarning?"var(--gold)":isPositive?"var(--acc)":"var(--red2)";
-              const bgTint=isWarning?"rgba(212,168,64,.04)":isPositive?"rgba(13,115,119,.03)":"transparent";
+              const borderColor=isWarning?"#d97706":isPositive?"#0d7377":"#ef4444";
+              const bgTint=isWarning?"rgba(217,119,6,.04)":isPositive?"rgba(13,115,119,.03)":"rgba(239,68,68,.03)";
+              const iconName=isWarning?"alert-triangle":isPositive?"shield-check":"alert-triangle";
+              const iconColor=isWarning?"#d97706":isPositive?"#0d7377":"#ef4444";
               return (
                 <div key={i} className="surf fu" style={{marginBottom:8,borderLeft:`3px solid ${borderColor}`,background:bgTint}}>
-                  <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:4}}>{r.label}</div>
+                  <div style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:4}}>
+                    <Icon name={iconName} size={14} color={iconColor} style={{marginTop:1,flexShrink:0}}/>
+                    <div style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>{r.label}</div>
+                  </div>
                   <p style={{fontSize:12,color:"var(--tx2)",margin:"0 0 8px",lineHeight:1.6}}>{r.detail}</p>
                   {r.sharingNote&&<div style={{fontSize:10,color:"var(--tx3)",fontStyle:"italic",marginBottom:6}}>Limits: {r.sharingNote}</div>}
                   {r.savings&&typeof r.savings==="number"?(
-                    <div style={{fontSize:11,fontWeight:700,color:"var(--grn2)"}}>Potential savings: ${r.savings}/yr</div>
+                    <div style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 10px",borderRadius:99,background:"rgba(22,163,74,.08)",border:"1px solid rgba(22,163,74,.15)"}}>
+                      <span style={{fontSize:11,fontWeight:700,color:"var(--grn2)"}}>Save ${r.savings}/yr</span>
+                    </div>
                   ):r.savings?(
-                    <div style={{fontSize:11,fontWeight:700,color:"var(--grn2)"}}>Potential savings: {r.savings}</div>
+                    <div style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 10px",borderRadius:99,background:"rgba(22,163,74,.08)",border:"1px solid rgba(22,163,74,.15)"}}>
+                      <span style={{fontSize:11,fontWeight:700,color:"var(--grn2)"}}>Potential savings: {r.savings}</span>
+                    </div>
                   ):null}
                   {r.cards.length>0&&(
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:r.savings?8:0}}>
                       {r.cards.map(c=>{
                         const p=getIssuerPalette(c.issuer);
                         return <span key={c.id} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:p.tint,color:p.text,border:`1px solid ${p.text}15`}}>{c.short||c.name}</span>;
