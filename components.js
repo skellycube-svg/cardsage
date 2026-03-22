@@ -3303,7 +3303,7 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
                       {row.p1Best?(
                         <div>
                           <div style={{fontSize:11,fontWeight:row.winner==="p1"?700:400,color:row.winner==="p1"?"var(--grn2)":"var(--tx3)"}}>{row.p1Rate}x</div>
-                          <div style={{fontSize:9,color:"var(--tx4)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}>{row.p1Best.short||row.p1Best.name}</div>
+                          <div style={{fontSize:11,color:"#6b7280",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}>{row.p1Best.short||row.p1Best.name}</div>
                         </div>
                       ):<span style={{color:"var(--tx4)"}}>—</span>}
                     </td>
@@ -3311,7 +3311,7 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
                       {row.p2Best?(
                         <div>
                           <div style={{fontSize:11,fontWeight:row.winner==="p2"?700:400,color:row.winner==="p2"?"var(--grn2)":"var(--tx3)"}}>{row.p2Rate}x</div>
-                          <div style={{fontSize:9,color:"var(--tx4)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}>{row.p2Best.short||row.p2Best.name}</div>
+                          <div style={{fontSize:11,color:"#6b7280",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}>{row.p2Best.short||row.p2Best.name}</div>
                         </div>
                       ):<span style={{color:"var(--tx4)"}}>—</span>}
                     </td>
