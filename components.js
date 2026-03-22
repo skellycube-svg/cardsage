@@ -2761,6 +2761,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             const catStr=earnCats.map(([k,v])=>(catLabels[k]||k)+" ("+v+"x)").join(", ");
             qs.push({id:"spending",title:"How much do you spend monthly in this card's bonus categories?",subtitle:card.short+"'s bonus categories: "+catStr,
               type:"single",options:[
+                {label:"$0 \u2014 I use other cards for these categories",value:"zero"},
                 {label:"Less than $200/mo",value:"low"},
                 {label:"$200 - $500/mo",value:"med"},
                 {label:"$500 - $1,000/mo",value:"high"},
@@ -2874,7 +2875,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
 
           // Q1: Spending value
           if(answers.spending&&earnCats.length>0){
-            const spendMap={low:150,med:350,high:750,vhigh:1500};
+            const spendMap={zero:0,low:150,med:350,high:750,vhigh:1500};
             const monthlySpend=spendMap[answers.spending]||0;
             const avgRate=earnCats.reduce((s,[,v])=>s+parseFloat(String(v).replace(/[^0-9.]/g,"")),0)/earnCats.length;
             const cpp=tpd?tpd.transferValue/100:0.01;
