@@ -3166,43 +3166,43 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
             <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Coverage Map</div>
           </div>
           <div className="surf fu" style={{padding:"12px 10px",overflowX:"auto"}}>
-            <table className="hh-coverage-table" style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+            <table className="hh-coverage-table" style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
               <thead>
                 <tr>
-                  <th style={{textAlign:"left",padding:"6px 8px",fontSize:10,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase",borderBottom:"2px solid var(--br2)"}}>Category</th>
-                  <th style={{textAlign:"center",padding:"6px 8px",fontSize:10,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase",borderBottom:"2px solid var(--br2)"}}>You</th>
-                  <th style={{textAlign:"center",padding:"6px 8px",fontSize:10,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase",borderBottom:"2px solid var(--br2)"}}>{p2Name||"Partner"}</th>
-                  <th style={{textAlign:"center",padding:"6px 8px",fontSize:10,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase",borderBottom:"2px solid var(--br2)"}}>Best</th>
+                  <th style={{textAlign:"left",padding:"8px",fontSize:13,fontWeight:700,letterSpacing:.5,color:"var(--tx2)",textTransform:"uppercase",borderBottom:"2px solid var(--br2)"}}>Category</th>
+                  <th style={{textAlign:"center",padding:"8px",fontSize:13,fontWeight:700,letterSpacing:.5,color:"var(--tx2)",textTransform:"uppercase",borderBottom:"2px solid var(--br2)"}}>You</th>
+                  <th style={{textAlign:"center",padding:"8px",fontSize:13,fontWeight:700,letterSpacing:.5,color:"var(--tx2)",textTransform:"uppercase",borderBottom:"2px solid var(--br2)"}}>{p2Name||"Partner"}</th>
+                  <th style={{textAlign:"center",padding:"8px",fontSize:13,fontWeight:700,letterSpacing:.5,color:"var(--tx2)",textTransform:"uppercase",borderBottom:"2px solid var(--br2)"}}>Best</th>
                 </tr>
               </thead>
               <tbody>
                 {coverageMap.map(row=>(
                   <tr key={row.cat.id} style={{background:row.gap?"rgba(220,38,38,.03)":"transparent"}}>
-                    <td style={{padding:"8px",fontWeight:600,color:"var(--tx)",borderBottom:"1px solid var(--br)"}}>
+                    <td style={{padding:"8px",fontSize:15,fontWeight:600,color:"var(--tx)",borderBottom:"1px solid var(--br)"}}>
                       {row.cat.label}
-                      {row.gap&&<span style={{fontSize:9,fontWeight:700,color:"var(--red2)",marginLeft:6}}>GAP</span>}
+                      {row.gap&&<span style={{fontSize:10,fontWeight:700,color:"var(--red2)",marginLeft:6}}>GAP</span>}
                     </td>
                     <td style={{textAlign:"center",padding:"8px",borderBottom:"1px solid var(--br)"}}>
                       {row.p1Best?(
                         <div>
-                          <div style={{fontSize:11,fontWeight:row.winner==="p1"?700:400,color:row.winner==="p1"?"var(--grn2)":"var(--tx3)"}}>{row.p1Rate}x</div>
-                          <div style={{fontSize:11,color:"#6b7280",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}>{row.p1Best?.short||row.p1Best?.name||"Card"}</div>
+                          <div style={{fontSize:18,fontWeight:700,color:row.winner==="p1"?"var(--grn2)":"var(--tx2)"}}>{row.p1Rate}x</div>
+                          <div style={{fontSize:13,fontWeight:500,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{row.p1Best?.short||row.p1Best?.name||"Card"}</div>
                         </div>
-                      ):<span style={{color:"var(--tx4)"}}>—</span>}
+                      ):<span style={{color:"var(--tx4)",fontSize:18}}>—</span>}
                     </td>
                     <td style={{textAlign:"center",padding:"8px",borderBottom:"1px solid var(--br)"}}>
                       {row.p2Best?(
                         <div>
-                          <div style={{fontSize:11,fontWeight:row.winner==="p2"?700:400,color:row.winner==="p2"?"var(--grn2)":"var(--tx3)"}}>{row.p2Rate}x</div>
-                          <div style={{fontSize:11,color:"#6b7280",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}>{row.p2Best?.short||row.p2Best?.name||"Card"}</div>
+                          <div style={{fontSize:18,fontWeight:700,color:row.winner==="p2"?"var(--grn2)":"var(--tx2)"}}>{row.p2Rate}x</div>
+                          <div style={{fontSize:13,fontWeight:500,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{row.p2Best?.short||row.p2Best?.name||"Card"}</div>
                         </div>
-                      ):<span style={{color:"var(--tx4)"}}>—</span>}
+                      ):<span style={{color:"var(--tx4)",fontSize:18}}>—</span>}
                     </td>
                     <td style={{textAlign:"center",padding:"8px",borderBottom:"1px solid var(--br)"}}>
                       {row.gap?(
-                        <span style={{fontSize:10,fontWeight:700,color:"var(--red2)"}}>None</span>
+                        <span style={{fontSize:14,fontWeight:700,color:"var(--red2)"}}>None</span>
                       ):(
-                        <span style={{fontSize:10,fontWeight:700,color:"var(--grn2)"}}>{row.winner==="p1"?"You":p2Name||"Partner"}</span>
+                        <span style={{fontSize:14,fontWeight:700,color:"var(--grn2)"}}>{row.winner==="p1"?"You":p2Name||"Partner"}</span>
                       )}
                     </td>
                   </tr>
