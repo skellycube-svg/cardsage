@@ -1502,6 +1502,73 @@ const ECOSYSTEM_MAP={
   }
 };
 
+const POINT_SHARING_RULES={
+  "Chase Ultimate Rewards":{
+    canShareHousehold:true,
+    method:"Combine points between household members at same address via phone call to Chase",
+    requirements:"Same address, both must have a UR-earning card",
+    limits:"No fee, 1,000 point increments, one combine partner at a time",
+    implication:"Only ONE household member needs a Sapphire/Ink Preferred to unlock transfer partners for both. Person A can transfer UR to Person B, then Person B transfers to Hyatt/United/etc."
+  },
+  "Amex Membership Rewards":{
+    canShareHousehold:false,
+    method:"No direct account-to-account transfer. Workaround: add partner as authorized user (90-day wait), then transfer to their loyalty accounts",
+    requirements:"Authorized user must be on card 90+ days before transfers",
+    limits:"Small excise tax on transfers to US airlines ($0.0006/point, max $99)",
+    implication:"Each person needs their OWN MR-earning card to maintain transfer access. Canceling Person 2's only MR card means their points are stranded — authorized user workaround is slow and limited."
+  },
+  "Capital One Miles":{
+    canShareHousehold:true,
+    method:"Call Capital One to transfer miles to any other Capital One cardholder — no address or relationship requirement",
+    requirements:"Both must have a Capital One card",
+    limits:"No fee, no limits, instant transfer",
+    implication:"Most flexible program. Only ONE household member needs a Venture X/Venture to unlock transfers for both."
+  },
+  "Citi ThankYou Points":{
+    canShareHousehold:true,
+    method:"Transfer TY points to any ThankYou member online",
+    requirements:"Recipient needs a ThankYou account",
+    limits:"100,000 points/year send and receive cap",
+    warning:"CRITICAL: Citi is discontinuing point sharing on May 17, 2026. After that date, each person needs their own Strata Premier for transfer access.",
+    implication:"Currently only one person needs Strata Premier, but after May 2026 each person will need their own."
+  },
+  "Bilt Points":{
+    canShareHousehold:false,
+    method:"No direct transfers between Bilt accounts",
+    requirements:"N/A",
+    limits:"N/A",
+    implication:"Each person's Bilt points are locked to their own account. Workaround: transfer to Hyatt and use Hyatt's point combining, or book travel in partner's name."
+  },
+  "Marriott Bonvoy Points":{
+    canShareHousehold:true,
+    method:"Free transfers between Marriott Bonvoy members",
+    requirements:"Both members must have Bonvoy accounts",
+    limits:"100,000 points/year send limit",
+    implication:"One Marriott card per household is enough since you can share points freely."
+  },
+  "Hilton Honors Points":{
+    canShareHousehold:true,
+    method:"Pool points with up to 10 members via Hilton Honors account",
+    requirements:"Both must have Hilton Honors accounts",
+    limits:"Up to 500,000 points/year per member",
+    implication:"Pool points together — one Aspire covers Diamond status for stays booked under that member."
+  },
+  "Hyatt Points":{
+    canShareHousehold:true,
+    method:"Combine points by submitting a signed form to Hyatt",
+    requirements:"Both must have World of Hyatt accounts and submit a Points Combining Form",
+    limits:"Requires paperwork, not instant",
+    implication:"Can combine but requires both to sign a form. Plan ahead if you need combined points for a redemption."
+  },
+  "IHG One Rewards Points":{
+    canShareHousehold:true,
+    method:"Transfer points between IHG accounts",
+    requirements:"Both must have IHG accounts",
+    limits:"Restricted based on elite status tier. May incur a fee for non-elite members.",
+    implication:"Transfers limited — check your elite tier. Points & Cash bookings can help stretch a single balance."
+  }
+};
+
 /* TRANSFER_PATHS — maps loyalty program currencies to flexible-point programs
    that can transfer into them. Used by the Renewal Advisor to show alternative
    points paths when a user considers canceling a co-branded hotel/airline card. */

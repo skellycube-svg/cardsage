@@ -2297,6 +2297,45 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
                 )}
               </div>
             )}
+
+            {/* Household point sharing context */}
+            {householdSetup&&card&&card.cur&&POINT_SHARING_RULES[card.cur]&&(()=>{
+              const rule=POINT_SHARING_RULES[card.cur];
+              const eco=ECOSYSTEM_MAP[card.cur];
+              const isUnlocker=eco&&eco.unlockers.some(u=>card.name===u);
+              const p2Resolved=p2Cards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
+              const partnerSameEco=p2Resolved.filter(c=>c.cur===card.cur);
+              const partnerHasUnlocker=eco&&partnerSameEco.some(c=>eco.unlockers.includes(c.name));
+              if(!partnerSameEco.length||!isUnlocker)return null;
+              return (
+                <div style={{marginTop:14,padding:"12px 14px",borderRadius:10,
+                  background:rule.canShareHousehold?"rgba(22,163,74,.05)":"rgba(220,38,38,.05)",
+                  border:rule.canShareHousehold?"1px solid rgba(22,163,74,.15)":"1px solid rgba(220,38,38,.15)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                    <Icon name="users" size={14} color={rule.canShareHousehold?"var(--grn2)":"var(--red2)"}/>
+                    <span style={{fontSize:12,fontWeight:700,color:"var(--tx)"}}>Household Impact</span>
+                  </div>
+                  {rule.canShareHousehold&&partnerHasUnlocker?(
+                    <p style={{fontSize:12,color:"var(--grn2)",margin:0,lineHeight:1.6,fontWeight:600}}>
+                      ✅ {p2Name||"Your partner"}'s {partnerSameEco.find(c=>eco.unlockers.includes(c.name)).short||partnerSameEco.find(c=>eco.unlockers.includes(c.name)).name} can still unlock transfers for your {card.cur.split(" ")[0]} points — {card.cur.split(" ")[0]} allows household point {rule.method.toLowerCase().includes("combine")?"combining":"sharing"}.
+                    </p>
+                  ):rule.canShareHousehold&&!partnerHasUnlocker?(
+                    <p style={{fontSize:12,color:"var(--tx2)",margin:0,lineHeight:1.6}}>
+                      ⚠️ {p2Name||"Your partner"} has {partnerSameEco[0].short||partnerSameEco[0].name} but it doesn't unlock transfers. {card.cur.split(" ")[0]} allows household point sharing, but someone still needs a transfer-unlocking card ({eco.cheapestUnlocker}, ${eco.cheapestUnlockerFee}/yr).
+                    </p>
+                  ):(
+                    <p style={{fontSize:12,color:"var(--red2)",margin:0,lineHeight:1.6,fontWeight:600}}>
+                      ⚠️ {p2Name||"Your partner"}'s {partnerSameEco[0].short||partnerSameEco[0].name} won't help — {card.cur.split(" ")[0]} doesn't allow point transfers between household members. {rule.implication}
+                    </p>
+                  )}
+                  {rule.warning&&(
+                    <div style={{marginTop:8,padding:"8px 10px",borderRadius:8,background:"rgba(212,168,64,.08)",border:"1px solid rgba(212,168,64,.2)"}}>
+                      <p style={{fontSize:11,color:"var(--gold)",margin:0,lineHeight:1.5,fontWeight:600}}>⚠️ {rule.warning}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
@@ -2669,12 +2708,62 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
     if(!p2Resolved.length)return[];
     const alerts=[];
 
-    // 1. Same card held by both
+    // Helper: find which ecosystem a card's currency belongs to
+    function getEcosystem(card){
+      if(!card.cur)return null;
+      const eco=ECOSYSTEM_MAP[card.cur];
+      if(!eco)return null;
+      const isUnlocker=eco.unlockers.some(u=>card.name===u);
+      return {currency:card.cur,eco,isUnlocker};
+    }
+
+    // 1. Same card held by both — check point-sharing rules
     const p1Ids=new Set(myCards);
+    const handledEcosystems=new Set();
     p2Cards.forEach(id=>{
       if(p1Ids.has(id)){
         const card=CARDS.find(c=>c.id===id);
-        if(card&&card.fee>0){
+        if(!card)return;
+        const ecoInfo=getEcosystem(card);
+        const sharingRule=card.cur?POINT_SHARING_RULES[card.cur]:null;
+
+        if(ecoInfo&&ecoInfo.isUnlocker&&sharingRule){
+          handledEcosystems.add(card.cur);
+          if(sharingRule.canShareHousehold){
+            // TRUE redundancy — one person can share
+            const dg=card.downgradePaths&&card.downgradePaths[0];
+            const dgName=dg?dg.cardName:"a no-fee card";
+            const dgSave=dg?card.fee-dg.annualFee:card.fee;
+            alerts.push({
+              type:"same-card",
+              label:`Both hold ${card.short||card.name}`,
+              detail:`Since ${card.cur.split(" ")[0]} lets household members ${sharingRule.method.toLowerCase().includes("combine")?"combine":"share"} points, only one of you needs ${card.short||card.name} to unlock transfer partners for both. Consider downgrading one to ${dgName} ($${dg?dg.annualFee:0}/yr) — you'll still earn points and ${sharingRule.method.toLowerCase().includes("combine")?"combine them with":"transfer them to"} the other person's account.`,
+              savings:dgSave,
+              cards:[card],
+              sharingNote:sharingRule.limits
+            });
+            if(sharingRule.warning){
+              alerts.push({
+                type:"sharing-warning",
+                label:"⚠️ "+card.cur.split(" ")[0]+" Sharing Deadline",
+                detail:sharingRule.warning+" "+sharingRule.implication,
+                savings:null,
+                cards:[card]
+              });
+            }
+          } else {
+            // NOT redundant — each person needs their own
+            alerts.push({
+              type:"keep-both",
+              label:`Both hold ${card.short||card.name} — keep both`,
+              detail:sharingRule.implication,
+              savings:null,
+              cards:[card],
+              isPositive:true
+            });
+          }
+        } else if(card.fee>0){
+          // Non-ecosystem card or no sharing rules — original logic
           alerts.push({
             type:"same-card",
             label:`Both hold ${card.short||card.name}`,
@@ -2683,6 +2772,76 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
             cards:[card]
           });
         }
+      }
+    });
+
+    // 1b. Different cards in the same ecosystem with unlockers on both sides
+    Object.entries(ECOSYSTEM_MAP).forEach(([currency,eco])=>{
+      if(handledEcosystems.has(currency))return;
+      const sharingRule=POINT_SHARING_RULES[currency];
+      if(!sharingRule)return;
+      const p1Unlockers=p1Cards.filter(c=>c.cur===currency&&eco.unlockers.includes(c.name));
+      const p2Unlockers=p2Resolved.filter(c=>c.cur===currency&&eco.unlockers.includes(c.name));
+      if(p1Unlockers.length>0&&p2Unlockers.length>0){
+        const allCards=[...p1Unlockers,...p2Unlockers];
+        if(sharingRule.canShareHousehold){
+          const cheapest=allCards.reduce((a,b)=>a.fee<=b.fee?a:b);
+          const expensive=allCards.filter(c=>c.id!==cheapest.id);
+          const potentialSavings=expensive.reduce((s,c)=>{
+            const dg=c.downgradePaths&&c.downgradePaths[0];
+            return s+(dg?c.fee-dg.annualFee:c.fee);
+          },0);
+          if(potentialSavings>0){
+            alerts.push({
+              type:"ecosystem-redundancy",
+              label:`Both unlock ${currency.split(" ")[0]} transfers`,
+              detail:`${sharingRule.implication} One household member with a transfer-unlocking card is enough — the other can downgrade and still access transfers via point ${sharingRule.method.toLowerCase().includes("combine")?"combining":"sharing"}.`,
+              savings:potentialSavings>0?potentialSavings:null,
+              cards:allCards
+            });
+          }
+          if(sharingRule.warning){
+            alerts.push({
+              type:"sharing-warning",
+              label:"⚠️ "+currency.split(" ")[0]+" Sharing Deadline",
+              detail:sharingRule.warning+" "+sharingRule.implication,
+              savings:null,
+              cards:allCards
+            });
+          }
+        } else {
+          alerts.push({
+            type:"keep-both",
+            label:`Both have ${currency.split(" ")[0]} unlockers — keep both`,
+            detail:sharingRule.implication,
+            savings:null,
+            cards:allCards,
+            isPositive:true
+          });
+        }
+      }
+    });
+
+    // 1c. Hotel/airline point sharing alerts for duplicate loyalty programs
+    const p1Currencies=new Set(p1Cards.map(c=>c.cur).filter(Boolean));
+    const p2Currencies=new Set(p2Resolved.map(c=>c.cur).filter(Boolean));
+    const sharedCurrencies=[...p1Currencies].filter(cur=>p2Currencies.has(cur)&&!ECOSYSTEM_MAP[cur]&&POINT_SHARING_RULES[cur]);
+    sharedCurrencies.forEach(cur=>{
+      const rule=POINT_SHARING_RULES[cur];
+      const p1Cds=p1Cards.filter(c=>c.cur===cur);
+      const p2Cds=p2Resolved.filter(c=>c.cur===cur);
+      // Only add a note if both have fee-paying cards in the same loyalty program
+      const p1Fee=p1Cds.some(c=>c.fee>0);
+      const p2Fee=p2Cds.some(c=>c.fee>0);
+      if(p1Fee&&p2Fee){
+        alerts.push({
+          type:rule.canShareHousehold?"hotel-sharing":"hotel-no-sharing",
+          label:`Both earn ${cur.replace(" Points","").replace(" Miles","")} points`,
+          detail:rule.implication+(rule.limits?" ("+rule.limits+")":""),
+          savings:null,
+          cards:[...p1Cds,...p2Cds].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i),
+          isPositive:rule.canShareHousehold
+        });
       }
     });
 
@@ -2760,14 +2919,18 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
     });
 
     // Check for redundant high-fee cards where one could downgrade
-    redundancies.filter(r=>r.type==="same-card").forEach(r=>{
+    redundancies.filter(r=>r.type==="same-card"||r.type==="ecosystem-redundancy").forEach(r=>{
       const card=r.cards[0];
       const paths=card.downgradePaths;
       if(paths&&paths.length>0){
         const best=paths[0];
+        const sharingRule=card.cur?POINT_SHARING_RULES[card.cur]:null;
+        const sharingNote=sharingRule&&sharingRule.canShareHousehold
+          ?` Points can still be ${sharingRule.method.toLowerCase().includes("combine")?"combined":"shared"} with your account for transfers.`
+          :"";
         suggs.push({
           type:"downgrade",
-          text:`${p2Name||"P2"} should downgrade their ${card.short||card.name} to ${best.cardName} — ${p2Name?"they":"P2"} save${p2Name?"s":""} $${card.fee-best.annualFee}/yr and can use ${p2Name?"your":"P1's"} card as primary.`,
+          text:`${p2Name||"P2"} should downgrade their ${card.short||card.name} to ${best.cardName} — ${p2Name?"they":"P2"} save${p2Name?"s":""} $${card.fee-best.annualFee}/yr.${sharingNote}`,
           card:null
         });
       }
@@ -2962,40 +3125,53 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
       </div>
 
       {/* ── Redundancy Alerts ── */}
-      {redundancies.length>0&&(
+      {redundancies.length>0&&(()=>{
+        const actionable=redundancies.filter(r=>!r.isPositive);
+        const informational=redundancies.filter(r=>r.isPositive);
+        return (
         <div style={{marginBottom:16}}>
           <button onClick={()=>setShowRedundancy(!showRedundancy)}
             style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"none",border:"none",cursor:"pointer",padding:0,marginBottom:10,textAlign:"left"}}>
-            <div style={{width:36,height:36,borderRadius:10,background:"rgba(220,38,38,.06)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <Icon name="alert-triangle" size={18} color="var(--red2)"/>
+            <div style={{width:36,height:36,borderRadius:10,background:actionable.length>0?"rgba(220,38,38,.06)":"rgba(13,115,119,.06)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <Icon name={actionable.length>0?"alert-triangle":"shield-check"} size={18} color={actionable.length>0?"var(--red2)":"var(--acc)"}/>
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Redundancy Alerts</div>
-              <div style={{fontSize:11,color:"var(--tx3)"}}>{redundancies.length} overlap{redundancies.length>1?"s":""} found</div>
+              <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>Household Point Sharing & Overlaps</div>
+              <div style={{fontSize:11,color:"var(--tx3)"}}>{actionable.length} action item{actionable.length!==1?"s":""}{informational.length>0?`, ${informational.length} info note${informational.length!==1?"s":""}`:""}</div>
             </div>
             <span style={{transition:"transform .2s",transform:showRedundancy?"rotate(90deg)":"rotate(0deg)"}}><Icon name="chevron-right" size={16} color="var(--tx3)"/></span>
           </button>
-          {showRedundancy&&redundancies.map((r,i)=>(
-            <div key={i} className="surf fu" style={{marginBottom:8,borderLeft:"3px solid var(--red2)"}}>
-              <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:4}}>{r.label}</div>
-              <p style={{fontSize:12,color:"var(--tx2)",margin:"0 0 8px",lineHeight:1.6}}>{r.detail}</p>
-              {r.savings&&typeof r.savings==="number"?(
-                <div style={{fontSize:11,fontWeight:700,color:"var(--grn2)"}}>Potential savings: ${r.savings}/yr</div>
-              ):r.savings?(
-                <div style={{fontSize:11,fontWeight:700,color:"var(--grn2)"}}>Potential savings: {r.savings}</div>
-              ):null}
-              {r.cards.length>0&&(
-                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
-                  {r.cards.map(c=>{
-                    const p=getIssuerPalette(c.issuer);
-                    return <span key={c.id} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:p.tint,color:p.text,border:`1px solid ${p.text}15`}}>{c.short||c.name}</span>;
-                  })}
+          {showRedundancy&&(<>
+            {redundancies.map((r,i)=>{
+              const isWarning=r.type==="sharing-warning";
+              const isPositive=r.isPositive;
+              const borderColor=isWarning?"var(--gold)":isPositive?"var(--acc)":"var(--red2)";
+              const bgTint=isWarning?"rgba(212,168,64,.04)":isPositive?"rgba(13,115,119,.03)":"transparent";
+              return (
+                <div key={i} className="surf fu" style={{marginBottom:8,borderLeft:`3px solid ${borderColor}`,background:bgTint}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:4}}>{r.label}</div>
+                  <p style={{fontSize:12,color:"var(--tx2)",margin:"0 0 8px",lineHeight:1.6}}>{r.detail}</p>
+                  {r.sharingNote&&<div style={{fontSize:10,color:"var(--tx3)",fontStyle:"italic",marginBottom:6}}>Limits: {r.sharingNote}</div>}
+                  {r.savings&&typeof r.savings==="number"?(
+                    <div style={{fontSize:11,fontWeight:700,color:"var(--grn2)"}}>Potential savings: ${r.savings}/yr</div>
+                  ):r.savings?(
+                    <div style={{fontSize:11,fontWeight:700,color:"var(--grn2)"}}>Potential savings: {r.savings}</div>
+                  ):null}
+                  {r.cards.length>0&&(
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
+                      {r.cards.map(c=>{
+                        const p=getIssuerPalette(c.issuer);
+                        return <span key={c.id} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:p.tint,color:p.text,border:`1px solid ${p.text}15`}}>{c.short||c.name}</span>;
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              );
+            })}
+          </>)}
         </div>
-      )}
+        );
+      })()}
 
       {/* ── Household Suggestions ── */}
       {suggestions.length>0&&(
