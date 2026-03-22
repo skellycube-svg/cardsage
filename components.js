@@ -846,7 +846,8 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
           </div>
           {feeCards.map(({card,usedVal,renewDays,roiPct,verdict,owner,strat})=>{
             const palette=getIssuerPalette(card.issuer);
-            const verdictLabel=verdict==="worth-it"?"Worth It":verdict==="on-track"?"On Track":verdict==="strategic"?"Strategic":"At Risk";
+            const verdictLabel=verdict==="worth-it"?"Worth It":verdict==="on-track"?"On Track":verdict==="strategic"?"Keeper":"Behind";
+            const verdictTip=verdict==="worth-it"?"Credits already exceed the annual fee":verdict==="on-track"?"Earning back the annual fee at a healthy pace":verdict==="strategic"?"Valuable for transfer partners, perks, or household strategy":"Credits captured haven\u2019t covered the fee yet";
             const verdictColor=verdict==="worth-it"?"var(--grn2)":verdict==="on-track"?"var(--acc)":verdict==="strategic"?"#2563eb":"var(--red2)";
             const verdictBg=verdict==="worth-it"?"rgba(22,163,74,.1)":verdict==="on-track"?"rgba(13,115,119,.1)":verdict==="strategic"?"rgba(37,99,235,.1)":"rgba(220,38,38,.1)";
             const barPct=Math.min(roiPct||0,100);
@@ -874,8 +875,8 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
                         Set renewal date →
                       </div>
                     )}
-                    <span style={{display:"inline-flex",alignItems:"center",padding:"3px 10px",borderRadius:99,
-                      fontSize:10,fontWeight:700,letterSpacing:.3,color:verdictColor,background:verdictBg,whiteSpace:"nowrap"}}>
+                    <span title={verdictTip} style={{display:"inline-flex",alignItems:"center",padding:"3px 10px",borderRadius:99,
+                      fontSize:10,fontWeight:700,letterSpacing:.3,color:verdictColor,background:verdictBg,whiteSpace:"nowrap",cursor:"help"}}>
                       {verdictLabel}
                     </span>
                   </div>
@@ -1620,9 +1621,9 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
     roiDesc="Check off more benefits you use.";
   }
   const verdictConfig={
-    "worth-it":{label:"Worth It",icon:"check",bg:"rgba(22,163,74,.06)",border:"rgba(22,163,74,.2)",color:"var(--grn2)",desc:roiDesc},
-    "on-track":{label:"On Track",icon:"zap",bg:"rgba(13,115,119,.06)",border:"rgba(13,115,119,.2)",color:"var(--acc)",desc:roiDesc},
-    "at-risk":{label:"At Risk",icon:"alert-triangle",bg:"rgba(220,38,38,.06)",border:"rgba(220,38,38,.2)",color:"var(--red2)",desc:roiDesc}
+    "worth-it":{label:"Worth It",icon:"check",bg:"rgba(22,163,74,.06)",border:"rgba(22,163,74,.2)",color:"var(--grn2)",desc:roiDesc,tip:"Credits already exceed the annual fee"},
+    "on-track":{label:"On Track",icon:"zap",bg:"rgba(13,115,119,.06)",border:"rgba(13,115,119,.2)",color:"var(--acc)",desc:roiDesc,tip:"Earning back the annual fee at a healthy pace"},
+    "at-risk":{label:"Behind",icon:"alert-triangle",bg:"rgba(220,38,38,.06)",border:"rgba(220,38,38,.2)",color:"var(--red2)",desc:roiDesc,tip:"Credits captured haven\u2019t covered the fee yet"}
   };
   const vc=verdictConfig[verdict];
 
@@ -2499,6 +2500,40 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
               {replacement.signup&&replacement.signup!=="No signup bonus"&&replacement.signup!=="No sign-up bonus"&&(
                 <div style={{fontSize:11,fontWeight:600,color:"var(--acc)",marginBottom:10}}>{replacement.signup}</div>
               )}
+              {/* Why upgrade? comparison */}
+              {(()=>{
+                const bullets=[];
+                const currentCredits=[...card.annual,...card.monthly].filter(b=>b.v!=null).reduce((s,b)=>s+annualBenValue(b),0);
+                if(replacement.credits>currentCredits) bullets.push({text:"$"+replacement.credits.toLocaleString()+" in annual credits vs $"+currentCredits.toLocaleString()+" with your "+card.short,positive:true});
+                const earnUps=[];const catLabelsMap={d:"dining",g:"groceries",gas:"gas",t:"travel",s:"streaming",a:"Amazon",tr:"rideshare",p:"pharmacy"};
+                Object.keys(catLabelsMap).forEach(k=>{
+                  const oldR=parseFloat(String((card.earn&&card.earn[k])||"0").replace(/[^0-9.]/g,""));
+                  const newR=parseFloat(String((replacement.earn&&replacement.earn[k])||"0").replace(/[^0-9.]/g,""));
+                  if(newR>oldR) earnUps.push(catLabelsMap[k]+" ("+newR+"x vs "+oldR+"x)");
+                });
+                if(earnUps.length>0) bullets.push({text:"Higher earn on "+earnUps.slice(0,3).join(", ")+(earnUps.length>3?" +more":""),positive:true});
+                const replPartners=(replacement.partners||[]).length;const curPartners=(card.partners||[]).length;
+                if(replPartners>0&&curPartners>0) bullets.push({text:replPartners===curPartners?"Same transfer partner access":"Access to "+replPartners+" transfer partners"+(curPartners>0?" (vs "+curPartners+")":""),positive:true});
+                else if(replPartners>0&&curPartners===0) bullets.push({text:"Adds "+replPartners+" transfer partners",positive:true});
+                const replBenNames=new Set([...replacement.annual,...replacement.monthly].filter(b=>b.v!=null).map(b=>b.n));
+                const curBenNames=new Set([...card.annual,...card.monthly].filter(b=>b.v!=null).map(b=>b.n));
+                const gained=[...replBenNames].filter(n=>!curBenNames.has(n)).slice(0,3);
+                if(gained.length>0) bullets.push({text:"Adds: "+gained.join(", "),positive:true});
+                const lost=[...curBenNames].filter(n=>!replBenNames.has(n)).slice(0,2);
+                if(lost.length>0) bullets.push({text:"You\u2019d lose: "+lost.join(", "),positive:false});
+                const feeDiff=replacement.fee-card.fee;
+                if(feeDiff>0&&replacement.credits>card.fee+feeDiff) bullets.push({text:"Fee increases by $"+feeDiff+", but credits more than cover the difference",positive:true});
+                else if(feeDiff>0) bullets.push({text:"Fee increases from $"+card.fee+" to $"+replacement.fee+" (+$"+feeDiff+")",positive:false});
+                else if(feeDiff<0) bullets.push({text:"Fee drops from $"+card.fee+" to $"+replacement.fee+" (\u2212$"+Math.abs(feeDiff)+")",positive:true});
+                return bullets.length>0?(
+                  <div style={{marginBottom:12,padding:"10px 12px",borderRadius:8,background:"rgba(13,115,119,.03)",border:"1px solid rgba(13,115,119,.08)"}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"var(--acc)",marginBottom:6}}>Why upgrade?</div>
+                    {bullets.map((b,i)=><div key={i} style={{fontSize:11,lineHeight:1.5,color:b.positive?"var(--tx2)":"var(--tx3)",marginBottom:2}}>
+                      <span style={{color:b.positive?"var(--acc)":"var(--red2)",marginRight:4}}>{b.positive?"+":"\u2212"}</span>{b.text}
+                    </div>)}
+                  </div>
+                ):null;
+              })()}
               {(()=>{
                 const applyUrl=APPLY_URLS[replacement.id]&&!APPLY_URLS[replacement.id].startsWith("#")?APPLY_URLS[replacement.id]:null;
                 return applyUrl?(
@@ -3665,11 +3700,11 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
   const verdictBadge=(verdict)=>{
     if(!verdict)return null;
     const cfg={
-      "worth-it":{label:"Worth It",color:"var(--grn2)",bg:"rgba(22,163,74,.08)"},
-      "on-track":{label:"On Track",color:"var(--acc)",bg:"rgba(13,115,119,.08)"},
-      "at-risk":{label:"At Risk",color:"var(--red2)",bg:"rgba(220,38,38,.08)"}
+      "worth-it":{label:"Worth It",color:"var(--grn2)",bg:"rgba(22,163,74,.08)",tip:"Credits already exceed the annual fee"},
+      "on-track":{label:"On Track",color:"var(--acc)",bg:"rgba(13,115,119,.08)",tip:"Earning back the annual fee at a healthy pace"},
+      "at-risk":{label:"Behind",color:"var(--red2)",bg:"rgba(220,38,38,.08)",tip:"Credits captured haven\u2019t covered the fee yet"}
     }[verdict];
-    return <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,color:cfg.color,background:cfg.bg}}>{cfg.label}</span>;
+    return <span title={cfg.tip} style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,color:cfg.color,background:cfg.bg,cursor:"help"}}>{cfg.label}</span>;
   };
 
   // Card list renderer for P1 or P2
@@ -3733,7 +3768,7 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
         <div className="surf fu" style={{textAlign:"center",padding:"12px 8px"}}>
           <div style={{fontSize:9,fontWeight:700,letterSpacing:.5,color:"var(--tx3)",textTransform:"uppercase"}}>Net ROI</div>
           <div style={{fontSize:20,fontWeight:800,color:hhNet>=0?"var(--grn2)":"var(--red2)",fontFamily:"'Source Code Pro',monospace"}}>{hhNet>=0?"+":""}${hhNet.toLocaleString()}</div>
-          <div style={{fontSize:10,color:"var(--tx3)",marginTop:2}}>{hhCredits>0?Math.round((hhCredits/Math.max(hhFees,1))*100):0}% fee coverage</div>
+          <div style={{fontSize:10,color:"var(--tx3)",marginTop:2}}>You ${(p1Credits-p1Fees).toLocaleString()} · {p2Name||"P2"} ${(p2Credits-p2Fees).toLocaleString()}</div>
         </div>
       </div>
 
@@ -6128,7 +6163,8 @@ function AuthModal({onClose}){
       if(nlChecked&&isNew) await subscribeNewsletter(result.user);
       onClose();
     }catch(e){
-      if(e.code!=='auth/popup-closed-by-user') setError('Google sign-in failed. Try again.');
+      console.error('Google auth error:',e.code,e.message);
+      if(e.code!=='auth/popup-closed-by-user') setError('Google sign-in failed: '+(e.code||e.message||'Unknown error')+'. Try again.');
     }
     setLoading(false);
   };

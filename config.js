@@ -12,7 +12,7 @@ const CS_CONFIG = {
   // ── Versioning ──────────────────────────────────────────────────────────────
   // The current app version. Incrementing this forces all users' browsers to
   // download fresh files instead of using old cached copies.
-  CACHE_VERSION: 'v99',
+  CACHE_VERSION: 'v100',
 
   // ── Site Metadata ───────────────────────────────────────────────────────────
   // Basic info about the site — name, URL, contact email, and descriptions
@@ -57,7 +57,7 @@ const CS_CONFIG = {
   CSS_VARS: {
     bg: '#ffffff', s1: '#ffffff', s2: '#ffffff', s3: '#f8f8f6', s4: '#f0f0ee',
     br: 'rgba(0,0,0,.06)', br2: '#e5e7eb', br3: '#d1d5db',
-    tx: '#1a1a2e', tx2: '#6b7280', tx3: '#9ca3af', tx4: '#d1d5db',
+    tx: '#1a1a2e', tx2: '#6b7280', tx3: '#78838f', tx4: '#9ca3af',
     acc: '#0d7377', acc2: '#0a5c5f', pur: '#0f172a', pur2: '#1e293b',
     gold: '#0d7377', gld2: '#14b8b8', gld3: '#e6f5f5',
     grn: '#166534', grn2: '#16a34a', grn3: '#22c55e',
