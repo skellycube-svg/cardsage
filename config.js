@@ -12,13 +12,13 @@ const CS_CONFIG = {
   // ── Versioning ──────────────────────────────────────────────────────────────
   // The current app version. Incrementing this forces all users' browsers to
   // download fresh files instead of using old cached copies.
-  CACHE_VERSION: 'v107',
+  CACHE_VERSION: 'v108',
 
   // ── Site Metadata ───────────────────────────────────────────────────────────
   // Basic info about the site — name, URL, contact email, and descriptions
   // used in the browser tab, search engine results, and social media previews.
   SITE_NAME: 'FeeWorth',
-  SITE_URL: 'https://cardsage.co',
+  SITE_URL: 'https://feeworth.com',
   CONTACT_EMAIL: 'cardsage.co@gmail.com',
   SITE_TAGLINE: 'Is the fee worth it?',
   SITE_DESCRIPTION: 'FeeWorth tells you which credit cards are worth keeping and which to cancel. Renewal countdowns, ROI tracking, and household optimization for couples.',
