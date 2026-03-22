@@ -2681,7 +2681,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
         // Pre-populate Q3 from existing benefit tracker checked state
         const benefitOptions=useMemo(()=>{
           const bens=[...card.annual,...card.monthly].filter(b=>b.v!=null).map(b=>({name:b.n,value:annualBenValue(b),checked:checkedSet.has(benKey(card.id,b,!!b.reset&&b.reset==="monthly"))}));
-          const hvPerks=(hv&&hv.hiddenPerks||[]).map(hp=>{
+          const hvPerks=(hv&&hv.hiddenPerks||[]).filter(hp=>hp.category!=="transferPartners").map(hp=>{
             const valMatch=(hp.estimatedValue||"").match(/\$(\d+)/);
             return {name:hp.perk,value:valMatch?parseInt(valMatch[1]):0,checked:false,isHidden:true};
           });
