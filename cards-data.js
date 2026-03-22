@@ -922,7 +922,7 @@ const STRATS={
   desc:"The gold standard of travel rewards. Combine a Sapphire card (for travel/dining), Freedom Flex (5x rotating categories), and Freedom Unlimited (1.5x everything) to earn on every purchase, then pool all points for airline/hotel transfers.",
   forBeginners:"Think of it like this: instead of earning 1 reward per dollar on everything, you're earning 3–5x in the categories you spend most. Then when you book travel, those points are worth 50% MORE than if you'd just saved cash — because you transfer them to airline or hotel programs that give you outsized value.",
   analogy:"It's like getting airline miles that are worth $1.50–2.00 instead of $1.00. You spend $1,000 normally, but those points buy $1,500–2,000 of flights or hotel nights when transferred correctly.",
-  firstStep:"Step 1: Get Freedom Unlimited (free, no stress). Step 2: Get Freedom Flex (free, activate quarterly 5x bonus). Step 3: Add Sapphire Preferred ($95) or Reserve ($550). Step 4: Put each purchase on the card with the highest earn rate. Step 5: When booking a trip, transfer points to Hyatt or an airline for 50–100% more value than cash.",
+  firstStep:"Step 1: Get Freedom Unlimited (free, no stress). Step 2: Get Freedom Flex (free, activate quarterly 5x bonus). Step 3: Add Sapphire Preferred ($95) or Reserve ($795). Step 4: Put each purchase on the card with the highest earn rate. Step 5: When booking a trip, transfer points to Hyatt or an airline for 50–100% more value than cash.",
   value:"$1,500–4,000+/year",
   play:["Dining & travel → Sapphire Reserve (3x) or Preferred (3x)","Rotating categories → Freedom Flex (5x, activate quarterly!)","Everything else → Freedom Unlimited (1.5x)","Pool ALL points to your Sapphire card first","Transfer to Hyatt for hotel awards — often worth 3–5¢/point","Transfer to Singapore Airlines for Suites, United for flights","Best hotel hack: Park Hyatt properties at 40k points vs $1,000+ cash"],
   learn:"The most common mistake: opening too many cards before Chase ones. Chase denies anyone with 5+ card applications in 24 months. Get your Chase cards FIRST, before Amex or Capital One."},
@@ -930,7 +930,7 @@ const STRATS={
   req:["amex-plat","amex-gold","amex-bbp"],alt:null,
   req_names:["Amex Platinum","Amex Gold","Amex Blue Business Plus"],
   desc:"The premium travel stack. Platinum handles 5x on flights and all the lounge/credit perks. Gold dominates dining and groceries at 4x. Blue Business Plus catches everything else at 2x — all points go into the same Membership Rewards pool.",
-  forBeginners:"This is the 'frequent flyer who wants luxury travel' strategy. The Amex Platinum has a scary $695 fee, but there's $995+ in credits if you use them all — meaning the card literally pays you $300 to hold it. The Gold card earns 4 points per dollar on food. The Blue Business Plus earns 2 points on literally everything else. All three use the same points currency, so you're building one big pile of flexible points.",
+  forBeginners:"This is the 'frequent flyer who wants luxury travel' strategy. The Amex Platinum has a scary $895 fee, but there's $1,200+ in credits if you use them all — meaning the card literally pays you $300+ to hold it. The Gold card earns 4 points per dollar on food. The Blue Business Plus earns 2 points on literally everything else. All three use the same points currency, so you're building one big pile of flexible points.",
   analogy:"Like being a member of a travel club where your regular spending (groceries, restaurants, phone bill) automatically converts to business class flights. A $500 grocery run generates points worth $10–15 in business class tickets.",
   firstStep:"Step 1: Get Amex Gold (best for dining + groceries, $250 fee but $240 in monthly credits = $10 effective fee). Step 2: Add Blue Business Plus (free, 2x on everything). Step 3: When you're ready for premium travel, add Platinum and commit to using every credit monthly.",
   value:"$2,000–6,000+/year with full credit use",
@@ -1222,7 +1222,8 @@ const TRANSFER_PARTNER_DATA={
     {name:"Air France/KLM",ratio:"1:1",cpp:"1.5-2.5cpp",sweetSpot:"Promo awards to Europe"},
     {name:"British Airways",ratio:"1:1",cpp:"1.5-3cpp",sweetSpot:"Short-haul domestic, Qatar Qsuite"},
     {name:"IHG",ratio:"1:1",cpp:"0.5-0.7cpp",sweetSpot:"4th night free"},
-    {name:"Marriott",ratio:"1:1",cpp:"0.7-1cpp",sweetSpot:"5th night free, off-peak"}
+    {name:"Marriott",ratio:"1:1",cpp:"0.7-1cpp",sweetSpot:"5th night free, off-peak"},
+    {name:"Wyndham Rewards",ratio:"1:1",cpp:"~1.1cpp",sweetSpot:"Flat-rate redemptions at higher-end Wyndham brands"}
   ]},
   "Amex Membership Rewards":{cashValue:0.6,portalValue:1.0,transferValue:2.2,bestCase:6.0,topPartners:[
     {name:"ANA",ratio:"1:1",cpp:"3-6cpp",sweetSpot:"RT first/biz to Japan"},
@@ -1238,14 +1239,15 @@ const TRANSFER_PARTNER_DATA={
     {name:"Air Canada Aeroplan",ratio:"1:1",cpp:"1.5-2.5cpp",sweetSpot:"Mixed-cabin, stopover rules"},
     {name:"British Airways",ratio:"1:1",cpp:"1.5-3cpp",sweetSpot:"Short-haul, Qatar Qsuite"},
     {name:"Avianca LifeMiles",ratio:"1:1",cpp:"1.5-2cpp",sweetSpot:"Star Alliance awards"},
-    {name:"Wyndham",ratio:"1:1",cpp:"1.1cpp",sweetSpot:"Flat-rate higher-end brands"}
+    {name:"Wyndham",ratio:"1:1",cpp:"1.1cpp",sweetSpot:"Flat-rate higher-end brands"},
+    {name:"Japan Airlines (JAL)",ratio:"1:1",cpp:"1.5-2cpp",sweetSpot:"JAL business class awards to Asia"}
   ]},
   "Citi ThankYou Points":{cashValue:1.0,portalValue:1.0,transferValue:1.9,bestCase:6.6,topPartners:[
     {name:"Turkish",ratio:"1:1",cpp:"3-6.6cpp",sweetSpot:"United domestic 7,500mi"},
     {name:"Air France/KLM",ratio:"1:1",cpp:"1.5-2.5cpp",sweetSpot:"Promo Europe"},
     {name:"Avianca",ratio:"1:1",cpp:"1.5-2cpp",sweetSpot:"Star Alliance, no fuel surcharges"},
     {name:"Virgin Atlantic",ratio:"1:1",cpp:"2-4cpp",sweetSpot:"ANA first, Delta"},
-    {name:"Choice Privileges",ratio:"1:2",cpp:"1.2-2cpp",sweetSpot:"Tokyo Comfort Hotels 6,000pts/night"},
+    {name:"Choice Privileges",ratio:"1:1.5 (was 1:2, devaluing Apr 19 2026)",cpp:"0.8-1.3cpp",sweetSpot:"Tokyo Comfort Hotels — value drops Apr 2026"},
     {name:"Wyndham",ratio:"1:1",cpp:"1.1cpp",sweetSpot:"Flat-rate"}
   ]},
   "Bilt Points":{cashValue:1.0,portalValue:1.25,transferValue:2.0,bestCase:5.0,topPartners:[
@@ -1420,7 +1422,7 @@ const CARD_SYNERGIES={
   "Chase Sapphire Reserve":[
     {type:"ecosystemUnlocker",pairWith:"Chase Freedom Flex",youGet:"Freedom Flex 5x becomes worth 12.5-15% via CSR portal/transfers",details:"The CSR's 1.5¢ portal redemption rate beats the CSP's 1.25¢. So Freedom Flex 5x × 1.5¢ = 7.5% through the Chase Travel portal, or 5x × 2-3¢ = 10-15% via transfer partners like Hyatt and United. The Reserve makes every Freedom point significantly more valuable than the Preferred does.",estimatedUplift:"$200-700/yr",bestFor:"Anyone with Freedom Flex"},
     {type:"companionCombo",pairWith:"World of Hyatt Card",youGet:"CSR portal at 1.5¢ + Hyatt transfers at 2-3¢ + Hyatt card 4x = premium hotel trifecta",details:"In 2026, $75k in CSR spend also earns World of Hyatt Explorist status — room upgrades, late checkout, and bonus points. Combined with the Hyatt card's 4x earning at properties and the ability to transfer all UR to Hyatt at 2-3¢ each, this is the most powerful hotel setup in the points game.",estimatedUplift:"$300-800/yr",bestFor:"Hyatt loyalists, luxury travelers"},
-    {type:"categoryCoverage",pairWith:"Chase Freedom Unlimited",youGet:"1.5x everything (FU) + 3x travel/dining (CSR) = no earning gaps",details:"The CSR earns 3x on travel and dining but just 1x on everything else. Freedom Unlimited fills that gap at 1.5x on all non-category spend. Add Freedom Flex for 5x rotating categories and you have the complete Chase Trifecta. Total annual fees: $550 + $0 + $0 = $550 for a system that covers every dollar.",estimatedUplift:"$200-400/yr",bestFor:"Everyone building a Chase Trifecta"}
+    {type:"categoryCoverage",pairWith:"Chase Freedom Unlimited",youGet:"1.5x everything (FU) + 3x travel/dining (CSR) = no earning gaps",details:"The CSR earns 3x on travel and dining but just 1x on everything else. Freedom Unlimited fills that gap at 1.5x on all non-category spend. Add Freedom Flex for 5x rotating categories and you have the complete Chase Trifecta. Total annual fees: $795 + $0 + $0 = $795 for a system that covers every dollar.",estimatedUplift:"$200-400/yr",bestFor:"Everyone building a Chase Trifecta"}
   ],
   "Chase Freedom Flex":[
     {type:"ecosystemUnlocker",pairWith:"Chase Sapphire Preferred",youGet:"Your 5x rotating categories are trapped at 1¢/point — the CSP unlocks 2-3¢ via transfers",details:"Without a Sapphire or Ink Preferred card, your UR points are cash back only at 1¢ each. The CSP ($95/yr) unlocks transfer partners for ALL your Chase UR points. Your 5x rotating categories go from 5% cash back to 10-15% effective value through Hyatt, United, and other partners.",estimatedUplift:"$150-600/yr",bestFor:"Anyone without a Sapphire or Ink Preferred card"}
@@ -1429,7 +1431,7 @@ const CARD_SYNERGIES={
     {type:"ecosystemUnlocker",pairWith:"Chase Sapphire Preferred",youGet:"Your 1.5% everywhere becomes 3-4.5% when you can transfer to partners",details:"Freedom Unlimited earns 1.5 UR per dollar on everything. Without a Sapphire card, that's 1.5% cash back. Add the CSP ($95/yr) and those points become transferable — worth 2-3¢ each via Hyatt, United, Southwest, and 11 other partners. Your baseline earning on all spending doubles or triples.",estimatedUplift:"$300-600/yr",bestFor:"Anyone spending $20k+/yr without a Sapphire card"}
   ],
   "The Platinum Card® from American Express":[
-    {type:"companionCombo",pairWith:"American Express® Gold Card",youGet:"Platinum covers travel/lounges, Gold covers dining/groceries — maximize every MR point",details:"The Platinum earns 5x on flights but only 1x on dining and groceries. The Gold fills that gap with 4x dining and 4x supermarkets. All Membership Rewards points pool together across both cards, giving you access to 20+ transfer partners. Combined net cost is roughly $545-625 after using all credits, while earning $3,000-4,000+ per year in transferable points.",estimatedUplift:"$500-1,500/yr",bestFor:"High spenders on dining and travel"},
+    {type:"companionCombo",pairWith:"American Express® Gold Card",youGet:"Platinum covers travel/lounges, Gold covers dining/groceries — maximize every MR point",details:"The Platinum earns 5x on flights but only 1x on dining and groceries. The Gold fills that gap with 4x dining and 4x supermarkets. All Membership Rewards points pool together across both cards, giving you access to 20+ transfer partners. Combined net cost is roughly $695-825 after using all credits, while earning $3,000-4,000+ per year in transferable points.",estimatedUplift:"$500-1,500/yr",bestFor:"High spenders on dining and travel"},
     {type:"statusStacking",pairWith:"Hilton Honors American Express Aspire Card",youGet:"Platinum gives Hilton Gold, Aspire gives Diamond — stack for max hotel perks",details:"The Platinum automatically gives you Hilton Gold (room upgrades, breakfast at select properties). The Aspire upgrades you to Diamond — the top tier with suite upgrades, executive lounge access, daily F&B credits, and 100% bonus points. The Aspire's $550 fee is largely offset by $250 resort credit, free weekend night, and $100 airline credit. Together: Diamond status + Centurion Lounges + Priority Pass + combined earning power.",estimatedUplift:"$500-2,000/yr",bestFor:"Frequent Hilton guests"},
     {type:"statusStacking",pairWith:"Marriott Bonvoy Boundless®",youGet:"Platinum gives Marriott Gold + Boundless adds 15 elite nights toward Platinum status",details:"The Amex Platinum auto-enrolls you in Marriott Gold Elite. The Boundless ($95/yr) adds 15 elite qualifying night credits each year plus 6x at Marriott. Combined: you start each year with Gold status and a 15-night head start toward Marriott Platinum (50 nights). Stay 35 more nights and you unlock suite upgrades, lounge access, and complimentary breakfast.",estimatedUplift:"$200-500/yr",bestFor:"Marriott loyalists aiming for Platinum status"}
   ],
