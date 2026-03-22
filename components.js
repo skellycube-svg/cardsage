@@ -2716,7 +2716,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
         // Pre-populate Q3 from existing benefit tracker checked state
         const benefitOptions=useMemo(()=>{
           const bens=[...card.annual,...card.monthly].filter(b=>b.v!=null).map(b=>({name:b.n,value:annualBenValue(b),checked:checkedSet.has(benKey(card.id,b,!!b.reset&&b.reset==="monthly"))}));
-          const hvPerks=(hv&&hv.hiddenPerks||[]).filter(hp=>hp.category!=="transferPartners").map(hp=>{
+          const hvPerks=(hv&&hv.hiddenPerks||[]).filter(hp=>hp.category!=="transferPartners"&&/\$\d+/.test(hp.estimatedValue||"")).map(hp=>{
             const valMatch=(hp.estimatedValue||"").match(/\$(\d+)/);
             return {name:hp.perk,value:valMatch?parseInt(valMatch[1]):0,checked:false,isHidden:true};
           });
@@ -2828,13 +2828,17 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           const trackerVal=usedValue;
           if(trackerVal>0){totalValue+=trackerVal;reasons.push("You've captured $"+trackerVal+" in direct benefits from your tracker");}
 
-          // Q3: Additional benefits checked in quiz
+          // Q3: Additional benefits checked in quiz — separate hidden perks from tracker benefits
           if(answers.benefits){
-            let quizBenVal=0;
-            benefitOptions.forEach(bo=>{
-              if(answers.benefits.includes(bo.name)&&!bo.checked) quizBenVal+=bo.value;
+            // Hidden perks (insurance, protection, etc.) — add value individually with names
+            benefitOptions.filter(bo=>bo.isHidden&&answers.benefits.includes(bo.name)&&bo.value>0).forEach(bo=>{
+              totalValue+=bo.value;reasons.push(bo.name+" adds ~$"+bo.value+"/yr in hidden value");
             });
-            if(quizBenVal>0){totalValue+=quizBenVal;reasons.push("You use an additional $"+quizBenVal+" in benefits not tracked above");}
+            // Untracked annual/monthly benefits — don't add to score, redirect to tracker
+            const untrackedBens=benefitOptions.filter(bo=>!bo.isHidden&&answers.benefits.includes(bo.name)&&!bo.checked);
+            if(untrackedBens.length>0){
+              tips.push("You said you use "+untrackedBens.map(b=>b.name).join(", ")+" \u2014 mark "+(untrackedBens.length===1?"it":"them")+" in your Benefit Tracker above to see "+(untrackedBens.length===1?"its":"their")+" full impact on your ROI.");
+            }
           }
 
           // Q1: Spending value
