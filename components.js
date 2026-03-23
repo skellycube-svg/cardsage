@@ -1578,7 +1578,30 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   }
 
   // Downgrade paths and retention data
-  const downgrades=card?(card.downgradePaths||[]):[];
+  // downgradePaths in card data can be either:
+  //   (a) array of card ID strings like ["bilt-blue","cfu"]
+  //   (b) array of full objects {cardName,annualFee,...} (legacy format)
+  // Normalize both to the object format the UI expects.
+  const rawDg=card?(card.downgradePaths||[]):[];
+  const downgrades=rawDg.map(dg=>{
+    if(typeof dg==='object'&&dg.cardName) return dg; // already an object
+    // It's a card ID string — build the object from CARDS data
+    const dgCard=CARDS.find(c=>c.id===dg);
+    if(!dgCard) return null;
+    // Figure out what you keep vs lose by comparing benefits
+    const parentBens=[...card.annual,...card.monthly].map(b=>b.n);
+    const dgBens=[...dgCard.annual,...dgCard.monthly].map(b=>b.n);
+    const kept=dgBens.filter(b=>parentBens.includes(b));
+    const lost=parentBens.filter(b=>!dgBens.includes(b));
+    return {
+      cardName:dgCard.name,
+      annualFee:dgCard.fee,
+      affiliateKey:dgCard.id,
+      whatYouKeep:kept.length>0?kept.join(", "):"Basic card benefits",
+      whatYouLose:lost.length>0?lost.join(", "):"Premium benefits",
+      note:dgCard.fee===0?"No annual fee — keep the card open to maintain your credit history and points access.":null
+    };
+  }).filter(Boolean);
   const retentionOffers=card?(card.retentionOffers||[]):[];
   const issuerPhone=card?(ISSUER_PHONES[card.issuer]||ISSUER_PHONES[card.name.split(' ')[0]]||null):null;
   const pointsInfo=card&&card.ifYouCancel?card.ifYouCancel:null;
@@ -5904,6 +5927,12 @@ const QUIZ_QS=[
     {id:"hilton",   label:"Hilton"},
     {id:"alaska",   label:"Alaska / Hawaiian"},
   ]},
+  {id:"rent",q:"Do you pay rent or a mortgage?",multi:false,opts:[
+    {id:"no",    label:"No",                        sub:"I don't have a housing payment"},
+    {id:"low",   label:"Yes, under $1,500/mo",      sub:"Rent or mortgage"},
+    {id:"mid",   label:"Yes, $1,500 – $3,000/mo",   sub:"Rent or mortgage"},
+    {id:"high",  label:"Yes, over $3,000/mo",        sub:"Rent or mortgage"},
+  ]},
   {id:"fee",q:"How do you feel about annual fees?",multi:false,opts:[
     {id:"none",label:"No fees — ever",             sub:"Keep it completely free"},
     {id:"100", label:"Up to $100/year",            sub:"If the value is clear"},
@@ -5932,15 +5961,19 @@ function calcQuizResults(ans){
   const BRAND_WORD={united:'United',delta:'Delta',aa:'American',southwest:'Southwest',hyatt:'Hyatt',marriott:'Marriott',hilton:'Hilton',alaska:'Alaska'};
   const FEE_MAX={none:0,'100':100,'250':250,any:99999};
   const MONTHLY_AMT={'1k2k':1500,'2k4k':3000,'4k8k':6000,'8kplus':10000};
+  const RENT_AMT={no:0,low:1200,mid:2250,high:4000};
+  const BILT_IDS=['bilt-blue','bilt-obsidian','bilt-palladium'];
 
   const sf=SPEND_FIELD[ans.spend]||'o';
   const feeMax=FEE_MAX[ans.fee]??99999;
   const brands=(ans.brand||['none']).filter(b=>b!=='none');
   const brandWords=brands.map(b=>BRAND_WORD[b]).filter(Boolean);
   const monthlyAmt=MONTHLY_AMT[ans.monthly]||2000;
+  const rentAmt=RENT_AMT[ans.rent]||0;
+  const paysRent=rentAmt>0;
 
   return CARDS
-    .filter(c=>!c.isBiz&&c.fee<=feeMax)
+    .filter(c=>!c.isBiz&&c.fee<=feeMax&&!c.isLegacy)
     .map(c=>{
       let score=0;
       const er=parseEarnNum(c.earn[sf]||c.earn.o);
@@ -5965,20 +5998,50 @@ function calcQuizResults(ans){
       const annualSpend=monthlyAmt*12;
       const earnedBack=annualSpend*(er/100)*1.5;
       if(earnedBack>c.fee*1.5)score+=12;
-      return {c,score,er,sf};
+
+      // ── Rent/mortgage scoring for Bilt cards ──
+      // Bilt cards are the only cards that earn points on housing payments.
+      // Boost Bilt cards heavily when the user pays rent.
+      const isBilt=BILT_IDS.includes(c.id);
+      if(paysRent&&isBilt){
+        // Base housing bonus: ~1x on rent → valuable transferable points
+        const annualRent=rentAmt*12;
+        const estPointValue=annualRent*0.02; // ~2cpp transfer value
+        score+=Math.min(estPointValue/10,60); // Up to +60 for high rent
+        // Extra bonus for higher Bilt tiers at higher rent
+        if(c.id==='bilt-palladium'&&rentAmt>=2250)score+=25;
+        else if(c.id==='bilt-obsidian'&&rentAmt>=1500)score+=15;
+        else if(c.id==='bilt-blue')score+=20; // No-fee rent earner is always valuable
+      }
+      // Slight penalty for non-Bilt cards when rent is a major expense
+      // (they earn 0 on housing — money left on the table)
+      if(paysRent&&!isBilt&&rentAmt>=2250)score-=5;
+
+      return {c,score,er,sf,isBilt,paysRent};
     })
     .sort((a,b)=>b.score-a.score)
     .slice(0,3)
     .map(entry=>{
-      const {c,sf:f}=entry;
+      const {c,sf:f,isBilt:ib}=entry;
       const spendLabel=SPEND_LABEL[ans.spend];
       const earnVal=c.earn[f]||c.earn.o||'1x';
       const lines=[];
-      lines.push(`Earns ${earnVal} on ${spendLabel} — one of the best rates for your primary spend category.`);
+
+      // Lead with rent explanation for Bilt cards when user pays rent
+      if(ib&&paysRent){
+        const rentLabel=ans.rent==='high'?'$3,000+':ans.rent==='mid'?'$1,500–$3,000':'under $1,500';
+        lines.push(`Earns transferable points on your ${rentLabel}/mo housing payment — no other card does this.`);
+        if(c.id==='bilt-palladium')lines.push('2x on all everyday purchases plus $400 hotel credit, $200 Bilt Cash, and Priority Pass lounges.');
+        else if(c.id==='bilt-obsidian')lines.push('Choose 3x dining or groceries annually, plus $100 hotel credit and $200 Bilt Cash.');
+        else lines.push('No annual fee — the simplest way to start earning points on rent.');
+      }else{
+        lines.push(`Earns ${earnVal} on ${spendLabel} — one of the best rates for your primary spend category.`);
+      }
+
       const matched=brands.filter(b=>{const bw=BRAND_WORD[b];return bw&&c.partners&&c.partners.some(p=>p.toLowerCase().includes(bw.toLowerCase()));});
       if(matched.length)lines.push(`Transfers directly to ${matched.map(b=>BRAND_WORD[b]).join(' & ')}, matching your loyalty preference.`);
-      else if(c.fee===0)lines.push('No annual fee — pure value with no commitment.');
-      else{const tc=(c.annual||[]).reduce((s,b)=>s+(b.v||0),0)+(c.monthly||[]).reduce((s,b)=>s+(b.v||0)*12,0);
+      else if(c.fee===0&&!ib)lines.push('No annual fee — pure value with no commitment.');
+      else if(c.fee>0&&!ib){const tc=(c.annual||[]).reduce((s,b)=>s+(b.v||0),0)+(c.monthly||[]).reduce((s,b)=>s+(b.v||0)*12,0);
         if(tc>=c.fee)lines.push(`The $${c.fee} fee is largely offset by $${tc}+ in annual statement credits.`);
         else lines.push(`$${c.fee}/year annual fee — the earn rate makes it worth it at your spend level.`);}
       return {...entry,reason:lines.join(' ')};
