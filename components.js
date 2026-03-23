@@ -2809,6 +2809,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             qs.push({id:"housing_spend",title:"How much non-housing spending would you put on this Bilt card per month?",
               subtitle:"Bilt offers two housing modes. Tiered Points: your housing earn rate depends on your non-housing spend ratio (25% of rent → 0.5x, 50% → 0.75x, 75% → 1x, 100%+ → 1.25x). Bilt Cash: earn 4% Bilt Cash on spending, then convert $30 Bilt Cash → 1,000 housing points.",
               type:"single",options:[
+                {label:"$0 — I'd only use this card for rent",value:"zero"},
                 {label:"Less than $500/mo",value:"vlow"},
                 {label:"$500 - $1,000/mo",value:"low"},
                 {label:"$1,000 - $2,000/mo",value:"med"},
@@ -2981,6 +2982,9 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
                 warnings.push("Your non-housing spending ($"+spendMo.toLocaleString()+"/mo) is below 25% of your rent ($"+rentMo.toLocaleString()+"/mo). You won't earn any housing points in Tiered mode, and very few via Bilt Cash. Consider using this card for more everyday purchases to unlock housing rewards.");
               }
             }
+          }
+          if(isBiltCard&&answers.housing&&answers.housing!=='none'&&answers.housing_spend==='zero'){
+            warnings.push("With $0 non-housing spending on this card, you won't earn any housing points. Bilt requires everyday spending on the card to unlock housing rewards — either through Tiered Points mode (spend ratio determines your earn rate) or Bilt Cash mode (4% Bilt Cash on purchases, converted to housing points). Consider putting at least some everyday spending on this card.");
           }
           if(isBiltCard&&answers.housing==='none'){
             warnings.push("Without rent or mortgage payments, you're missing this card's biggest feature: earning transferable points on housing. The Bilt cards are primarily designed for renters and homeowners.");
