@@ -106,6 +106,7 @@ function useAuthSync(){
         if(window._csExplicitSignOut){
           window._csExplicitSignOut=false;
           localStorage.removeItem('cs_auth_uid');
+          cloudLoadedRef.current=false; // Allow fresh Firestore load on next sign-in
           clearAll();
         }
         mountedRef.current=true;
