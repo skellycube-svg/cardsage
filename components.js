@@ -6635,21 +6635,55 @@ function App(){
     if(!fbReady) return;
     const fb=window.CS_FB;
     if(!fb) return;
+    // Helper: wipe all user-specific state back to defaults.
+    // Called on sign-out and when switching between accounts so
+    // User A's cards never appear under User B's session.
+    function clearUserState(){
+      setMyCards([]);setCheckedArr([]);setSkippedArr([]);
+      setP2Cards([]);setP2Name("");setHouseholdSetup(false);
+      setAnniversaryDates({});setFirstYearCards([]);
+    }
+
     const unsub=fb.onAuthStateChanged(fb.auth,async u=>{
       setUser(u);
+
+      // ── Signed-out path ─────────────────────────────────────────────
       if(!u){
         userRef.current=null;
+        // Only clear data if someone was previously signed in on this
+        // browser. This prevents the brief null→user transition that
+        // Firebase sometimes emits on refresh from wiping data, because
+        // on a true refresh the stored UID will match and this block
+        // won't run (onAuthStateChanged fires with the user directly
+        // when using browserLocalPersistence).
+        const prevUid=localStorage.getItem('cs_auth_uid');
+        if(prevUid){
+          localStorage.removeItem('cs_auth_uid');
+          clearUserState();
+        }
         setTab("home");
         mountedRef.current=true;
         window._csAuthDone=true;
         return;
       }
+
+      // ── Signed-in path ──────────────────────────────────────────────
       mountedRef.current=false;
       userRef.current=u;
-      // Load cloud data — Firestore is the source of truth for signed-in users.
-      // Always apply cloud values so data syncs across devices.
-      // The deferred-reload in sw-register.js ensures this completes before
-      // any SW or version-check reload can interrupt it.
+
+      // Check if this is the same user who was here last time.
+      // If a different user signed in, clear the old user's cached data
+      // BEFORE loading the new user's cloud data.
+      const prevUid=localStorage.getItem('cs_auth_uid');
+      if(prevUid&&prevUid!==u.uid){
+        clearUserState();
+      }
+      // Record this user's UID so we can detect user switches next time
+      localStorage.setItem('cs_auth_uid',u.uid);
+
+      // Load cloud data — Firestore is the single source of truth.
+      // The deferred-reload in sw-register.js ensures this async call
+      // completes before any SW or version-check reload can interrupt it.
       try{
         const snap=await fb.getDoc(fb.doc(fb.db,'users',u.uid));
         if(snap.exists()){
@@ -6661,6 +6695,9 @@ function App(){
           if(cloud.cs_p2_name!=null) setP2Name(cloud.cs_p2_name);
           if(cloud.cs_household_setup!=null) setHouseholdSetup(cloud.cs_household_setup);
           if(cloud.cs_anniversary_dates) setAnniversaryDates(cloud.cs_anniversary_dates);
+        }else if(!prevUid||prevUid!==u.uid){
+          // Brand-new user or different user with no cloud doc yet — start fresh
+          clearUserState();
         }
         mountedRef.current=true;
         window._csAuthDone=true;
