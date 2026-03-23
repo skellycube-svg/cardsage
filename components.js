@@ -6415,14 +6415,14 @@ function TopNav({tab,setTab,cardCount,user,onAuthClick,fbReady,pwaPrompt,onInsta
           <AuthButton user={user} onSignIn={onAuthClick} fbReady={fbReady}/>
         </div>
       </div>
-      <div className="top-nav-tabs">
+      {user&&<div className="top-nav-tabs">
         {NAV_TABS.map(t=>(
           <button key={t.id} className={"nav-tab"+(tab===t.id?" active":"")} onClick={()=>setTab(t.id)}>
             <span className="nav-tab-icon"><NavIcon name={t.id}/></span>
             <span className="nav-tab-label">{t.label}</span>
           </button>
         ))}
-      </div>
+      </div>}
     </div>
   );
 }
