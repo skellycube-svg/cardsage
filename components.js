@@ -2887,6 +2887,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           const reasons=[];
           const warnings=[];
           const tips=[];
+          const isBiltCard=card&&card.id&&card.id.startsWith('bilt-');
 
           // Checked benefit value from tracker
           const trackerVal=usedValue;
