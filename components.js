@@ -19,8 +19,8 @@
 // Hooks: useLS (localStorage-backed state)
 // Helpers: Icon, CardArt, CreditCardDisplay, ValueMeter, CatChip, etc.
 
-// Pull out the React hooks we need so we can use them directly throughout the file.
-const {useState,useEffect,useCallback,useMemo,useRef}=React;
+// React hooks are pulled into globals by auth-sync.js (loaded before this file).
+// useState, useEffect, useCallback, useMemo, useRef are all available as globals.
 
 // This self-running function creates the animated particle background you see behind the app.
 // It draws soft, glowing orbs on an HTML canvas element and slowly moves them around forever.
@@ -37,23 +37,7 @@ const {useState,useEffect,useCallback,useMemo,useRef}=React;
   window.addEventListener('resize',resize);resize();draw();
 })();
 
-// useLS ("use localStorage") is a custom React hook that works like useState but also
-// saves the value to the browser's localStorage. This means data survives page refreshes.
-// Parameters: k = the storage key name, d = the default value if nothing is saved yet.
-// Returns: [currentValue, setterFunction] just like useState.
-/* LS hook */
-// This hook saves and loads data to your browser's local storage so your settings persist between visits.
-function useLS(k,d){
-  const[v,sv]=useState(()=>{try{const s=localStorage.getItem(k);return s?JSON.parse(s):d}catch{return d}});
-  const vRef=useRef(v);
-  vRef.current=v;
-  const set=useCallback(x=>{
-    const next=typeof x==='function'?x(vRef.current):x;
-    sv(next);
-    try{localStorage.setItem(k,JSON.stringify(next))}catch{};
-  },[k]);
-  return[v,set];
-}
+// useLS hook has been moved to auth-sync.js (loaded before this file).
 
 /* ── Renewal date helpers ──────────────────────────────────────────────── */
 const MONTH_NAMES=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -6482,25 +6466,26 @@ function needsReset(reset,checkDate,now){
 // The root component that ties everything together. Manages your card wallet,
 // checked-off benefits, and which tab is currently showing. All other components live inside this.
 function App(){
-  const [myCards,setMyCards]=useLS(CS_CONFIG.LS_KEYS.cards,[]);
+  // ── Auth + synced state from auth-sync.js ─────────────────────────────
+  const {
+    myCards,checkedArr,skippedArr,p2Cards,p2Name,householdSetup,anniversaryDates,
+    checkDates,setCheckDates,firstYearCards,
+    dirtySetMyCards,dirtySetP2Cards,dirtySetP2Name,
+    dirtySetHouseholdSetup,dirtySetAnniversaryDates,dirtySetFirstYearCards,
+    setCheckedBenefits,setSkippedBenefits,
+    checkedSet,skippedSet,
+    user,fbReady,userRef
+  }=useAuthSync();
+
+  // ── Local UI state (not synced to cloud) ──────────────────────────────
   const [tab,setTab]=useState("home");
-  const [checkedArr,setCheckedArr]=useLS(CS_CONFIG.LS_KEYS.checked,[]);
-  const [skippedArr,setSkippedArr]=useLS(CS_CONFIG.LS_KEYS.skipped,[]);
-  const [checkDates,setCheckDates]=useLS(CS_CONFIG.LS_KEYS.checkDates,{});
-  const [p2Cards,setP2Cards]=useLS(CS_CONFIG.LS_KEYS.p2Cards,[]);
-  const [p2Name,setP2Name]=useLS(CS_CONFIG.LS_KEYS.p2Name,"");
-  const [householdSetup,setHouseholdSetup]=useLS(CS_CONFIG.LS_KEYS.householdSetup,false);
-  const [anniversaryDates,setAnniversaryDates]=useLS(CS_CONFIG.LS_KEYS.anniversaryDates,{});
   const [feedbackOpen,setFeedbackOpen]=useState(false);
   const [feedbackText,setFeedbackText]=useState("");
   const [feedbackSent,setFeedbackSent]=useState(false);
   const [feedbackSending,setFeedbackSending]=useState(false);
-  const [firstYearCards,setFirstYearCards]=useLS(CS_CONFIG.LS_KEYS.firstYearCards,[]);
   const [resetBadges,setResetBadges]=useState(new Set());
   const [stratModal,setStratModal]=useState(null);
-  const [user,setUser]=useState(null);
   const [authModal,setAuthModal]=useState(false);
-  const [fbReady,setFbReady]=useState(!!window.CS_FB);
   const [pwaPrompt,setPwaPrompt]=useState(window._pwaPrompt||null);
   const [iosBanner,setIosBanner]=useState(()=>{
     const ua=navigator.userAgent;
@@ -6509,27 +6494,13 @@ function App(){
     const isStandalone=window.navigator.standalone===true;
     if(localStorage.getItem(CS_CONFIG.LS_KEYS.iosDismissed)) return null;
     if(isIos&&!isStandalone){
-      // CriOS = Chrome on iOS
       return /CriOS/i.test(ua)?'chrome-ios':'safari';
     }
     if(isAndroid&&/chrome/i.test(ua)&&!/android.*version\//i.test(ua)){
-      // Android Chrome — show native install prompt banner
       return 'android';
     }
     return null;
   });
-
-  // Refs so async callbacks always see latest values
-  const cardsRef=useRef(myCards);   cardsRef.current=myCards;
-  const checkedRef=useRef(checkedArr); checkedRef.current=checkedArr;
-  const userRef=useRef(user);       userRef.current=user;
-  // Prevent writing stale pre-load data on first mount
-  const mountedRef=useRef(false);
-  // Only allow Firestore writes when the user has explicitly changed data
-  const dirtyRef=useRef(false);
-
-  const checkedSet=useMemo(()=>new Set(checkedArr),[checkedArr]);
-  const skippedSet=useMemo(()=>new Set(skippedArr),[skippedArr]);
 
   useEffect(()=>{
     if(!checkedArr.length) return;
@@ -6577,31 +6548,11 @@ function App(){
     });
 
     if(badgeKeys.size>0){
-      setCheckedArr([...newChecked]);
+      setCheckedBenefits(()=>newChecked);
       setCheckDates(newDates);
       setResetBadges(badgeKeys);
     }
   },[]); // intentionally run once on mount
-
-  function setCheckedBenefits(updateFn){
-    dirtyRef.current=true;
-    const newSet=updateFn(checkedSet);
-    setCheckedArr([...newSet]);
-  }
-  function setSkippedBenefits(updateFn){
-    dirtyRef.current=true;
-    const newSet=updateFn(skippedSet);
-    setSkippedArr([...newSet]);
-  }
-
-  // Dirty-aware wrappers for state setters passed as props to child components.
-  // These mark data as user-modified so the Firestore write effect knows it's safe to sync.
-  function dirtySetMyCards(v){dirtyRef.current=true;setMyCards(typeof v==='function'?v(myCards):v);}
-  function dirtySetP2Cards(v){dirtyRef.current=true;setP2Cards(typeof v==='function'?v(p2Cards):v);}
-  function dirtySetP2Name(v){dirtyRef.current=true;setP2Name(typeof v==='function'?v(p2Name):v);}
-  function dirtySetHouseholdSetup(v){dirtyRef.current=true;setHouseholdSetup(typeof v==='function'?v(householdSetup):v);}
-  function dirtySetAnniversaryDates(v){dirtyRef.current=true;setAnniversaryDates(typeof v==='function'?v(anniversaryDates):v);}
-  function dirtySetFirstYearCards(v){dirtyRef.current=true;setFirstYearCards(typeof v==='function'?v(firstYearCards):v);}
 
   // ── PWA install prompt ────────────────────────────────────────────────────
   useEffect(()=>{
@@ -6622,125 +6573,10 @@ function App(){
     setPwaPrompt(null);
   };
 
-  // ── Wait for Firebase module to finish loading ─────────────────────────────
-  useEffect(()=>{
-    if(window.CS_FB){setFbReady(true);return;}
-    const handler=()=>setFbReady(true);
-    window.addEventListener('cs-firebase-ready',handler);
-    return()=>window.removeEventListener('cs-firebase-ready',handler);
-  },[]);
+  // ── All auth, Firestore sync, and dirty-write logic is now in auth-sync.js ──
 
-  // ── Firebase auth + Firestore sync (runs once Firebase is ready) ──────────
-  useEffect(()=>{
-    if(!fbReady) return;
-    const fb=window.CS_FB;
-    if(!fb) return;
-    // Wipe all user-specific React state + localStorage back to defaults.
-    function clearUserState(){
-      setMyCards([]);setCheckedArr([]);setSkippedArr([]);
-      setP2Cards([]);setP2Name("");setHouseholdSetup(false);
-      setAnniversaryDates({});setFirstYearCards([]);
-    }
-
-    const unsub=fb.onAuthStateChanged(fb.auth,async u=>{
-      setUser(u);
-
-      // ── SIGNED OUT ──────────────────────────────────────────────────
-      // This fires when the user clicks "Sign Out" OR on first visit.
-      // IMPORTANT: We ONLY clear data when the sign-out button was
-      // clicked (explicit flag). On page refresh, Firebase might
-      // briefly emit null before resolving the stored session — clearing
-      // here would destroy data. The flag makes this safe.
-      if(!u){
-        userRef.current=null;
-        if(window._csExplicitSignOut){
-          window._csExplicitSignOut=false;
-          localStorage.removeItem('cs_auth_uid');
-          clearUserState();
-        }
-        setTab("home");
-        mountedRef.current=true;
-        window._csAuthDone=true;
-        return;
-      }
-
-      // ── SIGNED IN ───────────────────────────────────────────────────
-      mountedRef.current=false;
-      userRef.current=u;
-
-      // Safety net: if a DIFFERENT user signed in (e.g. the previous
-      // user closed the tab without signing out), clear old data first.
-      const prevUid=localStorage.getItem('cs_auth_uid');
-      if(prevUid&&prevUid!==u.uid){
-        clearUserState();
-      }
-      localStorage.setItem('cs_auth_uid',u.uid);
-
-      // ALWAYS load from Firestore — it is the single source of truth.
-      // This is what makes cross-device sync work: phone writes to
-      // Firestore, desktop reads from Firestore on every sign-in/refresh.
-      // The deferred-reload in sw-register.js prevents SW updates from
-      // interrupting this call.
-      try{
-        const snap=await fb.getDoc(fb.doc(fb.db,'users',u.uid));
-        if(snap.exists()){
-          const cloud=snap.data();
-          // Cancel any pending dirty writes — cloud data is now the truth.
-          // Without this, a stale dirtyRef=true from a recent user action
-          // causes the write effect to overwrite Firestore with the empty
-          // cloud-loaded state, destroying the user's data.
-          dirtyRef.current=false;
-          setMyCards(cloud.cs_cards||[]);
-          setCheckedArr(cloud.cs_checked||[]);
-          if(cloud.cs_skipped) setSkippedArr(cloud.cs_skipped);
-          if(cloud.cs_p2_cards) setP2Cards(cloud.cs_p2_cards);
-          if(cloud.cs_p2_name!=null) setP2Name(cloud.cs_p2_name);
-          if(cloud.cs_household_setup!=null) setHouseholdSetup(cloud.cs_household_setup);
-          if(cloud.cs_anniversary_dates) setAnniversaryDates(cloud.cs_anniversary_dates);
-        }else if(!prevUid||prevUid!==u.uid){
-          // New user with no Firestore doc yet — start with a clean slate
-          clearUserState();
-        }
-        mountedRef.current=true;
-        window._csAuthDone=true;
-      }catch(e){
-        console.warn('Firestore load failed:',e.message);
-        // On failure, keep whatever localStorage had — don't blank the UI
-        mountedRef.current=true;
-        window._csAuthDone=true;
-      }
-      // Link standalone newsletter subscription to this account (Task 3 dedup)
-      try{
-        if(fb.query&&fb.collection){
-          const nlQ=fb.query(fb.collection(fb.db,'newsletter_subscribers'),fb.where('email','==',u.email));
-          const nlSnap=await fb.getDocs(nlQ);
-          if(!nlSnap.empty){
-            const nlDoc=nlSnap.docs[0];
-            if(!nlDoc.data().uid) await fb.setDoc(nlDoc.ref,{uid:u.uid},{merge:true});
-          }
-        }
-      }catch(e){console.warn('Newsletter link failed:',e.message);}
-    });
-    return unsub;
-  },[fbReady]);
-
-  // ── Write to Firestore on every change (when signed in) ───────────────────
-  // dirtyRef is reset IMMEDIATELY (not in the .then()) so that if the auth
-  // effect fires while this write is in flight, the re-render it causes
-  // won't trigger a second write that overwrites Firestore with stale data.
-  useEffect(()=>{
-    if(!dirtyRef.current) return;
-    dirtyRef.current=false;
-    const fb=window.CS_FB;
-    const u=userRef.current;
-    if(!fb||!u) return;
-    fb.setDoc(fb.doc(fb.db,'users',u.uid),
-      {cs_cards:myCards, cs_checked:checkedArr, cs_skipped:skippedArr,
-       cs_p2_cards:p2Cards, cs_p2_name:p2Name, cs_household_setup:householdSetup,
-       cs_anniversary_dates:anniversaryDates},
-      {merge:true}
-    ).catch(e=>{dirtyRef.current=true;console.warn('Firestore write failed:',e.message);});
-  },[myCards,checkedArr,skippedArr,p2Cards,p2Name,householdSetup,anniversaryDates]);
+  // Reset to home tab when user signs out
+  useEffect(()=>{if(!user) setTab("home");},[user]);
 
   useEffect(()=>{window.scrollTo({top:0,behavior:"smooth"});},[tab]);
 

@@ -69,7 +69,9 @@ window.addEventListener('appinstalled',function(){
 </script>
 <!-- 5. Card data (CARDS, STRATS, TIPS_DB, etc.) -->
 <script src="cards-data.js"></script>
-<!-- 6. All React components (transpiled by Babel Standalone) -->
+<!-- 6a. Auth + sync logic (useLS hook, useAuthSync hook — must load before components) -->
+<script type="text/babel" src="auth-sync.js"></script>
+<!-- 6b. All React components (transpiled by Babel Standalone) -->
 <script type="text/babel" src="components.js"></script>
 <!-- 7. Service worker registration + version check -->
 <script src="sw-register.js"></script>

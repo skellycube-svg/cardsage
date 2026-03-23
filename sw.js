@@ -30,6 +30,7 @@ const LOCAL_ASSETS = [
   './styles.css',
   './firebase-auth.js',
   './cards-data.js',
+  './auth-sync.js',
   './components.js',
   './sw-register.js',
   './version.json',

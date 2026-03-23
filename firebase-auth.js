@@ -21,14 +21,21 @@ if (firebaseConfig.apiKey) {
     import(`https://www.gstatic.com/firebasejs/${v}/firebase-app.js`),
     import(`https://www.gstatic.com/firebasejs/${v}/firebase-auth.js`),
     import(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore.js`)
-  ]).then(([{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged},{getFirestore,doc,getDoc,setDoc,collection,query,where,getDocs,serverTimestamp}])=>{
+  ]).then(([{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged},{initializeFirestore,persistentLocalCache,persistentSingleTabManager,doc,getDoc,setDoc,collection,query,where,getDocs,serverTimestamp}])=>{
     // Start the Firebase app and create auth + database connections
     const app=initializeApp(firebaseConfig);
+
+    // Use Firestore offline persistence (IndexedDB) so writes survive page reload.
+    // This means getDoc() reads from local cache immediately, even before the network
+    // round-trip completes, preventing the empty-data-on-refresh bug.
+    const db=initializeFirestore(app,{
+      localCache:persistentLocalCache({tabManager:persistentSingleTabManager()})
+    });
 
     // Expose all Firebase tools on window.CS_FB so React components can use them.
     // This is how the rest of the app accesses login, logout, and database functions.
     window.CS_FB={
-      auth:getAuth(app),db:getFirestore(app),
+      auth:getAuth(app),db:db,
       GoogleAuthProvider,signInWithPopup,signInWithEmailAndPassword,
       createUserWithEmailAndPassword,signOut,onAuthStateChanged,
       doc,getDoc,setDoc,collection,query,where,getDocs,serverTimestamp
