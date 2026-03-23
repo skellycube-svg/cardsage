@@ -50,9 +50,7 @@ function useLS(k,d){
   const set=useCallback(x=>{
     const next=typeof x==='function'?x(vRef.current):x;
     sv(next);
-    try{localStorage.setItem(k,JSON.stringify(next));
-      if(k==='cs_cards'){var _l=JSON.parse(sessionStorage.getItem('_cw')||'[]');_l.push({t:Date.now(),v:next,from:new Error().stack.split('\n').slice(1,4).join(' | ')});sessionStorage.setItem('_cw',JSON.stringify(_l));}
-    }catch{};
+    try{localStorage.setItem(k,JSON.stringify(next))}catch{};
   },[k]);
   return[v,set];
 }
@@ -6687,6 +6685,11 @@ function App(){
         const snap=await fb.getDoc(fb.doc(fb.db,'users',u.uid));
         if(snap.exists()){
           const cloud=snap.data();
+          // Cancel any pending dirty writes — cloud data is now the truth.
+          // Without this, a stale dirtyRef=true from a recent user action
+          // causes the write effect to overwrite Firestore with the empty
+          // cloud-loaded state, destroying the user's data.
+          dirtyRef.current=false;
           setMyCards(cloud.cs_cards||[]);
           setCheckedArr(cloud.cs_checked||[]);
           if(cloud.cs_skipped) setSkippedArr(cloud.cs_skipped);
@@ -6722,8 +6725,12 @@ function App(){
   },[fbReady]);
 
   // ── Write to Firestore on every change (when signed in) ───────────────────
+  // dirtyRef is reset IMMEDIATELY (not in the .then()) so that if the auth
+  // effect fires while this write is in flight, the re-render it causes
+  // won't trigger a second write that overwrites Firestore with stale data.
   useEffect(()=>{
-    if(!dirtyRef.current) return; // only write when user has explicitly changed data
+    if(!dirtyRef.current) return;
+    dirtyRef.current=false;
     const fb=window.CS_FB;
     const u=userRef.current;
     if(!fb||!u) return;
@@ -6732,8 +6739,7 @@ function App(){
        cs_p2_cards:p2Cards, cs_p2_name:p2Name, cs_household_setup:householdSetup,
        cs_anniversary_dates:anniversaryDates},
       {merge:true}
-    ).then(()=>{dirtyRef.current=false;})
-    .catch(e=>console.warn('Firestore write failed:',e.message));
+    ).catch(e=>{dirtyRef.current=true;console.warn('Firestore write failed:',e.message);});
   },[myCards,checkedArr,skippedArr,p2Cards,p2Name,householdSetup,anniversaryDates]);
 
   useEffect(()=>{window.scrollTo({top:0,behavior:"smooth"});},[tab]);
