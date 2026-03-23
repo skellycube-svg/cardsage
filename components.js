@@ -2778,6 +2778,19 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
                 {label:"Over $1,000/mo",value:"vhigh"}
               ]});
           }
+          // Q1b: Total card spend (non-Bilt cards only — Bilt uses housing_spend instead)
+          const isBiltCardQ=card&&card.id&&card.id.startsWith('bilt-');
+          if(!isBiltCardQ){
+            qs.push({id:"total_spend",title:"How much total spending would you put on this card per month?",
+              subtitle:"Include everything — bonus categories and regular purchases. If you don't use this card for spending, your points value will be $0.",
+              type:"single",options:[
+                {label:"$0 — I don't use this card for purchases",value:"zero"},
+                {label:"Less than $500/mo",value:"low"},
+                {label:"$500 - $1,500/mo",value:"med"},
+                {label:"$1,500 - $3,000/mo",value:"high"},
+                {label:"Over $3,000/mo",value:"vhigh"}
+              ]});
+          }
           // Q2: Transfer partner usage
           if(hasTransfer){
             qs.push({id:"transfer",title:"Do you transfer points to airline/hotel partners for flights or stays?",
@@ -2889,6 +2902,8 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           const warnings=[];
           const tips=[];
           const isBiltCard=card&&card.id&&card.id.startsWith('bilt-');
+          // Does the user actually spend money on this card? If not, all points-based value is $0.
+          const hasSpend=isBiltCard?(answers.housing_spend&&answers.housing_spend!=='zero'):(answers.total_spend!=='zero');
 
           // Checked benefit value from tracker
           const trackerVal=usedValue;
@@ -2907,8 +2922,8 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             }
           }
 
-          // Q1: Spending value
-          if(answers.spending&&earnCats.length>0){
+          // Q1: Spending value — only if user actually spends on this card
+          if(hasSpend&&answers.spending&&earnCats.length>0){
             const spendMap={zero:0,low:150,med:350,high:750,vhigh:1500};
             const monthlySpend=spendMap[answers.spending]||0;
             const avgRate=earnCats.reduce((s,[,v])=>s+parseFloat(String(v).replace(/[^0-9.]/g,"")),0)/earnCats.length;
@@ -2917,9 +2932,8 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             if(annualEarnValue>0){totalValue+=annualEarnValue;reasons.push("Your spending earns ~$"+annualEarnValue+"/yr in points value (you earn "+avgRate.toFixed(1)+"x points on bonus categories, worth "+(tpd?tpd.transferValue:1)+"\u00a2 each through travel partners)");}
           }
 
-          // Q2: Transfer partner multiplier
-          // Skip transfer bonus if partner already has an unlocker with sharing — the transfer access is redundant for THIS card
-          if(answers.transfer&&!(partnerHasUnlocker&&canShareHH)){
+          // Q2: Transfer partner multiplier — only if user earns points (has spend on this card)
+          if(hasSpend&&answers.transfer&&!(partnerHasUnlocker&&canShareHH)){
             const transferBonus=answers.transfer==="regular"?150:answers.transfer==="sometimes"?75:0;
             if(transferBonus>0){totalValue+=transferBonus;reasons.push("Transferring points to travel partners is worth ~$"+transferBonus+"/yr more than taking cash back (your points are worth ~"+(tpd?tpd.transferValue:"1.5")+"\u00a2 each vs "+(tpd?tpd.cashValue:"1")+"\u00a2 as cash)");}
             if(answers.transfer==="didnt_know"&&tpd){
@@ -2928,8 +2942,11 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             if(answers.transfer==="rarely"&&tpd){
               tips.push("Transferring to partners could boost your point value from "+tpd.cashValue+"c to "+tpd.transferValue+"c each. Consider trying before deciding.");
             }
-          } else if(answers.transfer&&partnerHasUnlocker&&canShareHH){
+          } else if(hasSpend&&answers.transfer&&partnerHasUnlocker&&canShareHH){
             tips.push("You still get full transfer partner access through "+(p2Name||"partner")+"'s "+(partnerUnlockerCard?.short||partnerUnlockerCard?.name||"card")+" via household point combining.");
+          }
+          if(!hasSpend){
+            warnings.push("With no spending on this card, you won't earn any points. The card's value comes entirely from its fixed benefits and credits — not from rewards earning or transfer partners.");
           }
 
           // Q4: Household redundancy discount
