@@ -50,7 +50,9 @@ function useLS(k,d){
   const set=useCallback(x=>{
     const next=typeof x==='function'?x(vRef.current):x;
     sv(next);
-    try{localStorage.setItem(k,JSON.stringify(next))}catch{};
+    try{localStorage.setItem(k,JSON.stringify(next));
+      if(k==='cs_cards'){var _l=JSON.parse(sessionStorage.getItem('_cw')||'[]');_l.push({t:Date.now(),v:next,from:new Error().stack.split('\n').slice(1,4).join(' | ')});sessionStorage.setItem('_cw',JSON.stringify(_l));}
+    }catch{};
   },[k]);
   return[v,set];
 }
