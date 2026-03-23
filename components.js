@@ -6525,6 +6525,8 @@ function App(){
   const userRef=useRef(user);       userRef.current=user;
   // Prevent writing stale pre-load data on first mount
   const mountedRef=useRef(false);
+  // Only allow Firestore writes when the user has explicitly changed data
+  const dirtyRef=useRef(false);
 
   const checkedSet=useMemo(()=>new Set(checkedArr),[checkedArr]);
   const skippedSet=useMemo(()=>new Set(skippedArr),[skippedArr]);
@@ -6582,13 +6584,24 @@ function App(){
   },[]); // intentionally run once on mount
 
   function setCheckedBenefits(updateFn){
+    dirtyRef.current=true;
     const newSet=updateFn(checkedSet);
     setCheckedArr([...newSet]);
   }
   function setSkippedBenefits(updateFn){
+    dirtyRef.current=true;
     const newSet=updateFn(skippedSet);
     setSkippedArr([...newSet]);
   }
+
+  // Dirty-aware wrappers for state setters passed as props to child components.
+  // These mark data as user-modified so the Firestore write effect knows it's safe to sync.
+  function dirtySetMyCards(v){dirtyRef.current=true;setMyCards(typeof v==='function'?v(myCards):v);}
+  function dirtySetP2Cards(v){dirtyRef.current=true;setP2Cards(typeof v==='function'?v(p2Cards):v);}
+  function dirtySetP2Name(v){dirtyRef.current=true;setP2Name(typeof v==='function'?v(p2Name):v);}
+  function dirtySetHouseholdSetup(v){dirtyRef.current=true;setHouseholdSetup(typeof v==='function'?v(householdSetup):v);}
+  function dirtySetAnniversaryDates(v){dirtyRef.current=true;setAnniversaryDates(typeof v==='function'?v(anniversaryDates):v);}
+  function dirtySetFirstYearCards(v){dirtyRef.current=true;setFirstYearCards(typeof v==='function'?v(firstYearCards):v);}
 
   // ── PWA install prompt ────────────────────────────────────────────────────
   useEffect(()=>{
@@ -6688,7 +6701,7 @@ function App(){
 
   // ── Write to Firestore on every change (when signed in) ───────────────────
   useEffect(()=>{
-    if(!mountedRef.current) return; // skip until after first auth check
+    if(!dirtyRef.current) return; // only write when user has explicitly changed data
     const fb=window.CS_FB;
     const u=userRef.current;
     if(!fb||!u) return;
@@ -6697,7 +6710,8 @@ function App(){
        cs_p2_cards:p2Cards, cs_p2_name:p2Name, cs_household_setup:householdSetup,
        cs_anniversary_dates:anniversaryDates},
       {merge:true}
-    ).catch(e=>console.warn('Firestore write failed:',e.message));
+    ).then(()=>{dirtyRef.current=false;})
+    .catch(e=>console.warn('Firestore write failed:',e.message));
   },[myCards,checkedArr,skippedArr,p2Cards,p2Name,householdSetup,anniversaryDates]);
 
   useEffect(()=>{window.scrollTo({top:0,behavior:"smooth"});},[tab]);
@@ -6731,14 +6745,14 @@ function App(){
       <div className="tab-content-wrap" style={{paddingTop:8}}>
         {/* When not authenticated, always show HomeTab (which renders the landing page) */}
         {!user?(
-          <HomeTab myCards={[]} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} onAuthClick={()=>setAuthModal(true)} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>
+          <HomeTab myCards={[]} setMyCards={dirtySetMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} onAuthClick={()=>setAuthModal(true)} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>
         ):(
           <>
-            {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={setMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} onAuthClick={()=>setAuthModal(true)} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>}
-            {tab==="benefits"&&<RenewalAdvisorTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits} anniversaryDates={anniversaryDates} setAnniversaryDates={setAnniversaryDates} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards} setFirstYearCards={setFirstYearCards}/>}
-            {tab==="household"&&<HouseholdTab myCards={myCards} p2Cards={p2Cards} setP2Cards={setP2Cards} p2Name={p2Name} setP2Name={setP2Name} householdSetup={householdSetup} setHouseholdSetup={setHouseholdSetup} checkedSet={checkedSet} user={user} onAuthClick={()=>setAuthModal(true)} setTab={setTab} firstYearCards={firstYearCards}/>}
+            {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={dirtySetMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} onAuthClick={()=>setAuthModal(true)} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>}
+            {tab==="benefits"&&<RenewalAdvisorTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits} anniversaryDates={anniversaryDates} setAnniversaryDates={dirtySetAnniversaryDates} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards} setFirstYearCards={dirtySetFirstYearCards}/>}
+            {tab==="household"&&<HouseholdTab myCards={myCards} p2Cards={p2Cards} setP2Cards={dirtySetP2Cards} p2Name={p2Name} setP2Name={dirtySetP2Name} householdSetup={householdSetup} setHouseholdSetup={dirtySetHouseholdSetup} checkedSet={checkedSet} user={user} onAuthClick={()=>setAuthModal(true)} setTab={setTab} firstYearCards={firstYearCards}/>}
             {tab==="quiz"&&    <QuizTab myCards={myCards}/>}
-            {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={setMyCards} anniversaryDates={anniversaryDates} setAnniversaryDates={setAnniversaryDates}/>}
+            {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={dirtySetMyCards} anniversaryDates={anniversaryDates} setAnniversaryDates={dirtySetAnniversaryDates}/>}
           </>
         )}
       </div>
