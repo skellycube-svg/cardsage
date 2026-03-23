@@ -6626,6 +6626,9 @@ function App(){
       const wasSignedIn=!!userRef.current;
       setUser(u);
       if(!u){
+        // Null the ref BEFORE clearing state so the Firestore write effect
+        // (which checks userRef.current) skips the write and doesn't wipe cloud data.
+        userRef.current=null;
         // If the user just signed out (not initial load), clear all state so
         // they see a clean landing page with no stale data from the prior account.
         if(wasSignedIn){
@@ -6637,6 +6640,9 @@ function App(){
         mountedRef.current=true;
         return;
       }
+      // Set ref to the authenticated user BEFORE loading cloud data so
+      // the Firestore write effect always has the correct user context.
+      userRef.current=u;
       // Load cloud data and merge with whatever's in localStorage
       try{
         const snap=await fb.getDoc(fb.doc(fb.db,'users',u.uid));
