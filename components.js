@@ -13,7 +13,7 @@
 //
 // Component tree:
 //   App (root) → TopNav, HomeTab, RenewalAdvisorTab, HouseholdTab,
-//                 BenefitsTab, TipsTab, UsecardTab, OffersTab, QuizTab,
+//                 BenefitsTab, TipsTab, UsecardTab, OffersTab,
 //                 WalletTab, StratModal, NewsletterSubscribe, AuthModal
 //
 // Hooks: useLS (localStorage-backed state)
@@ -2794,7 +2794,29 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
               type:"multi",options:benefitOptions.map(b=>({label:b.name+(b.value?" ($"+b.value+"/yr)":"")+(b.isHidden?" (hidden perk)":""),value:b.name,checked:b.checked}))
             });
           }
-          // Q4: Household redundancy
+          // Q4: Rent/housing (Bilt cards only)
+          const isBiltCard=card&&card.id&&card.id.startsWith('bilt-');
+          if(isBiltCard){
+            qs.push({id:"housing",title:"How much is your monthly rent or mortgage?",
+              subtitle:"Bilt cards are the only cards that earn points on housing payments — but you need everyday spending on the card to unlock those points.",
+              type:"single",options:[
+                {label:"I don't pay rent or a mortgage",value:"none"},
+                {label:"Under $1,500/mo",value:"low"},
+                {label:"$1,500 - $2,500/mo",value:"mid"},
+                {label:"$2,500 - $4,000/mo",value:"high"},
+                {label:"Over $4,000/mo",value:"vhigh"}
+              ]});
+            qs.push({id:"housing_spend",title:"How much non-housing spending would you put on this Bilt card per month?",
+              subtitle:"Bilt offers two housing modes. Tiered Points: your housing earn rate depends on your non-housing spend ratio (25% of rent → 0.5x, 50% → 0.75x, 75% → 1x, 100%+ → 1.25x). Bilt Cash: earn 4% Bilt Cash on spending, then convert $30 Bilt Cash → 1,000 housing points.",
+              type:"single",options:[
+                {label:"Less than $500/mo",value:"vlow"},
+                {label:"$500 - $1,000/mo",value:"low"},
+                {label:"$1,000 - $2,000/mo",value:"med"},
+                {label:"$2,000 - $4,000/mo",value:"high"},
+                {label:"Over $4,000/mo",value:"vhigh"}
+              ]});
+          }
+          // Q5: Household redundancy
           if(householdSetup&&hasHHOverlap){
             const overlaps=[];
             const myBens=[...card.annual,...card.monthly];
@@ -2922,7 +2944,48 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             }
           }
 
-          // Q5: Travel frequency scaling
+          // Bilt housing value calculation
+          if(isBiltCard&&answers.housing&&answers.housing!=='none'&&answers.housing_spend){
+            const rentMap={low:1200,mid:2000,high:3250,vhigh:5000};
+            const spendMap2={vlow:350,low:750,med:1500,high:3000,vhigh:5000};
+            const rentMo=rentMap[answers.housing]||0;
+            const spendMo=spendMap2[answers.housing_spend]||0;
+            if(rentMo>0&&spendMo>0){
+              const ratio=spendMo/rentMo;
+              // Mode 1: Tiered Points
+              let tieredRate=0;
+              if(ratio>=1.0) tieredRate=1.25;
+              else if(ratio>=0.75) tieredRate=1.0;
+              else if(ratio>=0.50) tieredRate=0.75;
+              else if(ratio>=0.25) tieredRate=0.5;
+              const tieredPts=Math.floor(rentMo*tieredRate);
+              // Mode 2: Bilt Cash
+              const biltCashEarned=spendMo*0.04;
+              const cashPts=Math.min(Math.floor(biltCashEarned/30)*1000,rentMo);
+              // Pick better mode
+              const bestPts=Math.max(tieredPts,cashPts);
+              const bestMode=tieredPts>=cashPts?'Tiered Points':'Bilt Cash';
+              const annualPts=bestPts*12;
+              // Value at 2cpp (conservative transfer value)
+              const housingValue=Math.round(annualPts*0.02);
+              if(housingValue>0){
+                totalValue+=housingValue;
+                if(bestMode==='Tiered Points'){
+                  reasons.push("Housing points: ~"+bestPts.toLocaleString()+" pts/mo ("+tieredRate+"x rate via Tiered Points mode, because your $"+spendMo.toLocaleString()+"/mo spend is "+Math.round(ratio*100)+"% of your rent). That's ~"+annualPts.toLocaleString()+" pts/yr worth ~$"+housingValue+" at transfer partners.");
+                }else{
+                  reasons.push("Housing points: ~"+bestPts.toLocaleString()+" pts/mo via Bilt Cash mode (your $"+spendMo.toLocaleString()+"/mo spending earns ~$"+Math.round(biltCashEarned)+" Bilt Cash, unlocking "+bestPts.toLocaleString()+" housing pts). That's ~"+annualPts.toLocaleString()+" pts/yr worth ~$"+housingValue+" at transfer partners.");
+                }
+              }
+              if(ratio<0.25){
+                warnings.push("Your non-housing spending ($"+spendMo.toLocaleString()+"/mo) is below 25% of your rent ($"+rentMo.toLocaleString()+"/mo). You won't earn any housing points in Tiered mode, and very few via Bilt Cash. Consider using this card for more everyday purchases to unlock housing rewards.");
+              }
+            }
+          }
+          if(isBiltCard&&answers.housing==='none'){
+            warnings.push("Without rent or mortgage payments, you're missing this card's biggest feature: earning transferable points on housing. The Bilt cards are primarily designed for renters and homeowners.");
+          }
+
+          // Q6: Travel frequency scaling
           if(answers.travel){
             const travelBenTotal=[...card.annual,...card.monthly].filter(b=>{const n=(b.n||"").toLowerCase();return b.v&&(n.includes("lounge")||n.includes("travel")||n.includes("airline")||n.includes("global entry")||n.includes("tsa")||n.includes("hotel credit")||n.includes("trip"));}).reduce((s,b)=>s+annualBenValue(b),0);
             if(travelBenTotal>0){
@@ -5896,404 +5959,6 @@ function WalletTab({myCards,setMyCards,anniversaryDates,setAnniversaryDates}){
 }
 
 /* ── TOP NAV ──────────────────────────────────────────────────────────────── */
-/* ── QUIZ ─────────────────────────────────────────────────────────────────── */
-// QUIZ_QS defines the 5 questions in the Card Finder quiz.
-// Each question has: an id, the question text (q), whether multiple answers are allowed (multi),
-// and an array of answer options (opts) with id, label, optional subtitle, icon, and exclusivity flag.
-// The quiz covers: top spending category, monthly spend amount, brand loyalty,
-// annual fee tolerance, and rewards experience level.
-const QUIZ_QS=[
-  {id:"spend",q:"What do you spend the most on?",multi:false,opts:[
-    {id:"dining",   label:"Dining & Restaurants",iconName:"utensils"},
-    {id:"grocery",  label:"Groceries",           iconName:"shopping-cart"},
-    {id:"travel",   label:"Travel",              iconName:"plane"},
-    {id:"gas",      label:"Gas",                 iconName:"car"},
-    {id:"everything",label:"Everything Equally", iconName:"bar-chart"},
-  ]},
-  {id:"monthly",q:"How much do you spend per month?",multi:false,opts:[
-    {id:"1k2k",  label:"$1,000 – $2,000"},
-    {id:"2k4k",  label:"$2,000 – $4,000"},
-    {id:"4k8k",  label:"$4,000 – $8,000"},
-    {id:"8kplus",label:"$8,000+"},
-  ]},
-  {id:"brand",q:"Preferred airline or hotel? Pick all that apply.",multi:true,opts:[
-    {id:"none",     label:"No preference",     excl:true},
-    {id:"united",   label:"United Airlines"},
-    {id:"delta",    label:"Delta Air Lines"},
-    {id:"aa",       label:"American Airlines"},
-    {id:"southwest",label:"Southwest Airlines"},
-    {id:"hyatt",    label:"World of Hyatt"},
-    {id:"marriott", label:"Marriott Bonvoy"},
-    {id:"hilton",   label:"Hilton"},
-    {id:"alaska",   label:"Alaska / Hawaiian"},
-  ]},
-  {id:"rent",q:"Do you pay rent or a mortgage?",multi:false,opts:[
-    {id:"no",    label:"No",                        sub:"I don't have a housing payment"},
-    {id:"low",   label:"Yes, under $1,500/mo",      sub:"Rent or mortgage"},
-    {id:"mid",   label:"Yes, $1,500 – $3,000/mo",   sub:"Rent or mortgage"},
-    {id:"high",  label:"Yes, over $3,000/mo",        sub:"Rent or mortgage"},
-  ]},
-  {id:"fee",q:"How do you feel about annual fees?",multi:false,opts:[
-    {id:"none",label:"No fees — ever",             sub:"Keep it completely free"},
-    {id:"100", label:"Up to $100/year",            sub:"If the value is clear"},
-    {id:"250", label:"Up to $250/year",            sub:"Happy to invest for perks"},
-    {id:"any", label:"Worth it if the value's there",sub:"I'll do the math"},
-  ]},
-  {id:"exp",q:"How experienced are you with rewards?",multi:false,opts:[
-    {id:"new", label:"Brand new",        sub:"Keep it simple, please"},
-    {id:"some",label:"Some experience",  sub:"I've earned points before"},
-    {id:"adv", label:"Advanced",         sub:"I know about transfer partners"},
-  ]},
-];
-
-// parseEarnNum extracts a numeric earn rate from a string like "3x" or "5%".
-// Returns the number (e.g., 3) or 1 as a default if the value cannot be parsed.
-function parseEarnNum(v){const n=parseFloat(String(v||1).replace(/[^0-9.]/g,''));return isNaN(n)?1:n;}
-
-// calcQuizResults takes the user's quiz answers and scores every personal (non-business) card.
-// It considers: earn rate in the user's top spending category, transfer partner matches,
-// brand loyalty alignment, experience level preferences, signup bonus presence,
-// and whether the card's annual fee is justified by the user's spending level.
-// Returns the top 3 cards sorted by score, each with a personalized explanation (reason).
-function calcQuizResults(ans){
-  const SPEND_FIELD={dining:'d',grocery:'g',travel:'t',gas:'gas',everything:'o'};
-  const SPEND_LABEL={dining:'dining',grocery:'groceries',travel:'travel',gas:'gas',everything:'everyday spending'};
-  const BRAND_WORD={united:'United',delta:'Delta',aa:'American',southwest:'Southwest',hyatt:'Hyatt',marriott:'Marriott',hilton:'Hilton',alaska:'Alaska'};
-  const FEE_MAX={none:0,'100':100,'250':250,any:99999};
-  const MONTHLY_AMT={'1k2k':1500,'2k4k':3000,'4k8k':6000,'8kplus':10000};
-  const RENT_AMT={no:0,low:1200,mid:2250,high:4000};
-  const BILT_IDS=['bilt-blue','bilt-obsidian','bilt-palladium'];
-
-  const sf=SPEND_FIELD[ans.spend]||'o';
-  const feeMax=FEE_MAX[ans.fee]??99999;
-  const brands=(ans.brand||['none']).filter(b=>b!=='none');
-  const brandWords=brands.map(b=>BRAND_WORD[b]).filter(Boolean);
-  const monthlyAmt=MONTHLY_AMT[ans.monthly]||2000;
-  const rentAmt=RENT_AMT[ans.rent]||0;
-  const paysRent=rentAmt>0;
-
-  // ── Bilt housing math ───────────────────────────────────────────────
-  // Bilt offers two housing modes (user picks one per month):
-  //
-  // MODE 1 — Tiered Points: earn points on rent based on how much
-  //   non-housing spend you put on the card. Tiers:
-  //     25% of rent in everyday spend → 0.5x on rent
-  //     50% → 0.75x, 75% → 1x, 100%+ → 1.25x
-  //   In this mode you do NOT earn Bilt Cash on everyday purchases.
-  //
-  // MODE 2 — Bilt Cash: earn 4% Bilt Cash on everyday purchases
-  //   (in addition to the card's normal points earn rate).
-  //   Convert $30 Bilt Cash → 1,000 housing points.
-  //   For $2,000 rent you need $60 Bilt Cash → $1,500 everyday spend.
-  //
-  // Key insight: in BOTH modes, you need significant everyday spending
-  // to earn meaningful housing points. The quiz knows both rent AND
-  // monthly spending, so we can calculate how many housing points
-  // the user would realistically earn.
-  function biltHousingPoints(rentMo,spendMo){
-    if(rentMo===0) return {pts:0,mode:'none',spendRatio:0};
-    const ratio=spendMo/rentMo;
-    // Mode 1: tiered points
-    let tieredRate=0;
-    if(ratio>=1.0) tieredRate=1.25;
-    else if(ratio>=0.75) tieredRate=1.0;
-    else if(ratio>=0.50) tieredRate=0.75;
-    else if(ratio>=0.25) tieredRate=0.5;
-    const tieredPts=Math.floor(rentMo*tieredRate);
-    // Mode 2: Bilt Cash unlock
-    const biltCashEarned=spendMo*0.04;
-    const maxHousingPts=Math.floor(biltCashEarned/30)*1000;
-    // Cap at actual rent amount (can't earn more points than rent $)
-    const cashPts=Math.min(maxHousingPts,rentMo);
-    // Return whichever mode yields more points
-    if(tieredPts>=cashPts) return {pts:tieredPts,mode:'tiered',spendRatio:ratio,rate:tieredRate};
-    return {pts:cashPts,mode:'biltcash',spendRatio:ratio,biltCash:biltCashEarned};
-  }
-
-  return CARDS
-    .filter(c=>!c.isBiz&&c.fee<=feeMax&&!c.isLegacy)
-    .map(c=>{
-      let score=0;
-      const er=parseEarnNum(c.earn[sf]||c.earn.o);
-      score+=er*20;
-      if(ans.spend==='travel'&&c.partners)score+=c.partners.length*2;
-      brandWords.forEach(bw=>{
-        if(c.partners&&c.partners.some(p=>p.toLowerCase().includes(bw.toLowerCase())))score+=45;
-        if(c.name.toLowerCase().includes(bw.toLowerCase()))score+=20;
-      });
-      if(ans.exp==='new'){
-        if(c.fee===0)score+=30;
-        if(c.fee>200)score-=25;
-        if(c.cur==='Cash Back')score+=20;
-      }else if(ans.exp==='some'){
-        if(c.fee<=250)score+=10;
-        if(c.partners&&c.partners.length>3)score+=15;
-      }else{
-        if(c.partners&&c.partners.length>3)score+=30;
-        if(c.fee>=95)score+=10;
-      }
-      if(c.signup)score+=8;
-      const annualSpend=monthlyAmt*12;
-      const earnedBack=annualSpend*(er/100)*1.5;
-      if(earnedBack>c.fee*1.5)score+=12;
-
-      // ── Bilt housing scoring ──
-      const isBilt=BILT_IDS.includes(c.id);
-      let biltInfo=null;
-      if(isBilt&&paysRent){
-        biltInfo=biltHousingPoints(rentAmt,monthlyAmt);
-        // Annual housing points value at ~2cpp transfer (conservative)
-        const annualHousingValue=(biltInfo.pts*12)*0.02;
-        // Score boost proportional to actual value earned
-        score+=Math.min(annualHousingValue/8,55);
-        // Credits offset fee — Palladium has $600 in credits
-        const credits=(c.annual||[]).reduce((s,b)=>s+(b.v||0),0);
-        if(credits>c.fee)score+=15;
-        // Blue bonus: no fee = pure upside on rent
-        if(c.id==='bilt-blue'&&c.fee===0)score+=18;
-      }
-      // Non-Bilt cards earn $0 on housing — slight penalty when rent is significant
-      if(paysRent&&!isBilt&&rentAmt>=1500)score-=8;
-
-      return {c,score,er,sf,isBilt,paysRent,biltInfo};
-    })
-    .sort((a,b)=>b.score-a.score)
-    .slice(0,3)
-    .map(entry=>{
-      const {c,sf:f,isBilt:ib,biltInfo:bi}=entry;
-      const spendLabel=SPEND_LABEL[ans.spend];
-      const earnVal=c.earn[f]||c.earn.o||'1x';
-      const lines=[];
-
-      // Lead with detailed Bilt explanation when user pays rent
-      if(ib&&paysRent&&bi&&bi.pts>0){
-        const annPts=bi.pts*12;
-        const annVal=Math.round(annPts*0.02);
-        if(bi.mode==='tiered'){
-          lines.push(`With your spending, you'd earn ~${bi.pts.toLocaleString()} housing points/mo (${bi.rate}x rate) via Tiered Points mode — that's ~${annPts.toLocaleString()} pts/year worth ~$${annVal}+ transferred to Hyatt or airlines.`);
-        }else{
-          lines.push(`In Bilt Cash mode, your $${monthlyAmt.toLocaleString()}/mo spending earns ~$${Math.round(bi.biltCash)} Bilt Cash, unlocking ~${bi.pts.toLocaleString()} housing points/mo — ~${annPts.toLocaleString()} pts/year worth ~$${annVal}+ at transfer partners.`);
-        }
-        if(c.id==='bilt-palladium') lines.push('Also earns 2x points on all everyday spending, with $400 hotel credit, $200 Bilt Cash, and Priority Pass lounges to offset the $495 fee.');
-        else if(c.id==='bilt-obsidian') lines.push('Plus pick 3x on dining or groceries, $100 hotel credit, and $200 Bilt Cash — all for $95/yr.');
-        else lines.push('No annual fee — the simplest way to earn transferable points on rent with zero risk.');
-      }else if(ib&&paysRent&&bi&&bi.pts===0){
-        lines.push(`You pay rent, but your current spending level ($${monthlyAmt.toLocaleString()}/mo) isn't high enough to unlock housing points. You'd need to spend at least 25% of your rent ($${Math.round(rentAmt*0.25).toLocaleString()}/mo) on the card to start earning.`);
-      }else{
-        lines.push(`Earns ${earnVal} on ${spendLabel} — one of the best rates for your primary spend category.`);
-      }
-
-      const matched=brands.filter(b=>{const bw=BRAND_WORD[b];return bw&&c.partners&&c.partners.some(p=>p.toLowerCase().includes(bw.toLowerCase()));});
-      if(matched.length)lines.push(`Transfers directly to ${matched.map(b=>BRAND_WORD[b]).join(' & ')}, matching your loyalty preference.`);
-      else if(c.fee===0&&!ib)lines.push('No annual fee — pure value with no commitment.');
-      else if(c.fee>0&&!ib){const tc=(c.annual||[]).reduce((s,b)=>s+(b.v||0),0)+(c.monthly||[]).reduce((s,b)=>s+(b.v||0)*12,0);
-        if(tc>=c.fee)lines.push(`The $${c.fee} fee is largely offset by $${tc}+ in annual statement credits.`);
-        else lines.push(`$${c.fee}/year annual fee — the earn rate makes it worth it at your spend level.`);}
-      return {...entry,reason:lines.join(' ')};
-    });
-}
-
-// pickQuizStrat recommends a card strategy based on the user's quiz answers.
-// Considers brand loyalty (Alaska -> Atmos), experience level, and top spending category
-// to pick one of the 6 defined strategies (e.g., Chase Trifecta, Amex Trifecta, etc.).
-function pickQuizStrat(ans){
-  const brands=(ans.brand||['none']).filter(b=>b!=='none');
-  if(brands.includes('alaska'))return 'atmos-strategy';
-  if(ans.exp==='adv'&&ans.spend==='dining')return 'amex-trifecta';
-  if(ans.exp==='adv')return 'chase-trifecta';
-  if(ans.exp==='some'&&(ans.spend==='travel'||ans.spend==='dining'))return 'chase-trifecta';
-  if(ans.spend==='everything'&&ans.exp!=='new')return 'citi-duo';
-  return 'c1-duo';
-}
-
-// QuizResults shows the quiz output after the user finishes all 5 questions.
-// Displays the top 3 recommended cards with personalized reasons, Apply Now buttons,
-// an "In wallet" badge for cards already owned, a recommended strategy section,
-// and a Retake Quiz button.
-// Props: answers (quiz answer object), onRetake (reset handler), myCards (wallet card IDs).
-function QuizResults({answers,onRetake,myCards}){
-  const [openStrat,setOpenStrat]=useState(false);
-  const results=useMemo(()=>calcQuizResults(answers),[answers]);
-  const strat=useMemo(()=>STRATS[pickQuizStrat(answers)],[answers]);
-  return(
-    <div style={{padding:"16px 16px 0",maxWidth:560,margin:"0 auto"}}>
-      <div className="fu" style={{textAlign:"center",marginBottom:24}}>
-        <div style={{marginBottom:8}}><Icon name="target" size={32} color="var(--acc)"/></div>
-        <div style={{fontFamily:"'Inter',sans-serif",fontStyle:"italic",fontSize:24,fontWeight:700,color:"var(--tx)",marginBottom:4}}>Your Top Cards</div>
-        <div style={{fontSize:12,color:"var(--tx3)"}}>Personalized picks based on your profile</div>
-        <div style={{fontSize:10,color:"var(--tx4)",marginTop:6,lineHeight:1.4}}>Recommended cards include affiliate links. We earn a commission if you apply and are approved.</div>
-      </div>
-
-      {results.map(({c,reason},i)=>{
-        const inWallet=myCards.includes(c.id);
-        return(
-          <div key={c.id} className="surf fu" style={{marginBottom:14,animationDelay:`${i*.07}s`}}>
-            <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:10}}>
-              <div style={{width:34,height:34,borderRadius:10,background:`linear-gradient(135deg,${c.c1},${c.c2})`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:900,color:"rgba(255,255,255,.9)"}}>{i+1}</div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:15,fontWeight:800,color:"var(--tx)",lineHeight:1.2}}>{c.name}</div>
-                <div style={{fontSize:11,color:"var(--tx3)",marginTop:2}}>{c.issuer} · {c.fee>0?`$${c.fee}/yr`:'No annual fee'} · {c.cur}</div>
-              </div>
-              {inWallet&&<span style={{fontSize:10,fontWeight:700,color:"var(--grn2)",background:"rgba(16,185,129,.1)",padding:"2px 8px",borderRadius:99,flexShrink:0,whiteSpace:"nowrap",display:"inline-flex",alignItems:"center",gap:3}}><Icon name="check" size={10} color="var(--grn2)"/> In wallet</span>}
-            </div>
-            <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.65,marginBottom:inWallet?0:12}}>{reason}</div>
-            {!inWallet&&(
-              <>
-                <a href={APPLY_URLS[c.id]||'#apply-'+c.id} target="_blank"
-                   style={{display:"block",textAlign:"center",padding:"11px 16px",background:"var(--acc)",color:"#fff",borderRadius:10,fontSize:13,fontWeight:700,textDecoration:"none",transition:"opacity .15s"}}
-                   onMouseEnter={e=>e.currentTarget.style.opacity='.85'}
-                   onMouseLeave={e=>e.currentTarget.style.opacity='1'}>
-                  Apply Now →
-                </a>
-                <div className="apply-disclose" style={{textAlign:"center"}}>Affiliate link — we may earn a commission at no cost to you.</div>
-              </>
-            )}
-          </div>
-        );
-      })}
-
-      {strat&&(
-        <div style={{marginBottom:20}}>
-          <div style={{fontSize:10,fontWeight:800,color:"var(--tx3)",textTransform:"uppercase",letterSpacing:1.5,marginBottom:10}}>Recommended Strategy</div>
-          <div className="surf" style={{cursor:"pointer"}} onClick={()=>setOpenStrat(s=>!s)}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <Icon name={STRAT_ICON_MAP[strat.id]||"diamond"} size={20} color="var(--acc)"/>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>{strat.name}</div>
-                <div style={{fontSize:11,color:"var(--grn2)",fontWeight:600,marginTop:1}}>{strat.value}</div>
-              </div>
-              <span style={{transition:"transform .2s",transform:openStrat?"rotate(90deg)":"none",display:"inline-flex"}}><Icon name="chevron-right" size={14} color="var(--tx3)"/></span>
-            </div>
-            {openStrat&&(
-              <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid var(--br)"}}>
-                <div style={{fontSize:13,color:"var(--tx2)",lineHeight:1.7}}>{strat.desc}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div style={{textAlign:"center",paddingBottom:24}}>
-        <button onClick={onRetake}
-          style={{background:"transparent",border:"1.5px solid var(--br2)",color:"var(--tx3)",borderRadius:10,padding:"10px 24px",fontSize:12,fontWeight:600,cursor:"pointer",transition:"color .15s,border-color .15s"}}
-          onMouseEnter={e=>{e.currentTarget.style.color="var(--tx)";e.currentTarget.style.borderColor="var(--br3)"}}
-          onMouseLeave={e=>{e.currentTarget.style.color="var(--tx3)";e.currentTarget.style.borderColor="var(--br2)"}}>
-          ↩ Retake Quiz
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// QuizTab manages the Card Finder quiz flow -- showing one question at a time with
-// animated transitions, a progress bar, single-select and multi-select question types.
-// Saves completed answers to localStorage so results persist across visits.
-// If the user already has saved answers, it shows QuizResults instead of the quiz.
-// Props: myCards (array of card IDs in the user's wallet).
-// The card finder quiz. Asks 5 questions about your spending habits and preferences,
-// then recommends the top 3 cards and a strategy that fits your profile.
-function QuizTab({myCards}){
-  const [savedAnswers,setSavedAnswers]=useLS(CS_CONFIG.LS_KEYS.quiz,null);
-  const [step,setStep]=useState(0);
-  const [answers,setAnswers]=useState({});
-  const [multiSel,setMultiSel]=useState([]);
-  const [animKey,setAnimKey]=useState(0);
-
-  const retake=()=>{setSavedAnswers(null);setStep(0);setAnswers({});setMultiSel([]);setAnimKey(k=>k+1);};
-
-  // Invalidate old saved answers that are missing required fields (e.g. rent question added later).
-  // This forces users to retake the quiz so new questions are answered.
-  const REQUIRED_FIELDS=['spend','monthly','brand','rent','fee','exp'];
-  const answersValid=savedAnswers&&REQUIRED_FIELDS.every(f=>savedAnswers[f]!=null);
-  if(answersValid)return <QuizResults answers={savedAnswers} onRetake={retake} myCards={myCards}/>;
-
-  const q=QUIZ_QS[step];
-  const isLast=step===QUIZ_QS.length-1;
-
-  const advance=(newAns)=>{
-    setAnimKey(k=>k+1);
-    if(!isLast){setStep(s=>s+1);setMultiSel([]);}
-    else setSavedAnswers(newAns);
-  };
-
-  const handleSingle=(optId)=>{
-    const newAns={...answers,[q.id]:optId};
-    setAnswers(newAns);
-    setTimeout(()=>advance(newAns),180);
-  };
-
-  const handleMultiToggle=(optId,excl)=>{
-    if(excl){setMultiSel([optId]);return;}
-    setMultiSel(sel=>{
-      const without=sel.filter(s=>s!=='none'&&s!==optId);
-      return sel.includes(optId)?without:[...without,optId];
-    });
-  };
-
-  const handleMultiNext=()=>{
-    const val=multiSel.length?multiSel:['none'];
-    const newAns={...answers,[q.id]:val};
-    setAnswers(newAns);
-    advance(newAns);
-  };
-
-  return(
-    <div style={{padding:"16px 16px 0",maxWidth:560,margin:"0 auto"}}>
-      {/* Progress */}
-      <div style={{marginBottom:28}}>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-          <span style={{fontSize:11,color:"var(--tx3)",fontWeight:700,letterSpacing:.5}}>QUESTION {step+1} OF {QUIZ_QS.length}</span>
-          <span style={{fontSize:11,color:"var(--tx4)"}}>Card Finder</span>
-        </div>
-        <div style={{height:3,background:"var(--s4)",borderRadius:99,overflow:"hidden"}}>
-          <div style={{height:"100%",width:`${((step+1)/QUIZ_QS.length)*100}%`,background:"linear-gradient(90deg,var(--acc),var(--acc2))",borderRadius:99,transition:"width .35s ease"}}/>
-        </div>
-      </div>
-
-      {/* Question + options */}
-      <div key={animKey} className="quiz-slide">
-        <div style={{fontFamily:"'Inter',sans-serif",fontStyle:"italic",fontSize:22,fontWeight:700,color:"var(--tx)",marginBottom:22,lineHeight:1.35}}>
-          {q.q}
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:9}}>
-          {q.opts.map(opt=>{
-            const isSel=q.multi?multiSel.includes(opt.id):false;
-            return(
-              <button key={opt.id}
-                className="quiz-opt"
-                onClick={()=>q.multi?handleMultiToggle(opt.id,opt.excl):handleSingle(opt.id)}
-                style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",textAlign:"left",width:"100%",
-                  background:isSel?"rgba(117,91,6,.07)":"var(--s1)",
-                  border:`1.5px solid ${isSel?"var(--acc)":"var(--br2)"}`,
-                  borderRadius:13,cursor:"pointer",transition:"background .12s,border-color .12s"}}>
-                {opt.iconName&&<span style={{flexShrink:0,display:"inline-flex"}}><Icon name={opt.iconName} size={18}/></span>}
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{opt.label}</div>
-                  {opt.sub&&<div style={{fontSize:11,color:"var(--tx3)",marginTop:1}}>{opt.sub}</div>}
-                </div>
-                {q.multi&&(
-                  <div style={{width:19,height:19,borderRadius:5,border:"1.5px solid",borderColor:isSel?"var(--acc)":"var(--br3)",background:isSel?"var(--acc)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .12s"}}>
-                    {isSel&&<Icon name="check" size={10} color="#fff"/>}
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-        {q.multi&&(
-          <button onClick={handleMultiNext}
-            style={{marginTop:18,width:"100%",padding:"13px",
-              background:multiSel.length?"var(--acc)":"var(--s4)",
-              color:multiSel.length?"#fff":"var(--tx4)",
-              border:"none",borderRadius:13,cursor:multiSel.length?"pointer":"default",
-              fontSize:13,fontWeight:700,transition:"background .15s,color .15s"}}>
-            {isLast?"See My Cards →":"Next →"}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
 
 /* ── AUTH MODAL ──────────────────────────────────────────────────────────── */
 // AuthModal is a popup for signing in or creating a FeeWorth account.
@@ -6728,7 +6393,7 @@ function App(){
             {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={dirtySetMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} onAuthClick={()=>setAuthModal(true)} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>}
             {tab==="benefits"&&<RenewalAdvisorTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits} anniversaryDates={anniversaryDates} setAnniversaryDates={dirtySetAnniversaryDates} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards} setFirstYearCards={dirtySetFirstYearCards}/>}
             {tab==="household"&&<HouseholdTab myCards={myCards} p2Cards={p2Cards} setP2Cards={dirtySetP2Cards} p2Name={p2Name} setP2Name={dirtySetP2Name} householdSetup={householdSetup} setHouseholdSetup={dirtySetHouseholdSetup} checkedSet={checkedSet} user={user} onAuthClick={()=>setAuthModal(true)} setTab={setTab} firstYearCards={firstYearCards}/>}
-            {tab==="quiz"&&    <QuizTab myCards={myCards}/>}
+
             {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={dirtySetMyCards} anniversaryDates={anniversaryDates} setAnniversaryDates={dirtySetAnniversaryDates}/>}
           </>
         )}
