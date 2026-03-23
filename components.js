@@ -6635,44 +6635,51 @@ function App(){
     if(!fbReady) return;
     const fb=window.CS_FB;
     if(!fb) return;
+    // Debug: track auth flow in sessionStorage (survives same-tab reloads)
+    const _dbg=m=>{try{const l=JSON.parse(sessionStorage.getItem('_auth_log')||'[]');l.push(Date.now()+': '+m);sessionStorage.setItem('_auth_log',JSON.stringify(l));}catch{}};
+    _dbg('auth effect started');
     const unsub=fb.onAuthStateChanged(fb.auth,async u=>{
+      _dbg('onAuth fired, u='+(u?u.uid:'null'));
       setUser(u);
       if(!u){
-        // Null the ref so the write effect (which checks userRef.current) skips writes.
         userRef.current=null;
-        // Navigate to home tab on sign-out, but do NOT clear state arrays.
-        // Why: onAuthStateChanged can fire null→user→null→user on page reload
-        // (e.g., during Firebase token refresh). If we clear state arrays here,
-        // the useLS setters write [] to localStorage, which destroys persisted
-        // card data. The render logic already shows empty cards when user is null
-        // (myCards={[]} is passed to HomeTab), so clearing is unnecessary.
         setTab("home");
         mountedRef.current=true;
+        // Signal to sw-register.js that auth is done — safe to reload
+        window._csAuthDone=true;
+        _dbg('null user path done');
         return;
       }
-      // Block Firestore writes until cloud data is loaded — prevents the
-      // mobile OAuth redirect race where null→user fires twice and the
-      // write effect would overwrite saved data with empty arrays.
       mountedRef.current=false;
-      // Set ref to the authenticated user BEFORE loading cloud data so
-      // the Firestore write effect always has the correct user context.
       userRef.current=u;
       // Load cloud data — Firestore is the source of truth
+      // Guard each field: only overwrite local state if the cloud field
+      // actually exists so stale cache / partial docs don't erase localStorage
       try{
+        _dbg('getDoc starting');
         const snap=await fb.getDoc(fb.doc(fb.db,'users',u.uid));
+        _dbg('getDoc returned, exists='+snap.exists());
         if(snap.exists()){
           const cloud=snap.data();
-          setMyCards(cloud.cs_cards||[]);
-          setCheckedArr(cloud.cs_checked||[]);
-          if(cloud.cs_skipped) setSkippedArr(cloud.cs_skipped);
-          if(cloud.cs_p2_cards) setP2Cards(cloud.cs_p2_cards);
-          if(cloud.cs_p2_name) setP2Name(cloud.cs_p2_name);
-          if(cloud.cs_household_setup!=null) setHouseholdSetup(cloud.cs_household_setup);
-          if(cloud.cs_anniversary_dates) setAnniversaryDates(cloud.cs_anniversary_dates);
+          _dbg('cs_cards='+JSON.stringify(cloud.cs_cards));
+          if(Array.isArray(cloud.cs_cards))   setMyCards(cloud.cs_cards);
+          if(Array.isArray(cloud.cs_checked))  setCheckedArr(cloud.cs_checked);
+          if(Array.isArray(cloud.cs_skipped))  setSkippedArr(cloud.cs_skipped);
+          if(Array.isArray(cloud.cs_p2_cards)) setP2Cards(cloud.cs_p2_cards);
+          if(typeof cloud.cs_p2_name==='string') setP2Name(cloud.cs_p2_name);
+          if(cloud.cs_household_setup!=null)  setHouseholdSetup(cloud.cs_household_setup);
+          if(cloud.cs_anniversary_dates)     setAnniversaryDates(cloud.cs_anniversary_dates);
         }
         mountedRef.current=true;
+        // Signal to sw-register.js that auth is done — safe to reload
+        window._csAuthDone=true;
+        _dbg('data load complete');
       }catch(e){
+        _dbg('getDoc FAILED: '+e.message);
         console.warn('Firestore load failed:',e.message);
+        // Still mark as mounted so the app isn't stuck, and allow reloads
+        mountedRef.current=true;
+        window._csAuthDone=true;
       }
       // Link standalone newsletter subscription to this account (Task 3 dedup)
       try{
