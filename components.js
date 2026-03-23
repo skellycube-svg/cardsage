@@ -6640,6 +6640,10 @@ function App(){
         mountedRef.current=true;
         return;
       }
+      // Block Firestore writes until cloud data is loaded — prevents the
+      // mobile OAuth redirect race where null→user fires twice and the
+      // write effect would overwrite saved data with empty arrays.
+      mountedRef.current=false;
       // Set ref to the authenticated user BEFORE loading cloud data so
       // the Firestore write effect always has the correct user context.
       userRef.current=u;
