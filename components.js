@@ -6635,19 +6635,13 @@ function App(){
     if(!fbReady) return;
     const fb=window.CS_FB;
     if(!fb) return;
-    // Debug: track auth flow in sessionStorage (survives same-tab reloads)
-    const _dbg=m=>{try{const l=JSON.parse(sessionStorage.getItem('_auth_log')||'[]');l.push(Date.now()+': '+m);sessionStorage.setItem('_auth_log',JSON.stringify(l));}catch{}};
-    _dbg('auth effect started');
     const unsub=fb.onAuthStateChanged(fb.auth,async u=>{
-      _dbg('onAuth fired, u='+(u?u.uid:'null'));
       setUser(u);
       if(!u){
         userRef.current=null;
         setTab("home");
         mountedRef.current=true;
-        // Signal to sw-register.js that auth is done — safe to reload
         window._csAuthDone=true;
-        _dbg('null user path done');
         return;
       }
       mountedRef.current=false;
@@ -6656,12 +6650,9 @@ function App(){
       // Guard each field: only overwrite local state if the cloud field
       // actually exists so stale cache / partial docs don't erase localStorage
       try{
-        _dbg('getDoc starting');
         const snap=await fb.getDoc(fb.doc(fb.db,'users',u.uid));
-        _dbg('getDoc returned, exists='+snap.exists());
         if(snap.exists()){
           const cloud=snap.data();
-          _dbg('cs_cards='+JSON.stringify(cloud.cs_cards));
           if(Array.isArray(cloud.cs_cards))   setMyCards(cloud.cs_cards);
           if(Array.isArray(cloud.cs_checked))  setCheckedArr(cloud.cs_checked);
           if(Array.isArray(cloud.cs_skipped))  setSkippedArr(cloud.cs_skipped);
@@ -6671,13 +6662,9 @@ function App(){
           if(cloud.cs_anniversary_dates)     setAnniversaryDates(cloud.cs_anniversary_dates);
         }
         mountedRef.current=true;
-        // Signal to sw-register.js that auth is done — safe to reload
         window._csAuthDone=true;
-        _dbg('data load complete');
       }catch(e){
-        _dbg('getDoc FAILED: '+e.message);
         console.warn('Firestore load failed:',e.message);
-        // Still mark as mounted so the app isn't stuck, and allow reloads
         mountedRef.current=true;
         window._csAuthDone=true;
       }
