@@ -6624,18 +6624,21 @@ function App(){
 
   // ── Wait for Firebase module to finish loading ─────────────────────────────
   useEffect(()=>{
+    console.log('[FB_READY] effect ran, window.CS_FB=', !!window.CS_FB);
     if(window.CS_FB){setFbReady(true);return;}
-    const handler=()=>setFbReady(true);
+    const handler=()=>{console.log('[FB_READY] cs-firebase-ready event received');setFbReady(true);};
     window.addEventListener('cs-firebase-ready',handler);
     return()=>window.removeEventListener('cs-firebase-ready',handler);
   },[]);
 
   // ── Firebase auth + Firestore sync (runs once Firebase is ready) ──────────
   useEffect(()=>{
+    console.log('[AUTH_EFFECT] ran, fbReady=', fbReady);
     if(!fbReady) return;
     const fb=window.CS_FB;
-    if(!fb) return;
+    if(!fb){console.log('[AUTH_EFFECT] no CS_FB, bailing');return;}
     const unsub=fb.onAuthStateChanged(fb.auth,async u=>{
+      console.log('[AUTH] onAuthStateChanged fired, u=', u?u.uid:'null');
       const wasSignedIn=!!userRef.current;
       setUser(u);
       if(!u){
@@ -6651,6 +6654,7 @@ function App(){
           setTab("home");
         }
         mountedRef.current=true;
+        console.log('[AUTH] null user path, wasSignedIn=', wasSignedIn);
         return;
       }
       // Block Firestore writes until cloud data is loaded — prevents the
@@ -6662,10 +6666,13 @@ function App(){
       userRef.current=u;
       // Load cloud data and merge with whatever's in localStorage
       try{
+        console.log('[AUTH] starting getDoc for uid:', u.uid);
         const snap=await fb.getDoc(fb.doc(fb.db,'users',u.uid));
+        console.log('[AUTH] getDoc returned, exists=', snap.exists());
         if(snap.exists()){
           // Firestore wins — cloud data takes precedence over localStorage
           const cloud=snap.data();
+          console.log('[AUTH] cloud.cs_cards=', JSON.stringify(cloud.cs_cards));
           setMyCards(cloud.cs_cards||[]);
           setCheckedArr(cloud.cs_checked||[]);
           if(cloud.cs_skipped) setSkippedArr(cloud.cs_skipped);
@@ -6674,12 +6681,14 @@ function App(){
           if(cloud.cs_household_setup!=null) setHouseholdSetup(cloud.cs_household_setup);
           if(cloud.cs_anniversary_dates) setAnniversaryDates(cloud.cs_anniversary_dates);
         } else {
+          console.log('[AUTH] doc does not exist, new user');
           // New user — no existing data to load. The write effect will
           // create the doc when the user first adds a card.
         }
         mountedRef.current=true;
+        console.log('[AUTH] data load complete, mountedRef=true');
       }catch(e){
-        console.warn('Firestore load failed:',e.message);
+        console.warn('[AUTH] Firestore load failed:',e.message);
         // Do NOT set mountedRef.current=true here. If we can't load data,
         // we must not allow the write effect to fire with empty state.
         // The user can still browse; data won't sync until they reload.
