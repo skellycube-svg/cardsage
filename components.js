@@ -6661,15 +6661,15 @@ function App(){
           if(cloud.cs_household_setup!=null) setHouseholdSetup(cloud.cs_household_setup);
           if(cloud.cs_anniversary_dates) setAnniversaryDates(cloud.cs_anniversary_dates);
         } else {
-          // New user — upload current localStorage data to cloud
-          await fb.setDoc(fb.doc(fb.db,'users',u.uid),{
-            cs_cards:cardsRef.current, cs_checked:checkedRef.current, cs_skipped:[]
-          });
+          // New user — no existing data to load. The write effect will
+          // create the doc when the user first adds a card.
         }
         mountedRef.current=true;
       }catch(e){
         console.warn('Firestore load failed:',e.message);
-        mountedRef.current=true; // fallback so app still works
+        // Do NOT set mountedRef.current=true here. If we can't load data,
+        // we must not allow the write effect to fire with empty state.
+        // The user can still browse; data won't sync until they reload.
       }
       // Link standalone newsletter subscription to this account (Task 3 dedup)
       try{
