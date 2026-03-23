@@ -5972,6 +5972,44 @@ function calcQuizResults(ans){
   const rentAmt=RENT_AMT[ans.rent]||0;
   const paysRent=rentAmt>0;
 
+  // ── Bilt housing math ───────────────────────────────────────────────
+  // Bilt offers two housing modes (user picks one per month):
+  //
+  // MODE 1 — Tiered Points: earn points on rent based on how much
+  //   non-housing spend you put on the card. Tiers:
+  //     25% of rent in everyday spend → 0.5x on rent
+  //     50% → 0.75x, 75% → 1x, 100%+ → 1.25x
+  //   In this mode you do NOT earn Bilt Cash on everyday purchases.
+  //
+  // MODE 2 — Bilt Cash: earn 4% Bilt Cash on everyday purchases
+  //   (in addition to the card's normal points earn rate).
+  //   Convert $30 Bilt Cash → 1,000 housing points.
+  //   For $2,000 rent you need $60 Bilt Cash → $1,500 everyday spend.
+  //
+  // Key insight: in BOTH modes, you need significant everyday spending
+  // to earn meaningful housing points. The quiz knows both rent AND
+  // monthly spending, so we can calculate how many housing points
+  // the user would realistically earn.
+  function biltHousingPoints(rentMo,spendMo){
+    if(rentMo===0) return {pts:0,mode:'none',spendRatio:0};
+    const ratio=spendMo/rentMo;
+    // Mode 1: tiered points
+    let tieredRate=0;
+    if(ratio>=1.0) tieredRate=1.25;
+    else if(ratio>=0.75) tieredRate=1.0;
+    else if(ratio>=0.50) tieredRate=0.75;
+    else if(ratio>=0.25) tieredRate=0.5;
+    const tieredPts=Math.floor(rentMo*tieredRate);
+    // Mode 2: Bilt Cash unlock
+    const biltCashEarned=spendMo*0.04;
+    const maxHousingPts=Math.floor(biltCashEarned/30)*1000;
+    // Cap at actual rent amount (can't earn more points than rent $)
+    const cashPts=Math.min(maxHousingPts,rentMo);
+    // Return whichever mode yields more points
+    if(tieredPts>=cashPts) return {pts:tieredPts,mode:'tiered',spendRatio:ratio,rate:tieredRate};
+    return {pts:cashPts,mode:'biltcash',spendRatio:ratio,biltCash:biltCashEarned};
+  }
+
   return CARDS
     .filter(c=>!c.isBiz&&c.fee<=feeMax&&!c.isLegacy)
     .map(c=>{
@@ -5999,41 +6037,48 @@ function calcQuizResults(ans){
       const earnedBack=annualSpend*(er/100)*1.5;
       if(earnedBack>c.fee*1.5)score+=12;
 
-      // ── Rent/mortgage scoring for Bilt cards ──
-      // Bilt cards are the only cards that earn points on housing payments.
-      // Boost Bilt cards heavily when the user pays rent.
+      // ── Bilt housing scoring ──
       const isBilt=BILT_IDS.includes(c.id);
-      if(paysRent&&isBilt){
-        // Base housing bonus: ~1x on rent → valuable transferable points
-        const annualRent=rentAmt*12;
-        const estPointValue=annualRent*0.02; // ~2cpp transfer value
-        score+=Math.min(estPointValue/10,60); // Up to +60 for high rent
-        // Extra bonus for higher Bilt tiers at higher rent
-        if(c.id==='bilt-palladium'&&rentAmt>=2250)score+=25;
-        else if(c.id==='bilt-obsidian'&&rentAmt>=1500)score+=15;
-        else if(c.id==='bilt-blue')score+=20; // No-fee rent earner is always valuable
+      let biltInfo=null;
+      if(isBilt&&paysRent){
+        biltInfo=biltHousingPoints(rentAmt,monthlyAmt);
+        // Annual housing points value at ~2cpp transfer (conservative)
+        const annualHousingValue=(biltInfo.pts*12)*0.02;
+        // Score boost proportional to actual value earned
+        score+=Math.min(annualHousingValue/8,55);
+        // Credits offset fee — Palladium has $600 in credits
+        const credits=(c.annual||[]).reduce((s,b)=>s+(b.v||0),0);
+        if(credits>c.fee)score+=15;
+        // Blue bonus: no fee = pure upside on rent
+        if(c.id==='bilt-blue'&&c.fee===0)score+=18;
       }
-      // Slight penalty for non-Bilt cards when rent is a major expense
-      // (they earn 0 on housing — money left on the table)
-      if(paysRent&&!isBilt&&rentAmt>=2250)score-=5;
+      // Non-Bilt cards earn $0 on housing — slight penalty when rent is significant
+      if(paysRent&&!isBilt&&rentAmt>=1500)score-=8;
 
-      return {c,score,er,sf,isBilt,paysRent};
+      return {c,score,er,sf,isBilt,paysRent,biltInfo};
     })
     .sort((a,b)=>b.score-a.score)
     .slice(0,3)
     .map(entry=>{
-      const {c,sf:f,isBilt:ib}=entry;
+      const {c,sf:f,isBilt:ib,biltInfo:bi}=entry;
       const spendLabel=SPEND_LABEL[ans.spend];
       const earnVal=c.earn[f]||c.earn.o||'1x';
       const lines=[];
 
-      // Lead with rent explanation for Bilt cards when user pays rent
-      if(ib&&paysRent){
-        const rentLabel=ans.rent==='high'?'$3,000+':ans.rent==='mid'?'$1,500–$3,000':'under $1,500';
-        lines.push(`Earns transferable points on your ${rentLabel}/mo housing payment — no other card does this.`);
-        if(c.id==='bilt-palladium')lines.push('2x on all everyday purchases plus $400 hotel credit, $200 Bilt Cash, and Priority Pass lounges.');
-        else if(c.id==='bilt-obsidian')lines.push('Choose 3x dining or groceries annually, plus $100 hotel credit and $200 Bilt Cash.');
-        else lines.push('No annual fee — the simplest way to start earning points on rent.');
+      // Lead with detailed Bilt explanation when user pays rent
+      if(ib&&paysRent&&bi&&bi.pts>0){
+        const annPts=bi.pts*12;
+        const annVal=Math.round(annPts*0.02);
+        if(bi.mode==='tiered'){
+          lines.push(`With your spending, you'd earn ~${bi.pts.toLocaleString()} housing points/mo (${bi.rate}x rate) via Tiered Points mode — that's ~${annPts.toLocaleString()} pts/year worth ~$${annVal}+ transferred to Hyatt or airlines.`);
+        }else{
+          lines.push(`In Bilt Cash mode, your $${monthlyAmt.toLocaleString()}/mo spending earns ~$${Math.round(bi.biltCash)} Bilt Cash, unlocking ~${bi.pts.toLocaleString()} housing points/mo — ~${annPts.toLocaleString()} pts/year worth ~$${annVal}+ at transfer partners.`);
+        }
+        if(c.id==='bilt-palladium') lines.push('Also earns 2x points on all everyday spending, with $400 hotel credit, $200 Bilt Cash, and Priority Pass lounges to offset the $495 fee.');
+        else if(c.id==='bilt-obsidian') lines.push('Plus pick 3x on dining or groceries, $100 hotel credit, and $200 Bilt Cash — all for $95/yr.');
+        else lines.push('No annual fee — the simplest way to earn transferable points on rent with zero risk.');
+      }else if(ib&&paysRent&&bi&&bi.pts===0){
+        lines.push(`You pay rent, but your current spending level ($${monthlyAmt.toLocaleString()}/mo) isn't high enough to unlock housing points. You'd need to spend at least 25% of your rent ($${Math.round(rentAmt*0.25).toLocaleString()}/mo) on the card to start earning.`);
       }else{
         lines.push(`Earns ${earnVal} on ${spendLabel} — one of the best rates for your primary spend category.`);
       }
@@ -6156,7 +6201,11 @@ function QuizTab({myCards}){
 
   const retake=()=>{setSavedAnswers(null);setStep(0);setAnswers({});setMultiSel([]);setAnimKey(k=>k+1);};
 
-  if(savedAnswers)return <QuizResults answers={savedAnswers} onRetake={retake} myCards={myCards}/>;
+  // Invalidate old saved answers that are missing required fields (e.g. rent question added later).
+  // This forces users to retake the quiz so new questions are answered.
+  const REQUIRED_FIELDS=['spend','monthly','brand','rent','fee','exp'];
+  const answersValid=savedAnswers&&REQUIRED_FIELDS.every(f=>savedAnswers[f]!=null);
+  if(answersValid)return <QuizResults answers={savedAnswers} onRetake={retake} myCards={myCards}/>;
 
   const q=QUIZ_QS[step];
   const isLast=step===QUIZ_QS.length-1;
