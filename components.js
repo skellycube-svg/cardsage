@@ -6662,7 +6662,11 @@ function App(){
             cs_cards:cardsRef.current, cs_checked:checkedRef.current, cs_skipped:[]
           });
         }
-      }catch(e){ console.warn('Firestore load failed:',e.message); }
+        mountedRef.current=true;
+      }catch(e){
+        console.warn('Firestore load failed:',e.message);
+        mountedRef.current=true; // fallback so app still works
+      }
       // Link standalone newsletter subscription to this account (Task 3 dedup)
       try{
         if(fb.query&&fb.collection){
@@ -6674,7 +6678,6 @@ function App(){
           }
         }
       }catch(e){console.warn('Newsletter link failed:',e.message);}
-      mountedRef.current=true;
     });
     return unsub;
   },[fbReady]);
