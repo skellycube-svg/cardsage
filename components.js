@@ -757,6 +757,7 @@ function HomeTab({myCards,setMyCards,checkedSet,setTab,setStratModal,anniversary
             <h1 className="home-hero-title">Is the fee<br/>worth it?</h1>
             <p className="home-hero-subtitle">Know exactly which cards to keep, cancel, or downgrade — before renewal day.</p>
             <button className="btn" onClick={()=>{if(user)setTab("benefits");else if(onAuthClick)onAuthClick();}}>Run Your Free Fee Check →</button>
+            <p style={{fontSize:13,color:'var(--tx3)',marginTop:8,marginBottom:0}}>See if your annual fee pays for itself in 60 seconds.</p>
           </div>
           <div className="home-hero-card">
             <div className="hero-card-mockup">
