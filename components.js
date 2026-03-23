@@ -6287,8 +6287,14 @@ function App(){
     user,fbReady,userRef
   }=useAuthSync();
 
+  // ── Deep-link support: ?card=csr&tab=benefits opens Fee Check for that card ──
+  const deepLink=useMemo(()=>{
+    const params=new URLSearchParams(window.location.search);
+    return {card:params.get("card"),tab:params.get("tab")};
+  },[]);
+
   // ── Local UI state (not synced to cloud) ──────────────────────────────
-  const [tab,setTab]=useState("home");
+  const [tab,setTab]=useState(deepLink.tab==="benefits"?"benefits":"home");
   const [feedbackOpen,setFeedbackOpen]=useState(false);
   const [feedbackText,setFeedbackText]=useState("");
   const [feedbackSent,setFeedbackSent]=useState(false);
@@ -6384,6 +6390,16 @@ function App(){
   };
 
   // ── All auth, Firestore sync, and dirty-write logic is now in auth-sync.js ──
+
+  // Deep-link: auto-add card to wallet if linked via ?card=xxx
+  useEffect(()=>{
+    if(deepLink.card&&CARDS.find(c=>c.id===deepLink.card)){
+      if(!myCards.includes(deepLink.card)) dirtySetMyCards(prev=>[...prev,deepLink.card]);
+      if(deepLink.tab==="benefits") setTab("benefits");
+      // Clear URL params after processing so refreshes don't re-trigger
+      window.history.replaceState({},"",window.location.pathname);
+    }
+  },[]);
 
   // Reset to home tab when user signs out
   useEffect(()=>{if(!user) setTab("home");},[user]);

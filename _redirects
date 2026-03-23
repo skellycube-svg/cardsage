@@ -1,1 +1,4 @@
+# Clean URLs for SEO card pages
+/cards/:slug  /cards/:slug.html  200
+
 /* /404.html 404
