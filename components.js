@@ -6358,7 +6358,7 @@ function AuthButton({user,onSignIn,fbReady}){
             <Icon name="check" size={11} color="var(--grn2)"/> Wallet synced to cloud
           </div>
           <button className="auth-dropdown-btn"
-            onClick={async()=>{const fb=window.CS_FB;if(fb)await fb.signOut(fb.auth);setOpen(false);}}>
+            onClick={async()=>{const fb=window.CS_FB;if(fb){window._csExplicitSignOut=true;await fb.signOut(fb.auth);}setOpen(false);}}>
             Sign out
           </button>
         </div>
@@ -6635,9 +6635,7 @@ function App(){
     if(!fbReady) return;
     const fb=window.CS_FB;
     if(!fb) return;
-    // Helper: wipe all user-specific state back to defaults.
-    // Called on sign-out and when switching between accounts so
-    // User A's cards never appear under User B's session.
+    // Wipe all user-specific React state + localStorage back to defaults.
     function clearUserState(){
       setMyCards([]);setCheckedArr([]);setSkippedArr([]);
       setP2Cards([]);setP2Name("");setHouseholdSetup(false);
@@ -6647,17 +6645,16 @@ function App(){
     const unsub=fb.onAuthStateChanged(fb.auth,async u=>{
       setUser(u);
 
-      // ── Signed-out path ─────────────────────────────────────────────
+      // ── SIGNED OUT ──────────────────────────────────────────────────
+      // This fires when the user clicks "Sign Out" OR on first visit.
+      // IMPORTANT: We ONLY clear data when the sign-out button was
+      // clicked (explicit flag). On page refresh, Firebase might
+      // briefly emit null before resolving the stored session — clearing
+      // here would destroy data. The flag makes this safe.
       if(!u){
         userRef.current=null;
-        // Only clear data if someone was previously signed in on this
-        // browser. This prevents the brief null→user transition that
-        // Firebase sometimes emits on refresh from wiping data, because
-        // on a true refresh the stored UID will match and this block
-        // won't run (onAuthStateChanged fires with the user directly
-        // when using browserLocalPersistence).
-        const prevUid=localStorage.getItem('cs_auth_uid');
-        if(prevUid){
+        if(window._csExplicitSignOut){
+          window._csExplicitSignOut=false;
           localStorage.removeItem('cs_auth_uid');
           clearUserState();
         }
@@ -6667,23 +6664,23 @@ function App(){
         return;
       }
 
-      // ── Signed-in path ──────────────────────────────────────────────
+      // ── SIGNED IN ───────────────────────────────────────────────────
       mountedRef.current=false;
       userRef.current=u;
 
-      // Check if this is the same user who was here last time.
-      // If a different user signed in, clear the old user's cached data
-      // BEFORE loading the new user's cloud data.
+      // Safety net: if a DIFFERENT user signed in (e.g. the previous
+      // user closed the tab without signing out), clear old data first.
       const prevUid=localStorage.getItem('cs_auth_uid');
       if(prevUid&&prevUid!==u.uid){
         clearUserState();
       }
-      // Record this user's UID so we can detect user switches next time
       localStorage.setItem('cs_auth_uid',u.uid);
 
-      // Load cloud data — Firestore is the single source of truth.
-      // The deferred-reload in sw-register.js ensures this async call
-      // completes before any SW or version-check reload can interrupt it.
+      // ALWAYS load from Firestore — it is the single source of truth.
+      // This is what makes cross-device sync work: phone writes to
+      // Firestore, desktop reads from Firestore on every sign-in/refresh.
+      // The deferred-reload in sw-register.js prevents SW updates from
+      // interrupting this call.
       try{
         const snap=await fb.getDoc(fb.doc(fb.db,'users',u.uid));
         if(snap.exists()){
@@ -6696,13 +6693,14 @@ function App(){
           if(cloud.cs_household_setup!=null) setHouseholdSetup(cloud.cs_household_setup);
           if(cloud.cs_anniversary_dates) setAnniversaryDates(cloud.cs_anniversary_dates);
         }else if(!prevUid||prevUid!==u.uid){
-          // Brand-new user or different user with no cloud doc yet — start fresh
+          // New user with no Firestore doc yet — start with a clean slate
           clearUserState();
         }
         mountedRef.current=true;
         window._csAuthDone=true;
       }catch(e){
         console.warn('Firestore load failed:',e.message);
+        // On failure, keep whatever localStorage had — don't blank the UI
         mountedRef.current=true;
         window._csAuthDone=true;
       }
