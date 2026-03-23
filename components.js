@@ -6646,20 +6646,21 @@ function App(){
       }
       mountedRef.current=false;
       userRef.current=u;
-      // Load cloud data — Firestore is the source of truth
-      // Guard each field: only overwrite local state if the cloud field
-      // actually exists so stale cache / partial docs don't erase localStorage
+      // Load cloud data — Firestore is the source of truth for signed-in users.
+      // Always apply cloud values so data syncs across devices.
+      // The deferred-reload in sw-register.js ensures this completes before
+      // any SW or version-check reload can interrupt it.
       try{
         const snap=await fb.getDoc(fb.doc(fb.db,'users',u.uid));
         if(snap.exists()){
           const cloud=snap.data();
-          if(Array.isArray(cloud.cs_cards))   setMyCards(cloud.cs_cards);
-          if(Array.isArray(cloud.cs_checked))  setCheckedArr(cloud.cs_checked);
-          if(Array.isArray(cloud.cs_skipped))  setSkippedArr(cloud.cs_skipped);
-          if(Array.isArray(cloud.cs_p2_cards)) setP2Cards(cloud.cs_p2_cards);
-          if(typeof cloud.cs_p2_name==='string') setP2Name(cloud.cs_p2_name);
-          if(cloud.cs_household_setup!=null)  setHouseholdSetup(cloud.cs_household_setup);
-          if(cloud.cs_anniversary_dates)     setAnniversaryDates(cloud.cs_anniversary_dates);
+          setMyCards(cloud.cs_cards||[]);
+          setCheckedArr(cloud.cs_checked||[]);
+          if(cloud.cs_skipped) setSkippedArr(cloud.cs_skipped);
+          if(cloud.cs_p2_cards) setP2Cards(cloud.cs_p2_cards);
+          if(cloud.cs_p2_name!=null) setP2Name(cloud.cs_p2_name);
+          if(cloud.cs_household_setup!=null) setHouseholdSetup(cloud.cs_household_setup);
+          if(cloud.cs_anniversary_dates) setAnniversaryDates(cloud.cs_anniversary_dates);
         }
         mountedRef.current=true;
         window._csAuthDone=true;
