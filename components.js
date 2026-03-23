@@ -3007,26 +3007,36 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
             warnings.push("Without rent or mortgage payments, you're missing this card's biggest feature: earning transferable points on housing. The Bilt cards are primarily designed for renters and homeowners.");
           }
 
-          // Q6: Travel frequency scaling
+          // Q6: Travel frequency scaling — only for travel benefits the user confirmed they use
           if(answers.travel){
-            const travelBenTotal=[...card.annual,...card.monthly].filter(b=>{const n=(b.n||"").toLowerCase();return b.v&&(n.includes("lounge")||n.includes("travel")||n.includes("airline")||n.includes("global entry")||n.includes("tsa")||n.includes("hotel credit")||n.includes("trip"));}).reduce((s,b)=>s+annualBenValue(b),0);
-            if(travelBenTotal>0){
+            const confirmedBens=answers.benefits||benefitOptions.filter(b=>b.checked).map(b=>b.name);
+            const travelBens=[...card.annual,...card.monthly].filter(b=>{const n=(b.n||"").toLowerCase();return b.v&&(n.includes("lounge")||n.includes("travel")||n.includes("airline")||n.includes("global entry")||n.includes("tsa")||n.includes("hotel credit")||n.includes("trip"));});
+            const confirmedTravelBens=travelBens.filter(b=>confirmedBens.includes(b.n));
+            const confirmedTravelTotal=confirmedTravelBens.reduce((s,b)=>s+annualBenValue(b),0);
+            if(confirmedTravelTotal>0){
               const scale=answers.travel==="frequent"?1:answers.travel==="sometimes"?0.6:0.2;
-              const travelVal=Math.round(travelBenTotal*scale);
-              const alreadyCounted=Math.min(travelBenTotal,trackerVal);
+              const travelVal=Math.round(confirmedTravelTotal*scale);
+              const alreadyCounted=confirmedTravelBens.filter(b=>{const bo=benefitOptions.find(o=>o.name===b.n);return bo&&bo.checked;}).reduce((s,b)=>s+annualBenValue(b),0);
               const extra=Math.max(0,travelVal-alreadyCounted);
-              if(extra>0){totalValue+=extra;reasons.push("Travel benefits worth ~$"+travelVal+"/yr at your travel frequency (includes lounge access, travel credits, and trip protections you\u2019d otherwise pay for)");}
+              if(extra>0){totalValue+=extra;reasons.push("Travel benefits worth ~$"+travelVal+"/yr at your travel frequency (based on the travel perks you said you use)");}
+            }
+            const unusedTravelBens=travelBens.filter(b=>!confirmedBens.includes(b.n));
+            if(unusedTravelBens.length>0){
+              const unusedVal=unusedTravelBens.reduce((s,b)=>s+annualBenValue(b),0);
+              if(unusedVal>0) tips.push("You're not using "+unusedTravelBens.map(b=>b.n).join(", ")+" (~$"+unusedVal+"/yr in travel benefits). If you started using "+(unusedTravelBens.length===1?"it":"them")+", the math could shift in this card's favor.");
             }
           }
 
-          // Q6: Loyalty status scaling
+          // Q6: Loyalty status scaling — only for loyalty benefits the user confirmed they use
           if(answers.loyalty&&isBrandedCard){
+            const confirmedBens2=answers.benefits||benefitOptions.filter(b=>b.checked).map(b=>b.name);
             const loyaltyBens=[...card.annual,...card.monthly].filter(b=>{const n=(b.n||"").toLowerCase();return b.v&&(n.includes("free night")||n.includes("status")||n.includes("certificate")||n.includes("companion"));});
-            const loyaltyTotal=loyaltyBens.reduce((s,b)=>s+annualBenValue(b),0);
+            const confirmedLoyaltyBens=loyaltyBens.filter(b=>confirmedBens2.includes(b.n));
+            const loyaltyTotal=confirmedLoyaltyBens.reduce((s,b)=>s+annualBenValue(b),0);
             if(loyaltyTotal>0){
               const weight=answers.loyalty==="very"?1:answers.loyalty==="somewhat"?0.5:0.3;
               const loyaltyVal=Math.round(loyaltyTotal*weight);
-              reasons.push(brandName+" loyalty perks worth ~$"+loyaltyVal+"/yr based on your usage (free nights, elite status upgrades, and certificates that offset hotel costs)");
+              reasons.push(brandName+" loyalty perks worth ~$"+loyaltyVal+"/yr based on your usage");
             }
           }
 
