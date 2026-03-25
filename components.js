@@ -6562,8 +6562,10 @@ function App(){
         </div>
       )}
       <div className="tab-content-wrap" style={{paddingTop:8}}>
-        {/* When not authenticated, always show HomeTab (which renders the landing page) */}
-        {!user?(
+        {/* When not authenticated and no stored session, show the landing page.
+            If there's a stored auth UID, Firebase is still restoring the session —
+            show the authenticated view with localStorage data to avoid a flash. */}
+        {!user&&!localStorage.getItem('cs_auth_uid')?(
           <HomeTab myCards={[]} setMyCards={dirtySetMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} onAuthClick={()=>setAuthModal(true)} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>
         ):(
           <>

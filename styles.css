@@ -539,18 +539,18 @@ a.tip-requires-chip:hover{background:rgba(13,115,119,.12);border-color:var(--acc
 
 /* ── Feedback button + panel ─────────────────────────────────────────────── */
 .fb-tab{
-  position:fixed;right:-1px;top:50%;
-  writing-mode:vertical-rl;text-orientation:mixed;
-  display:flex;align-items:center;gap:4px;
-  padding:10px 6px;font-size:11px;font-weight:600;font-family:'Inter',sans-serif;
-  color:var(--tx2);background:var(--bg);
-  border:1px solid var(--br2);border-right:none;border-radius:8px 0 0 8px;
-  cursor:pointer;z-index:999;box-shadow:-2px 0 6px rgba(0,0,0,.06);
-  transition:color .15s,border-color .15s;
+  position:fixed;right:20px;bottom:20px;
+  display:flex;align-items:center;gap:6px;
+  padding:10px 16px;font-size:12px;font-weight:600;font-family:'Inter',sans-serif;
+  color:#fff;background:var(--acc);
+  border:none;border-radius:99px;
+  cursor:pointer;z-index:999;box-shadow:0 2px 10px rgba(0,0,0,.15);
+  transition:transform .15s,box-shadow .15s;
 }
-.fb-tab:hover{color:var(--acc);border-color:var(--acc)}
+.fb-tab:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.fb-tab svg{stroke:#fff}
 .fb-panel{
-  position:fixed;right:16px;bottom:16px;width:280px;
+  position:fixed;right:20px;bottom:60px;width:280px;
   background:var(--bg);border:1px solid var(--br2);border-radius:12px;
   padding:16px;z-index:1000;
   box-shadow:0 4px 20px rgba(0,0,0,.1);
@@ -558,6 +558,6 @@ a.tip-requires-chip:hover{background:rgba(13,115,119,.12);border-color:var(--acc
 }
 @keyframes fb-slide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:480px){
-  .fb-tab{font-size:10px;padding:5px 10px}
-  .fb-panel{right:8px;left:8px;width:auto;bottom:8px}
+  .fb-tab{right:12px;bottom:12px;padding:8px 14px;font-size:11px}
+  .fb-panel{right:8px;left:8px;width:auto;bottom:56px}
 }
