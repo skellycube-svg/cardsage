@@ -21,7 +21,7 @@ if (firebaseConfig.apiKey) {
     import(`https://www.gstatic.com/firebasejs/${v}/firebase-app.js`),
     import(`https://www.gstatic.com/firebasejs/${v}/firebase-auth.js`),
     import(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore.js`)
-  ]).then(([{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged},{initializeFirestore,persistentLocalCache,persistentSingleTabManager,doc,getDoc,setDoc,collection,query,where,getDocs,serverTimestamp}])=>{
+  ]).then(([{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged},{initializeFirestore,persistentLocalCache,persistentSingleTabManager,doc,getDoc,setDoc,collection,query,where,getDocs,serverTimestamp}])=>{
     // Start the Firebase app and create auth + database connections
     const app=initializeApp(firebaseConfig);
 
@@ -36,7 +36,7 @@ if (firebaseConfig.apiKey) {
     // This is how the rest of the app accesses login, logout, and database functions.
     window.CS_FB={
       auth:getAuth(app),db:db,
-      GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signInWithEmailAndPassword,
+      GoogleAuthProvider,signInWithPopup,signInWithEmailAndPassword,
       createUserWithEmailAndPassword,signOut,onAuthStateChanged,
       doc,getDoc,setDoc,collection,query,where,getDocs,serverTimestamp
     };
