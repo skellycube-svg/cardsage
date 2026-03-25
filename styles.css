@@ -536,3 +536,27 @@ a.tip-requires-chip:hover{background:rgba(13,115,119,.12);border-color:var(--acc
   .hh-coverage-table{font-size:11px}
   .hh-coverage-table th,.hh-coverage-table td{padding:6px 4px}
 }
+
+/* ── Feedback button + panel ─────────────────────────────────────────────── */
+.fb-tab{
+  position:fixed;right:0;top:50%;transform:translateY(-50%) rotate(-90deg);transform-origin:right center;
+  display:flex;align-items:center;gap:0;
+  padding:6px 14px;font-size:11px;font-weight:600;font-family:'Inter',sans-serif;
+  color:var(--tx2);background:var(--bg);
+  border:1px solid var(--br2);border-bottom:none;border-radius:8px 8px 0 0;
+  cursor:pointer;z-index:999;box-shadow:0 -1px 6px rgba(0,0,0,.06);
+  transition:color .15s,border-color .15s;
+}
+.fb-tab:hover{color:var(--acc);border-color:var(--acc)}
+.fb-panel{
+  position:fixed;right:16px;bottom:16px;width:280px;
+  background:var(--bg);border:1px solid var(--br2);border-radius:12px;
+  padding:16px;z-index:1000;
+  box-shadow:0 4px 20px rgba(0,0,0,.1);
+  animation:fb-slide .15s ease-out;
+}
+@keyframes fb-slide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:480px){
+  .fb-tab{font-size:10px;padding:5px 10px}
+  .fb-panel{right:8px;left:8px;width:auto;bottom:8px}
+}
