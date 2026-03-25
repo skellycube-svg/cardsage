@@ -3415,7 +3415,70 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
                     </div>
 
                     {/* Fee Check feedback — thumbs up/down */}
-                    <FeeCheckFeedback cardName={card.name} recLabel={quizResult.recLabel}/>
+                    {(()=>{
+                      const [fcFb,setFcFb]=React.useState(null);
+                      const [fcText,setFcText]=React.useState("");
+                      const [fcSending,setFcSending]=React.useState(false);
+                      const [fcDone,setFcDone]=React.useState(false);
+                      if(fcDone) return (
+                        <div style={{textAlign:"center",marginTop:12,padding:"8px",fontSize:12,color:"var(--grn2)",fontWeight:600}}>
+                          Thanks for your feedback!
+                        </div>
+                      );
+                      return (
+                        <div style={{marginTop:12,textAlign:"center"}}>
+                          {!fcFb&&(
+                            <div>
+                              <div style={{fontSize:12,color:"var(--tx3)",marginBottom:6}}>Was this recommendation helpful?</div>
+                              <div style={{display:"flex",justifyContent:"center",gap:12}}>
+                                <button onClick={()=>{
+                                  setFcFb("up");
+                                  emailjs.send("service_jq89dig","template_ojxqunw",{message:"[Fee Check] Thumbs UP for "+card.name+" — Verdict: "+quizResult.recLabel,from_page:window.location.href},"sbpCDiM6phLK4xj_y").catch(()=>{});
+                                  setFcDone(true);
+                                }} style={{padding:"6px 16px",borderRadius:8,border:"1.5px solid var(--br2)",background:"var(--bg)",cursor:"pointer",fontSize:16,transition:"all .15s"}}
+                                  onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--grn2)";e.currentTarget.style.background="rgba(22,163,74,.06)";}}
+                                  onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--br2)";e.currentTarget.style.background="var(--bg)";}}>
+                                  {"👍"}
+                                </button>
+                                <button onClick={()=>setFcFb("down")}
+                                  style={{padding:"6px 16px",borderRadius:8,border:"1.5px solid var(--br2)",background:"var(--bg)",cursor:"pointer",fontSize:16,transition:"all .15s"}}
+                                  onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--red2)";e.currentTarget.style.background="rgba(220,38,38,.06)";}}
+                                  onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--br2)";e.currentTarget.style.background="var(--bg)";}}>
+                                  {"👎"}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          {fcFb==="down"&&(
+                            <div style={{marginTop:8}}>
+                              <div style={{fontSize:12,color:"var(--tx3)",marginBottom:6}}>What could be better?</div>
+                              <textarea value={fcText} onChange={e=>setFcText(e.target.value)}
+                                placeholder="The recommendation didn't feel right because..."
+                                rows={3}
+                                style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",fontSize:12,fontFamily:"Inter,sans-serif",
+                                  border:"1px solid var(--br2)",borderRadius:8,background:"var(--bg)",color:"var(--tx)",
+                                  resize:"vertical",outline:"none",marginBottom:6}}
+                                onFocus={e=>e.currentTarget.style.borderColor="var(--acc)"}
+                                onBlur={e=>e.currentTarget.style.borderColor="var(--br2)"}/>
+                              <button onClick={async()=>{
+                                if(!fcText.trim())return;
+                                setFcSending(true);
+                                try{
+                                  await emailjs.send("service_jq89dig","template_ojxqunw",{message:"[Fee Check] Thumbs DOWN for "+card.name+" — Verdict: "+quizResult.recLabel+"\nFeedback: "+fcText,from_page:window.location.href},"sbpCDiM6phLK4xj_y");
+                                  setFcDone(true);
+                                }catch(err){console.error("Feedback failed:",err);}
+                                setFcSending(false);
+                              }}
+                                disabled={fcSending||!fcText.trim()}
+                                style={{padding:"6px 18px",fontSize:11,fontWeight:700,color:"#fff",background:fcSending||!fcText.trim()?"var(--tx4)":"var(--acc)",
+                                  border:"none",borderRadius:99,cursor:fcSending?"wait":"pointer",transition:"background .2s"}}>
+                                {fcSending?"Sending...":"Submit"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -6269,73 +6332,6 @@ function needsReset(reset,checkDate,now){
     case'annual':     return cy>ly;
     default:          return false;
   }
-}
-
-/* ── FEE CHECK FEEDBACK ───────────────────────────────────────────────────── */
-// Thumbs up/down after Fee Check quiz result. Proper component so hooks work.
-function FeeCheckFeedback({cardName,recLabel}){
-  const [fcFb,setFcFb]=React.useState(null);
-  const [fcText,setFcText]=React.useState("");
-  const [fcSending,setFcSending]=React.useState(false);
-  const [fcDone,setFcDone]=React.useState(false);
-  if(fcDone) return (
-    <div style={{textAlign:"center",marginTop:12,padding:"8px",fontSize:12,color:"var(--grn2)",fontWeight:600}}>
-      Thanks for your feedback!
-    </div>
-  );
-  return (
-    <div style={{marginTop:12,textAlign:"center"}}>
-      {!fcFb&&(
-        <div>
-          <div style={{fontSize:12,color:"var(--tx3)",marginBottom:6}}>Was this recommendation helpful?</div>
-          <div style={{display:"flex",justifyContent:"center",gap:12}}>
-            <button onClick={()=>{
-              setFcFb("up");
-              emailjs.send("service_jq89dig","template_ojxqunw",{message:"[Fee Check] Thumbs UP for "+cardName+" — Verdict: "+recLabel,from_page:window.location.href},"sbpCDiM6phLK4xj_y").catch(()=>{});
-              setFcDone(true);
-            }} style={{padding:"6px 16px",borderRadius:8,border:"1.5px solid var(--br2)",background:"var(--bg)",cursor:"pointer",fontSize:16,transition:"all .15s"}}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--grn2)";e.currentTarget.style.background="rgba(22,163,74,.06)";}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--br2)";e.currentTarget.style.background="var(--bg)";}}>
-              {"👍"}
-            </button>
-            <button onClick={()=>setFcFb("down")}
-              style={{padding:"6px 16px",borderRadius:8,border:"1.5px solid var(--br2)",background:"var(--bg)",cursor:"pointer",fontSize:16,transition:"all .15s"}}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--red2)";e.currentTarget.style.background="rgba(220,38,38,.06)";}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--br2)";e.currentTarget.style.background="var(--bg)";}}>
-              {"👎"}
-            </button>
-          </div>
-        </div>
-      )}
-      {fcFb==="down"&&(
-        <div style={{marginTop:8}}>
-          <div style={{fontSize:12,color:"var(--tx3)",marginBottom:6}}>What could be better?</div>
-          <textarea value={fcText} onChange={e=>setFcText(e.target.value)}
-            placeholder="The recommendation didn't feel right because..."
-            rows={3}
-            style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",fontSize:12,fontFamily:"Inter,sans-serif",
-              border:"1px solid var(--br2)",borderRadius:8,background:"var(--bg)",color:"var(--tx)",
-              resize:"vertical",outline:"none",marginBottom:6}}
-            onFocus={e=>e.currentTarget.style.borderColor="var(--acc)"}
-            onBlur={e=>e.currentTarget.style.borderColor="var(--br2)"}/>
-          <button onClick={async()=>{
-            if(!fcText.trim())return;
-            setFcSending(true);
-            try{
-              await emailjs.send("service_jq89dig","template_ojxqunw",{message:"[Fee Check] Thumbs DOWN for "+cardName+" — Verdict: "+recLabel+"\nFeedback: "+fcText,from_page:window.location.href},"sbpCDiM6phLK4xj_y");
-              setFcDone(true);
-            }catch(err){console.error("Feedback failed:",err);}
-            setFcSending(false);
-          }}
-            disabled={fcSending||!fcText.trim()}
-            style={{padding:"6px 18px",fontSize:11,fontWeight:700,color:"#fff",background:fcSending||!fcText.trim()?"var(--tx4)":"var(--acc)",
-              border:"none",borderRadius:99,cursor:fcSending?"wait":"pointer",transition:"background .2s"}}>
-            {fcSending?"Sending...":"Submit"}
-          </button>
-        </div>
-      )}
-    </div>
-  );
 }
 
 /* ── FEEDBACK BUTTON ──────────────────────────────────────────────────────── */
