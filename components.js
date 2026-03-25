@@ -3413,72 +3413,6 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
                         </button>
                       )}
                     </div>
-
-                    {/* Fee Check feedback — thumbs up/down */}
-                    {(()=>{
-                      const [fcFb,setFcFb]=React.useState(null);
-                      const [fcText,setFcText]=React.useState("");
-                      const [fcSending,setFcSending]=React.useState(false);
-                      const [fcDone,setFcDone]=React.useState(false);
-                      if(fcDone) return (
-                        <div style={{textAlign:"center",marginTop:12,padding:"8px",fontSize:12,color:"var(--grn2)",fontWeight:600}}>
-                          Thanks for your feedback!
-                        </div>
-                      );
-                      return (
-                        <div style={{marginTop:12,textAlign:"center"}}>
-                          {!fcFb&&(
-                            <div>
-                              <div style={{fontSize:12,color:"var(--tx3)",marginBottom:6}}>Was this recommendation helpful?</div>
-                              <div style={{display:"flex",justifyContent:"center",gap:12}}>
-                                <button onClick={()=>{
-                                  setFcFb("up");
-                                  emailjs.send("service_jq89dig","template_ojxqunw",{message:"[Fee Check] Thumbs UP for "+card.name+" — Verdict: "+quizResult.recLabel,from_page:window.location.href},"sbpCDiM6phLK4xj_y").catch(()=>{});
-                                  setFcDone(true);
-                                }} style={{padding:"6px 16px",borderRadius:8,border:"1.5px solid var(--br2)",background:"var(--bg)",cursor:"pointer",fontSize:16,transition:"all .15s"}}
-                                  onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--grn2)";e.currentTarget.style.background="rgba(22,163,74,.06)";}}
-                                  onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--br2)";e.currentTarget.style.background="var(--bg)";}}>
-                                  {"👍"}
-                                </button>
-                                <button onClick={()=>setFcFb("down")}
-                                  style={{padding:"6px 16px",borderRadius:8,border:"1.5px solid var(--br2)",background:"var(--bg)",cursor:"pointer",fontSize:16,transition:"all .15s"}}
-                                  onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--red2)";e.currentTarget.style.background="rgba(220,38,38,.06)";}}
-                                  onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--br2)";e.currentTarget.style.background="var(--bg)";}}>
-                                  {"👎"}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                          {fcFb==="down"&&(
-                            <div style={{marginTop:8}}>
-                              <div style={{fontSize:12,color:"var(--tx3)",marginBottom:6}}>What could be better?</div>
-                              <textarea value={fcText} onChange={e=>setFcText(e.target.value)}
-                                placeholder="The recommendation didn't feel right because..."
-                                rows={3}
-                                style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",fontSize:12,fontFamily:"Inter,sans-serif",
-                                  border:"1px solid var(--br2)",borderRadius:8,background:"var(--bg)",color:"var(--tx)",
-                                  resize:"vertical",outline:"none",marginBottom:6}}
-                                onFocus={e=>e.currentTarget.style.borderColor="var(--acc)"}
-                                onBlur={e=>e.currentTarget.style.borderColor="var(--br2)"}/>
-                              <button onClick={async()=>{
-                                if(!fcText.trim())return;
-                                setFcSending(true);
-                                try{
-                                  await emailjs.send("service_jq89dig","template_ojxqunw",{message:"[Fee Check] Thumbs DOWN for "+card.name+" — Verdict: "+quizResult.recLabel+"\nFeedback: "+fcText,from_page:window.location.href},"sbpCDiM6phLK4xj_y");
-                                  setFcDone(true);
-                                }catch(err){console.error("Feedback failed:",err);}
-                                setFcSending(false);
-                              }}
-                                disabled={fcSending||!fcText.trim()}
-                                style={{padding:"6px 18px",fontSize:11,fontWeight:700,color:"#fff",background:fcSending||!fcText.trim()?"var(--tx4)":"var(--acc)",
-                                  border:"none",borderRadius:99,cursor:fcSending?"wait":"pointer",transition:"background .2s"}}>
-                                {fcSending?"Sending...":"Submit"}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
                   </div>
                 )}
               </div>
@@ -6334,65 +6268,6 @@ function needsReset(reset,checkDate,now){
   }
 }
 
-/* ── FEEDBACK BUTTON ──────────────────────────────────────────────────────── */
-// Fixed feedback tab on the right edge of the screen. Opens a slide-out form
-// that lets users send general feedback via EmailJS.
-function FeedbackButton(){
-  const [open,setOpen]=React.useState(false);
-  const [text,setText]=React.useState("");
-  const [sending,setSending]=React.useState(false);
-  const [done,setDone]=React.useState(false);
-
-  function handleSubmit(){
-    if(!text.trim())return;
-    setSending(true);
-    emailjs.send("service_jq89dig","template_ojxqunw",{message:"[General Feedback]\n"+text,from_page:window.location.href},"sbpCDiM6phLK4xj_y")
-      .then(()=>{setDone(true);setText("");setTimeout(()=>{setDone(false);setOpen(false);},2500);})
-      .catch(err=>{console.error("Feedback failed:",err);alert("Failed to send. Please try again.");})
-      .finally(()=>setSending(false));
-  }
-
-  return (
-    <>
-      {/* Tab */}
-      <button onClick={()=>setOpen(!open)} className="fb-tab" aria-label="Send feedback">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        <span style={{marginLeft:4}}>Feedback</span>
-      </button>
-      {/* Panel */}
-      {open&&(
-        <div className="fb-panel">
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <span style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>Send Feedback</span>
-            <button onClick={()=>setOpen(false)} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:"var(--tx3)"}}><Icon name="x" size={14}/></button>
-          </div>
-          {done?(
-            <div style={{fontSize:12,color:"var(--grn2)",fontWeight:600,padding:"12px 0",textAlign:"center"}}>Thanks! We'll review this shortly.</div>
-          ):(
-            <>
-              <textarea value={text} onChange={e=>setText(e.target.value)}
-                placeholder="What's on your mind? Bug reports, feature ideas, or general thoughts..."
-                rows={4}
-                style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",fontSize:12,fontFamily:"Inter,sans-serif",
-                  border:"1px solid var(--br2)",borderRadius:8,background:"var(--bg)",color:"var(--tx)",
-                  resize:"vertical",outline:"none",marginBottom:8}}
-                onFocus={e=>e.currentTarget.style.borderColor="var(--acc)"}
-                onBlur={e=>e.currentTarget.style.borderColor="var(--br2)"}/>
-              <button onClick={handleSubmit}
-                disabled={sending||!text.trim()}
-                style={{width:"100%",padding:"8px",fontSize:12,fontWeight:700,color:"#fff",
-                  background:sending||!text.trim()?"var(--tx4)":"var(--acc)",
-                  border:"none",borderRadius:8,cursor:sending?"wait":"pointer",transition:"background .2s"}}>
-                {sending?"Sending...":"Submit"}
-              </button>
-            </>
-          )}
-        </div>
-      )}
-    </>
-  );
-}
-
 /* ── APP ROOT ─────────────────────────────────────────────────────────────── */
 // App is the root component that holds all app-wide state and renders everything.
 // It manages: the user's card wallet, checked-off benefits, check dates, active tab,
@@ -6637,7 +6512,6 @@ function App(){
           &copy; 2025&ndash;2026 FeeWorth. All rights reserved.
         </div>
       </div>
-      <FeedbackButton/>
     </div>
   );
 }
