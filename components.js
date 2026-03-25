@@ -129,6 +129,9 @@ const ICON_PATHS={
 "users":<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
 "arrow-down":<><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></>,
 "key":<><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></>,
+"thumbs-up":<><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></>,
+"thumbs-down":<><path d="M10 15V19a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></>,
+"message-circle":<><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></>,
 };
 
 // Draws an SVG icon by name. Used throughout the app for buttons, navigation, and labels.
@@ -1489,6 +1492,8 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   const [quizStep,setQuizStep]=useState(0);
   const [quizAnswers,setQuizAnswers]=useState({});
   const [quizResult,setQuizResult]=useState(null);
+  const [verdictVote,setVerdictVote]=useState(null);
+  const [verdictVoteSent,setVerdictVoteSent]=useState(false);
 
   const card=useMemo(()=>CARDS.find(c=>c.id===selectedId),[selectedId]);
 
@@ -1499,6 +1504,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
     setShowDowngrades(false);setShowReplacement(false);setShowBenefits(true);setOpenBen(null);
     setExpandedHiddenPerk(null);setExpandedSynergy(null);
     setShowQuiz(false);setQuizStep(0);setQuizAnswers({});setQuizResult(null);
+    setVerdictVote(null);setVerdictVoteSent(false);
   },[selectedKey]);
 
   // Benefits for this card
@@ -3411,6 +3417,30 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
                             cursor:"pointer",fontSize:12,fontWeight:700,color:"#fff",fontFamily:"'Inter',sans-serif"}}>
                           View Retention Offers
                         </button>
+                      )}
+                    </div>
+                    {/* ── QUIZ VERDICT FEEDBACK (thumbs up/down) ── */}
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginTop:16,paddingTop:14,borderTop:"1px solid rgba(0,0,0,.08)"}}>
+                      <span style={{fontSize:13,color:"var(--tx2)",fontWeight:600}}>{verdictVoteSent?"Thanks for the feedback!":"Was this recommendation helpful?"}</span>
+                      {!verdictVoteSent&&(
+                        <>
+                          <button onClick={async()=>{
+                            setVerdictVote("up");setVerdictVoteSent(true);
+                            try{await emailjs.send("service_jq89dig","template_ojxqunw",{message:`[QUIZ FEEDBACK] Card: ${card.name} | Result: ${quizResult.recLabel} | Vote: thumbs UP`,from_page:window.location.href},"sbpCDiM6phLK4xj_y");}catch(e){console.warn("Vote send failed",e);}
+                          }} style={{background:verdictVote==="up"?"rgba(22,163,74,.12)":"transparent",border:"1.5px solid",borderColor:verdictVote==="up"?"var(--grn2)":"var(--br2)",borderRadius:10,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .2s"}}
+                            onMouseEnter={e=>{if(!verdictVoteSent)e.currentTarget.style.borderColor="var(--grn2)";}}
+                            onMouseLeave={e=>{if(!verdictVoteSent&&verdictVote!=="up")e.currentTarget.style.borderColor="var(--br2)";}}>
+                            <Icon name="thumbs-up" size={16} color={verdictVote==="up"?"var(--grn2)":"var(--tx3)"}/>
+                          </button>
+                          <button onClick={async()=>{
+                            setVerdictVote("down");setVerdictVoteSent(true);
+                            try{await emailjs.send("service_jq89dig","template_ojxqunw",{message:`[QUIZ FEEDBACK] Card: ${card.name} | Result: ${quizResult.recLabel} | Vote: thumbs DOWN`,from_page:window.location.href},"sbpCDiM6phLK4xj_y");}catch(e){console.warn("Vote send failed",e);}
+                          }} style={{background:verdictVote==="down"?"rgba(220,38,38,.1)":"transparent",border:"1.5px solid",borderColor:verdictVote==="down"?"#dc2626":"var(--br2)",borderRadius:10,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .2s"}}
+                            onMouseEnter={e=>{if(!verdictVoteSent)e.currentTarget.style.borderColor="#dc2626";}}
+                            onMouseLeave={e=>{if(!verdictVoteSent&&verdictVote!=="down")e.currentTarget.style.borderColor="var(--br2)";}}>
+                            <Icon name="thumbs-down" size={16} color={verdictVote==="down"?"#dc2626":"var(--tx3)"}/>
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -5719,9 +5749,17 @@ function WalletTab({myCards,setMyCards,anniversaryDates,setAnniversaryDates}){
   const [showAdd,setShowAdd]=useState(false);
   const [issuerFilter,setIssuerFilter]=useState("All");
   const [detailId,setDetailId]=useState(null);
+  const [cardSearch,setCardSearch]=useState("");
   const myCardObjs=useMemo(()=>myCards.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean),[myCards]);
   const issuers=["All",...[...new Set(CARDS.map(c=>c.issuer))].sort()];
-  const filtered=issuerFilter==="All"?CARDS:CARDS.filter(c=>c.issuer===issuerFilter);
+  const filtered=useMemo(()=>{
+    let list=issuerFilter==="All"?CARDS:CARDS.filter(c=>c.issuer===issuerFilter);
+    if(cardSearch.trim()){
+      const q=cardSearch.trim().toLowerCase();
+      list=list.filter(c=>c.name.toLowerCase().includes(q)||c.short.toLowerCase().includes(q)||c.issuer.toLowerCase().includes(q));
+    }
+    return list;
+  },[issuerFilter,cardSearch]);
 
   function toggleCard(id){setMyCards(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);}
 
@@ -5884,6 +5922,18 @@ function WalletTab({myCards,setMyCards,anniversaryDates,setAnniversaryDates}){
             <button key={iss} className={"pill "+(issuerFilter===iss?"pill-a":"pill-i")} onClick={()=>setIssuerFilter(iss)}>{iss}</button>
           ))}
         </div>
+        <div style={{position:"relative",marginBottom:14}}>
+          <Icon name="search" size={14} color="var(--tx3)" style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}/>
+          <input type="text" value={cardSearch} onChange={e=>setCardSearch(e.target.value)}
+            placeholder="Search cards..."
+            style={{width:"100%",boxSizing:"border-box",padding:"10px 12px 10px 34px",fontSize:13,fontFamily:"Inter,sans-serif",
+              border:"1px solid var(--br2)",borderRadius:10,background:"var(--bg)",color:"var(--tx)",
+              outline:"none",transition:"border-color .2s"}}
+            onFocus={e=>e.currentTarget.style.borderColor="var(--acc)"}
+            onBlur={e=>e.currentTarget.style.borderColor="var(--br2)"}/>
+          {cardSearch&&<button onClick={()=>setCardSearch("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:2,display:"flex",alignItems:"center"}}><Icon name="x" size={14} color="var(--tx3)"/></button>}
+        </div>
+        {filtered.length===0&&<div style={{textAlign:"center",padding:"24px 16px",color:"var(--tx3)",fontSize:13}}>No cards match "{cardSearch}"</div>}
         <div className="card-browser-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,paddingBottom:16}}>
           {filtered.map(card=>{
             const inWallet=myCards.includes(card.id);
@@ -6449,6 +6499,52 @@ function App(){
       {stratModal&&<StratModal stratId={stratModal} myCards={myCards} onClose={()=>setStratModal(null)}/>}
       <NewsletterPopup user={user}/>
       <NewsletterSubscribe/>
+      {/* ── FLOATING FEEDBACK BUTTON ── */}
+      <div style={{position:"fixed",bottom:20,right:20,zIndex:9999}}>
+        {feedbackOpen&&!feedbackSent&&(
+          <div style={{position:"absolute",bottom:56,right:0,width:280,background:"var(--bg)",border:"1px solid var(--br2)",
+            borderRadius:14,boxShadow:"0 8px 32px rgba(0,0,0,.15)",padding:14,animation:"fadeIn .2s ease"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <span style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>Send Feedback</span>
+              <button onClick={()=>setFeedbackOpen(false)} style={{background:"none",border:"none",cursor:"pointer",padding:2}}><Icon name="x" size={14} color="var(--tx3)"/></button>
+            </div>
+            <textarea value={feedbackText} onChange={e=>setFeedbackText(e.target.value)}
+              placeholder="What could be better? See outdated info?"
+              rows={3}
+              style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",fontSize:12,fontFamily:"Inter,sans-serif",
+                border:"1px solid var(--br2)",borderRadius:8,background:"var(--s3)",color:"var(--tx)",
+                resize:"vertical",outline:"none",marginBottom:8}}
+              onFocus={e=>e.currentTarget.style.borderColor="var(--acc)"}
+              onBlur={e=>e.currentTarget.style.borderColor="var(--br2)"}/>
+            <button onClick={async()=>{
+              if(!feedbackText.trim())return;
+              setFeedbackSending(true);
+              try{
+                await emailjs.send("service_jq89dig","template_ojxqunw",{message:feedbackText,from_page:window.location.href},"sbpCDiM6phLK4xj_y");
+                setFeedbackSent(true);setFeedbackText("");setFeedbackOpen(false);
+                setTimeout(()=>setFeedbackSent(false),4000);
+              }catch(err){console.error("Feedback send failed:",err);alert("Failed to send. Please try again.");}
+              setFeedbackSending(false);
+            }}
+              disabled={feedbackSending||!feedbackText.trim()}
+              style={{width:"100%",padding:"8px 0",fontSize:12,fontWeight:700,color:"#fff",
+                background:feedbackSending||!feedbackText.trim()?"var(--tx4)":"var(--acc)",
+                border:"none",borderRadius:99,cursor:feedbackSending?"wait":"pointer",transition:"background .2s"}}>
+              {feedbackSending?"Sending...":"Submit Feedback"}
+            </button>
+          </div>
+        )}
+        <button onClick={()=>{if(!feedbackSent)setFeedbackOpen(!feedbackOpen);}}
+          style={{width:48,height:48,borderRadius:"50%",background:feedbackSent?"var(--grn2)":"var(--acc)",
+            border:"none",boxShadow:"0 4px 16px rgba(0,0,0,.2)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
+            transition:"transform .2s, background .2s"}}
+          onMouseEnter={e=>e.currentTarget.style.transform="scale(1.1)"}
+          onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>
+          {feedbackSent?<Icon name="check" size={20} color="#fff"/>
+            :feedbackOpen?<Icon name="x" size={20} color="#fff"/>
+            :<Icon name="message-circle" size={20} color="#fff"/>}
+        </button>
+      </div>
       <div style={{padding:"32px 24px 28px",background:"var(--s3)",marginTop:24}}>
         <div style={{display:"flex",flexWrap:"wrap",justifyContent:"space-between",gap:"6px 16px",marginBottom:10,maxWidth:1000,margin:"0 auto 10px"}}>
           <span style={{fontSize:11,color:feedbackSent?"var(--grn2)":"var(--tx3)",textDecoration:"none",cursor:"pointer",transition:"color .2s"}}
