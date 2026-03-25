@@ -82,6 +82,16 @@ function useAuthSync(){
     return()=>window.removeEventListener('cs-firebase-ready',h);
   },[]);
 
+  // ── Handle redirect result (if user was sent to Google sign-in via redirect) ──
+  useEffect(()=>{
+    if(!fbReady) return;
+    const fb=window.CS_FB;
+    if(!fb||!fb.getRedirectResult) return;
+    fb.getRedirectResult(fb.auth).catch(e=>{
+      if(e.code!=='auth/popup-closed-by-user') console.warn('Redirect result:',e.code);
+    });
+  },[fbReady]);
+
   // ── Auth listener + cloud data load ────────────────────────────────
   useEffect(()=>{
     if(!fbReady) return;

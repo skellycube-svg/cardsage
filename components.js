@@ -6027,12 +6027,25 @@ function AuthModal({onClose}){
   const signInGoogle=async()=>{
     setLoading(true);setError('');
     try{
+      // Try popup first — faster UX when it works
       const result=await fb.signInWithPopup(fb.auth,new fb.GoogleAuthProvider());
       if(nlChecked&&isNew) await subscribeNewsletter(result.user);
       onClose();
     }catch(e){
       console.error('Google auth error:',e.code,e.message);
-      if(e.code!=='auth/popup-closed-by-user') setError('Google sign-in failed: '+(e.code||e.message||'Unknown error')+'. Try again.');
+      // If popup was blocked or failed (common with third-party cookie restrictions),
+      // fall back to redirect flow which is more reliable
+      if(e.code==='auth/popup-blocked'||e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request'){
+        try{
+          await fb.signInWithRedirect(fb.auth,new fb.GoogleAuthProvider());
+          return; // Page will navigate away — no cleanup needed
+        }catch(e2){
+          console.error('Redirect auth error:',e2.code,e2.message);
+          setError('Sign-in failed. Please try again.');
+        }
+      }else{
+        setError('Google sign-in failed: '+(e.code||e.message||'Unknown error')+'. Try again.');
+      }
     }
     setLoading(false);
   };
