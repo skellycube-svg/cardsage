@@ -60,12 +60,26 @@ const CDN_ORIGINS = [
 // ── INSTALL: Download and cache all app files ────────────────────────────
 // This runs once when a new version of the service worker is detected.
 // It downloads every file in LOCAL_ASSETS and stores them in the cache.
+// NOTE: We intentionally do NOT call skipWaiting() here. This prevents
+// the new service worker from taking over mid-session, which can cause
+// reloads that interrupt Firestore data loading and corrupt user data.
+// Instead, the new SW activates naturally on the user's next visit.
+// sw-register.js handles prompting the user to refresh when an update
+// is ready, and sends a SKIP_WAITING message when the user is ready.
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
       .then(cache => cache.addAll(LOCAL_ASSETS))
-      .then(() => self.skipWaiting())
   );
+});
+
+// Listen for SKIP_WAITING message from sw-register.js
+// This is sent only when the page detects a waiting worker and the user
+// has finished auth, making it safe to transition.
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // ── ACTIVATE: Clean up old caches and take control ──────────────────────
