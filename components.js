@@ -1870,30 +1870,6 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
           </>
         )}
         <p style={{fontSize:12,color:"var(--tx2)",margin:0,lineHeight:1.5}}>{vc.desc}</p>
-        {/* ── VERDICT FEEDBACK (thumbs up/down) ── */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6,marginTop:12,paddingTop:10,borderTop:"1px solid rgba(0,0,0,.06)"}}>
-          <span style={{fontSize:11,color:"var(--tx3)",marginRight:4}}>{verdictVoteSent?"Thanks for the feedback!":"Was this helpful?"}</span>
-          {!verdictVoteSent&&(
-            <>
-              <button onClick={async()=>{
-                setVerdictVote("up");setVerdictVoteSent(true);
-                try{await emailjs.send("service_jq89dig","template_ojxqunw",{message:`[VERDICT FEEDBACK] Card: ${card.name} | Verdict: ${vc.label} | Vote: thumbs UP`,from_page:window.location.href},"sbpCDiM6phLK4xj_y");}catch(e){console.warn("Vote send failed",e);}
-              }} style={{background:verdictVote==="up"?"rgba(22,163,74,.1)":"transparent",border:"1px solid",borderColor:verdictVote==="up"?"var(--grn2)":"var(--br2)",borderRadius:8,padding:"4px 8px",cursor:"pointer",display:"flex",alignItems:"center",gap:4,transition:"all .2s"}}
-                onMouseEnter={e=>{if(!verdictVoteSent)e.currentTarget.style.borderColor="var(--grn2)";}}
-                onMouseLeave={e=>{if(!verdictVoteSent&&verdictVote!=="up")e.currentTarget.style.borderColor="var(--br2)";}}>
-                <Icon name="thumbs-up" size={13} color={verdictVote==="up"?"var(--grn2)":"var(--tx3)"}/>
-              </button>
-              <button onClick={async()=>{
-                setVerdictVote("down");setVerdictVoteSent(true);
-                try{await emailjs.send("service_jq89dig","template_ojxqunw",{message:`[VERDICT FEEDBACK] Card: ${card.name} | Verdict: ${vc.label} | Vote: thumbs DOWN`,from_page:window.location.href},"sbpCDiM6phLK4xj_y");}catch(e){console.warn("Vote send failed",e);}
-              }} style={{background:verdictVote==="down"?"rgba(220,38,38,.08)":"transparent",border:"1px solid",borderColor:verdictVote==="down"?"#dc2626":"var(--br2)",borderRadius:8,padding:"4px 8px",cursor:"pointer",display:"flex",alignItems:"center",gap:4,transition:"all .2s"}}
-                onMouseEnter={e=>{if(!verdictVoteSent)e.currentTarget.style.borderColor="#dc2626";}}
-                onMouseLeave={e=>{if(!verdictVoteSent&&verdictVote!=="down")e.currentTarget.style.borderColor="var(--br2)";}}>
-                <Icon name="thumbs-down" size={13} color={verdictVote==="down"?"#dc2626":"var(--tx3)"}/>
-              </button>
-            </>
-          )}
-        </div>
       </div>
 
       {/* ── TRANSFER PARTNER VALUE NOTE ── */}
@@ -3441,6 +3417,30 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
                             cursor:"pointer",fontSize:12,fontWeight:700,color:"#fff",fontFamily:"'Inter',sans-serif"}}>
                           View Retention Offers
                         </button>
+                      )}
+                    </div>
+                    {/* ── QUIZ VERDICT FEEDBACK (thumbs up/down) ── */}
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginTop:16,paddingTop:14,borderTop:"1px solid rgba(0,0,0,.08)"}}>
+                      <span style={{fontSize:13,color:"var(--tx2)",fontWeight:600}}>{verdictVoteSent?"Thanks for the feedback!":"Was this recommendation helpful?"}</span>
+                      {!verdictVoteSent&&(
+                        <>
+                          <button onClick={async()=>{
+                            setVerdictVote("up");setVerdictVoteSent(true);
+                            try{await emailjs.send("service_jq89dig","template_ojxqunw",{message:`[QUIZ FEEDBACK] Card: ${card.name} | Result: ${quizResult.recLabel} | Vote: thumbs UP`,from_page:window.location.href},"sbpCDiM6phLK4xj_y");}catch(e){console.warn("Vote send failed",e);}
+                          }} style={{background:verdictVote==="up"?"rgba(22,163,74,.12)":"transparent",border:"1.5px solid",borderColor:verdictVote==="up"?"var(--grn2)":"var(--br2)",borderRadius:10,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .2s"}}
+                            onMouseEnter={e=>{if(!verdictVoteSent)e.currentTarget.style.borderColor="var(--grn2)";}}
+                            onMouseLeave={e=>{if(!verdictVoteSent&&verdictVote!=="up")e.currentTarget.style.borderColor="var(--br2)";}}>
+                            <Icon name="thumbs-up" size={16} color={verdictVote==="up"?"var(--grn2)":"var(--tx3)"}/>
+                          </button>
+                          <button onClick={async()=>{
+                            setVerdictVote("down");setVerdictVoteSent(true);
+                            try{await emailjs.send("service_jq89dig","template_ojxqunw",{message:`[QUIZ FEEDBACK] Card: ${card.name} | Result: ${quizResult.recLabel} | Vote: thumbs DOWN`,from_page:window.location.href},"sbpCDiM6phLK4xj_y");}catch(e){console.warn("Vote send failed",e);}
+                          }} style={{background:verdictVote==="down"?"rgba(220,38,38,.1)":"transparent",border:"1.5px solid",borderColor:verdictVote==="down"?"#dc2626":"var(--br2)",borderRadius:10,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .2s"}}
+                            onMouseEnter={e=>{if(!verdictVoteSent)e.currentTarget.style.borderColor="#dc2626";}}
+                            onMouseLeave={e=>{if(!verdictVoteSent&&verdictVote!=="down")e.currentTarget.style.borderColor="var(--br2)";}}>
+                            <Icon name="thumbs-down" size={16} color={verdictVote==="down"?"#dc2626":"var(--tx3)"}/>
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
