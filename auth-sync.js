@@ -138,7 +138,15 @@ function useAuthSync(){
         if(snap.exists()){
           const cloud=snap.data();
           dirtyRef.current=false; // Cancel any pending dirty flag
-          setMyCards(cloud.cs_cards||[]);
+          // Safety: don't overwrite local cards with empty cloud data
+          // (protects against corrupted Firestore docs)
+          const localCards=JSON.parse(localStorage.getItem(CS_CONFIG.LS_KEYS.cards)||'[]');
+          if((cloud.cs_cards||[]).length===0&&localCards.length>0){
+            // Local has cards but cloud is empty — keep local and push to cloud
+            dirtyRef.current=true;
+          }else{
+            setMyCards(cloud.cs_cards||[]);
+          }
           setCheckedArr(cloud.cs_checked||[]);
           if(cloud.cs_skipped) setSkippedArr(cloud.cs_skipped);
           if(cloud.cs_p2_cards) setP2Cards(cloud.cs_p2_cards);
