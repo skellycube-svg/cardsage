@@ -3481,7 +3481,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
 /* ── HOUSEHOLD TAB ────────────────────────────────────────────────────────── */
 // Couples/household optimizer — lets user manage P1 + P2 wallets,
 // detect redundant benefits, suggest optimizations, and show coverage map.
-function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetup,setHouseholdSetup,checkedSet,user,onAuthClick,setTab,firstYearCards=[]}){
+function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetup,setHouseholdSetup,checkedSet,user,onAuthClick,setTab,firstYearCards=[],anniversaryDates={},setAnniversaryDates}){
   const [addingP2,setAddingP2]=useState(false);
   const [p2Search,setP2Search]=useState("");
 
@@ -3947,15 +3947,44 @@ function HouseholdTab({myCards,p2Cards,setP2Cards,p2Name,setP2Name,householdSetu
       ):cards.map(card=>{
         const stat=cardStat(card);
         const palette=getIssuerPalette(card.issuer);
+        const renewDays=card.fee>0?getRenewalDays(card.id,anniversaryDates):null;
         return (
-          <div key={card.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,
+          <div key={card.id} style={{padding:"8px 10px",borderRadius:10,
             background:palette.tint,border:`1px solid ${palette.text}10`,marginBottom:6}}>
-            <div style={{width:34,height:20,borderRadius:4,background:`linear-gradient(135deg,${card.c1},${card.c2})`,flexShrink:0,boxShadow:"0 1px 3px rgba(0,0,0,.1)"}}/>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:12,fontWeight:600,color:"var(--tx)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{card.short||card.name}</div>
-              <div style={{fontSize:10,color:"var(--tx3)"}}>{card.fee===0?"Free":"$"+card.fee+"/yr"} · ${stat.totalVal.toLocaleString()} credits</div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:34,height:20,borderRadius:4,background:`linear-gradient(135deg,${card.c1},${card.c2})`,flexShrink:0,boxShadow:"0 1px 3px rgba(0,0,0,.1)"}}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:12,fontWeight:600,color:"var(--tx)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{card.short||card.name}</div>
+                <div style={{fontSize:10,color:"var(--tx3)"}}>{card.fee===0?"Free":"$"+card.fee+"/yr"} · ${stat.totalVal.toLocaleString()} credits</div>
+              </div>
+              {verdictBadge(stat.verdict)}
             </div>
-            {verdictBadge(stat.verdict)}
+            {card.fee>0&&setAnniversaryDates&&(
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,paddingTop:6,borderTop:"1px solid rgba(0,0,0,.04)"}}>
+                <Icon name="calendar" size={11} color="var(--tx3)"/>
+                <div style={{flex:1,fontSize:10,color:"var(--tx3)"}}>
+                  {renewDays!=null
+                    ?<span style={{fontWeight:600,color:renewDays<=60?"var(--red2)":renewDays<=120?"var(--acc)":"var(--tx2)"}}>Renews in {renewDays}d</span>
+                    :"Renewal month"}
+                </div>
+                <select
+                  value={anniversaryDates[card.id]||""}
+                  onChange={e=>{
+                    const v=e.target.value;
+                    setAnniversaryDates(prev=>{
+                      const next={...prev};
+                      if(v) next[card.id]=parseInt(v);
+                      else delete next[card.id];
+                      return next;
+                    });
+                  }}
+                  style={{padding:"3px 6px",borderRadius:6,border:"1px solid var(--br2)",background:"var(--bg)",
+                    fontSize:10,fontWeight:600,color:"var(--tx)",cursor:"pointer",minWidth:56}}>
+                  <option value="">Set</option>
+                  {MONTH_NAMES.map((m,i)=><option key={i} value={i+1}>{m}</option>)}
+                </select>
+              </div>
+            )}
           </div>
         );
       })}
@@ -6514,7 +6543,7 @@ function App(){
           <>
             {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={dirtySetMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} onAuthClick={()=>setAuthModal(true)} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>}
             {tab==="benefits"&&<RenewalAdvisorTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits} anniversaryDates={anniversaryDates} setAnniversaryDates={dirtySetAnniversaryDates} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards} setFirstYearCards={dirtySetFirstYearCards}/>}
-            {tab==="household"&&<HouseholdTab myCards={myCards} p2Cards={p2Cards} setP2Cards={dirtySetP2Cards} p2Name={p2Name} setP2Name={dirtySetP2Name} householdSetup={householdSetup} setHouseholdSetup={dirtySetHouseholdSetup} checkedSet={checkedSet} user={user} onAuthClick={()=>setAuthModal(true)} setTab={setTab} firstYearCards={firstYearCards}/>}
+            {tab==="household"&&<HouseholdTab myCards={myCards} p2Cards={p2Cards} setP2Cards={dirtySetP2Cards} p2Name={p2Name} setP2Name={dirtySetP2Name} householdSetup={householdSetup} setHouseholdSetup={dirtySetHouseholdSetup} checkedSet={checkedSet} user={user} onAuthClick={()=>setAuthModal(true)} setTab={setTab} firstYearCards={firstYearCards} anniversaryDates={anniversaryDates} setAnniversaryDates={dirtySetAnniversaryDates}/>}
 
             {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={dirtySetMyCards} anniversaryDates={anniversaryDates} setAnniversaryDates={dirtySetAnniversaryDates}/>}
           </>
