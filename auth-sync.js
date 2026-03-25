@@ -149,7 +149,13 @@ function useAuthSync(){
           }
           setCheckedArr(cloud.cs_checked||[]);
           if(cloud.cs_skipped) setSkippedArr(cloud.cs_skipped);
-          if(cloud.cs_p2_cards) setP2Cards(cloud.cs_p2_cards);
+          // Safety: same guard for partner cards — don't overwrite local with empty cloud
+          const localP2=JSON.parse(localStorage.getItem(CS_CONFIG.LS_KEYS.p2Cards)||'[]');
+          if((cloud.cs_p2_cards||[]).length===0&&localP2.length>0){
+            dirtyRef.current=true;
+          }else if(cloud.cs_p2_cards){
+            setP2Cards(cloud.cs_p2_cards);
+          }
           if(cloud.cs_p2_name!=null) setP2Name(cloud.cs_p2_name);
           if(cloud.cs_household_setup!=null) setHouseholdSetup(cloud.cs_household_setup);
           if(cloud.cs_anniversary_dates) setAnniversaryDates(cloud.cs_anniversary_dates);
