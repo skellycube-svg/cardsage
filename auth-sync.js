@@ -56,6 +56,7 @@ function useAuthSync(){
   const dirtyRef=useRef(false);        // true = user changed data, needs Firestore write
   const mountedRef=useRef(false);      // true after cloud data has been loaded
   const cloudLoadedRef=useRef(false);  // true after first getDoc THIS page load
+  const cloudCardsRef=useRef(null);    // snapshot of cs_cards from last Firestore load (safety net)
 
   // ── Derived ────────────────────────────────────────────────────────
   const checkedSet=useMemo(()=>new Set(checkedArr),[checkedArr]);
@@ -138,6 +139,7 @@ function useAuthSync(){
         if(snap.exists()){
           const cloud=snap.data();
           dirtyRef.current=false; // Cancel any pending dirty flag
+          cloudCardsRef.current=cloud.cs_cards||[];
           setMyCards(cloud.cs_cards||[]);
           setCheckedArr(cloud.cs_checked||[]);
           if(cloud.cs_skipped) setSkippedArr(cloud.cs_skipped);
@@ -158,17 +160,16 @@ function useAuthSync(){
         window._csAuthDone=true;
       }
 
-      // Link newsletter subscription to this account
-      try{
-        if(fb.query&&fb.collection){
-          const nlQ=fb.query(fb.collection(fb.db,'newsletter_subscribers'),fb.where('email','==',u.email));
-          const nlSnap=await fb.getDocs(nlQ);
-          if(!nlSnap.empty){
-            const nlDoc=nlSnap.docs[0];
-            if(!nlDoc.data().uid) await fb.setDoc(nlDoc.ref,{uid:u.uid},{merge:true});
-          }
-        }
-      }catch(e){console.warn('Newsletter link failed:',e.message);}
+      // Link newsletter subscription to this account (fire-and-forget, non-blocking)
+      if(fb.query&&fb.collection){
+        fb.getDocs(fb.query(fb.collection(fb.db,'newsletter_subscribers'),fb.where('email','==',u.email)))
+          .then(nlSnap=>{
+            if(!nlSnap.empty){
+              const nlDoc=nlSnap.docs[0];
+              if(!nlDoc.data().uid) fb.setDoc(nlDoc.ref,{uid:u.uid},{merge:true}).catch(()=>{});
+            }
+          }).catch(e=>console.warn('Newsletter link failed:',e.message));
+      }
     });
 
     return unsub;
@@ -180,10 +181,25 @@ function useAuthSync(){
   // won't cause a second write with stale data.
   useEffect(()=>{
     if(!dirtyRef.current) return;
+    // Safety: don't write until cloud data has been loaded at least once.
+    // This prevents race conditions where empty localStorage data overwrites
+    // real Firestore data before the initial load completes.
+    if(!cloudLoadedRef.current) return;
+    // Safety: never overwrite a non-empty cs_cards with an empty array.
+    // If the user truly wants to remove all cards, they remove them one by
+    // one (array goes from N→0), which is fine. But a sudden jump from
+    // cloud having cards to local being empty signals a bug, not intent.
+    if(myCards.length===0&&cloudCardsRef.current&&cloudCardsRef.current.length>0){
+      console.warn('Blocked Firestore write: cs_cards would go from',cloudCardsRef.current.length,'to 0');
+      dirtyRef.current=false;
+      return;
+    }
     dirtyRef.current=false;
     const fb=window.CS_FB;
     const u=userRef.current;
     if(!fb||!u) return;
+    // Update cloud snapshot so future guards use latest state
+    cloudCardsRef.current=myCards;
     fb.setDoc(fb.doc(fb.db,'users',u.uid),
       {cs_cards:myCards,cs_checked:checkedArr,cs_skipped:skippedArr,
        cs_p2_cards:p2Cards,cs_p2_name:p2Name,cs_household_setup:householdSetup,
