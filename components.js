@@ -1494,6 +1494,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
   const [quizResult,setQuizResult]=useState(null);
   const [verdictVote,setVerdictVote]=useState(null);
   const [verdictVoteSent,setVerdictVoteSent]=useState(false);
+  const [verdictFeedback,setVerdictFeedback]=useState("");
 
   const card=useMemo(()=>CARDS.find(c=>c.id===selectedId),[selectedId]);
 
@@ -1504,7 +1505,7 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
     setShowDowngrades(false);setShowReplacement(false);setShowBenefits(true);setOpenBen(null);
     setExpandedHiddenPerk(null);setExpandedSynergy(null);
     setShowQuiz(false);setQuizStep(0);setQuizAnswers({});setQuizResult(null);
-    setVerdictVote(null);setVerdictVoteSent(false);
+    setVerdictVote(null);setVerdictVoteSent(false);setVerdictFeedback("");
   },[selectedKey]);
 
   // Benefits for this card
@@ -3420,27 +3421,50 @@ function RenewalAdvisorTab({myCards,checkedSet,setCheckedBenefits,checkDates,set
                       )}
                     </div>
                     {/* ── QUIZ VERDICT FEEDBACK (thumbs up/down) ── */}
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginTop:16,paddingTop:14,borderTop:"1px solid rgba(0,0,0,.08)"}}>
-                      <span style={{fontSize:13,color:"var(--tx2)",fontWeight:600}}>{verdictVoteSent?"Thanks for the feedback!":"Was this recommendation helpful?"}</span>
-                      {!verdictVoteSent&&(
-                        <>
-                          <button onClick={async()=>{
-                            setVerdictVote("up");setVerdictVoteSent(true);
-                            try{await emailjs.send("service_jq89dig","template_ojxqunw",{message:`[QUIZ FEEDBACK] Card: ${card.name} | Result: ${quizResult.recLabel} | Vote: thumbs UP`,from_page:window.location.href},"sbpCDiM6phLK4xj_y");}catch(e){console.warn("Vote send failed",e);}
-                          }} style={{background:verdictVote==="up"?"rgba(22,163,74,.12)":"transparent",border:"1.5px solid",borderColor:verdictVote==="up"?"var(--grn2)":"var(--br2)",borderRadius:10,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .2s"}}
-                            onMouseEnter={e=>{if(!verdictVoteSent)e.currentTarget.style.borderColor="var(--grn2)";}}
-                            onMouseLeave={e=>{if(!verdictVoteSent&&verdictVote!=="up")e.currentTarget.style.borderColor="var(--br2)";}}>
-                            <Icon name="thumbs-up" size={16} color={verdictVote==="up"?"var(--grn2)":"var(--tx3)"}/>
-                          </button>
-                          <button onClick={async()=>{
-                            setVerdictVote("down");setVerdictVoteSent(true);
-                            try{await emailjs.send("service_jq89dig","template_ojxqunw",{message:`[QUIZ FEEDBACK] Card: ${card.name} | Result: ${quizResult.recLabel} | Vote: thumbs DOWN`,from_page:window.location.href},"sbpCDiM6phLK4xj_y");}catch(e){console.warn("Vote send failed",e);}
-                          }} style={{background:verdictVote==="down"?"rgba(220,38,38,.1)":"transparent",border:"1.5px solid",borderColor:verdictVote==="down"?"#dc2626":"var(--br2)",borderRadius:10,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .2s"}}
-                            onMouseEnter={e=>{if(!verdictVoteSent)e.currentTarget.style.borderColor="#dc2626";}}
-                            onMouseLeave={e=>{if(!verdictVoteSent&&verdictVote!=="down")e.currentTarget.style.borderColor="var(--br2)";}}>
-                            <Icon name="thumbs-down" size={16} color={verdictVote==="down"?"#dc2626":"var(--tx3)"}/>
-                          </button>
-                        </>
+                    <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid rgba(0,0,0,.08)"}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                        <span style={{fontSize:13,color:"var(--tx2)",fontWeight:600}}>{verdictVoteSent?"Thanks for the feedback!":verdictVote==="down"?"What could be better?":"Was this recommendation helpful?"}</span>
+                        {!verdictVote&&(
+                          <>
+                            <button onClick={async()=>{
+                              setVerdictVote("up");setVerdictVoteSent(true);
+                              try{await emailjs.send("service_jq89dig","template_ojxqunw",{message:`[QUIZ FEEDBACK] Card: ${card.name} | Result: ${quizResult.recLabel} | Vote: thumbs UP`,from_page:window.location.href},"sbpCDiM6phLK4xj_y");}catch(e){console.warn("Vote send failed",e);}
+                            }} style={{background:"transparent",border:"1.5px solid var(--br2)",borderRadius:10,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .2s"}}
+                              onMouseEnter={e=>e.currentTarget.style.borderColor="var(--grn2)"}
+                              onMouseLeave={e=>e.currentTarget.style.borderColor="var(--br2)"}>
+                              <Icon name="thumbs-up" size={16} color="var(--tx3)"/>
+                            </button>
+                            <button onClick={()=>setVerdictVote("down")}
+                              style={{background:"transparent",border:"1.5px solid var(--br2)",borderRadius:10,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .2s"}}
+                              onMouseEnter={e=>e.currentTarget.style.borderColor="#dc2626"}
+                              onMouseLeave={e=>e.currentTarget.style.borderColor="var(--br2)"}>
+                              <Icon name="thumbs-down" size={16} color="var(--tx3)"/>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      {verdictVote==="down"&&!verdictVoteSent&&(
+                        <div style={{marginTop:10}}>
+                          <textarea value={verdictFeedback} onChange={e=>setVerdictFeedback(e.target.value)}
+                            placeholder="Tell us what was off — wrong recommendation, missing info, confusing?"
+                            rows={3}
+                            style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",fontSize:12,fontFamily:"Inter,sans-serif",
+                              border:"1px solid var(--br2)",borderRadius:8,background:"var(--bg)",color:"var(--tx)",
+                              resize:"vertical",outline:"none",marginBottom:8}}
+                            onFocus={e=>e.currentTarget.style.borderColor="var(--acc)"}
+                            onBlur={e=>e.currentTarget.style.borderColor="var(--br2)"}/>
+                          <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                            <button onClick={()=>{setVerdictVote(null);setVerdictFeedback("");}}
+                              style={{padding:"6px 14px",fontSize:11,fontWeight:600,color:"var(--tx3)",background:"transparent",
+                                border:"1px solid var(--br2)",borderRadius:99,cursor:"pointer"}}>Cancel</button>
+                            <button onClick={async()=>{
+                              setVerdictVoteSent(true);
+                              try{await emailjs.send("service_jq89dig","template_ojxqunw",{message:`[QUIZ FEEDBACK] Card: ${card.name} | Result: ${quizResult.recLabel} | Vote: thumbs DOWN\n\nFeedback: ${verdictFeedback||"(no details)"}`,from_page:window.location.href},"sbpCDiM6phLK4xj_y");}catch(e){console.warn("Vote send failed",e);}
+                            }}
+                              style={{padding:"6px 14px",fontSize:11,fontWeight:700,color:"#fff",background:"var(--acc)",
+                                border:"none",borderRadius:99,cursor:"pointer",transition:"background .2s"}}>Submit</button>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
