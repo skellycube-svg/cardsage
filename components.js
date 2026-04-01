@@ -6509,6 +6509,16 @@ function App(){
 
   useEffect(()=>{window.scrollTo({top:0,behavior:"smooth"});},[tab]);
 
+  // ── Landing page for unauthenticated visitors ──────────────────────────
+  if(!user){
+    return (
+      <div>
+        {authModal&&<AuthModal onClose={()=>setAuthModal(false)}/>}
+        <LandingPage onGetStarted={()=>setAuthModal(true)}/>
+      </div>
+    );
+  }
+
   return (
     <div style={{minHeight:"100vh",paddingBottom:iosBanner?116:48}}>
       {authModal&&<AuthModal onClose={()=>setAuthModal(false)}/>}
@@ -6536,18 +6546,11 @@ function App(){
         </div>
       )}
       <div className="tab-content-wrap" style={{paddingTop:8}}>
-        {/* When not authenticated, always show HomeTab (which renders the landing page) */}
-        {!user?(
-          <HomeTab myCards={[]} setMyCards={dirtySetMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} onAuthClick={()=>setAuthModal(true)} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>
-        ):(
-          <>
-            {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={dirtySetMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} onAuthClick={()=>setAuthModal(true)} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>}
-            {tab==="benefits"&&<RenewalAdvisorTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits} anniversaryDates={anniversaryDates} setAnniversaryDates={dirtySetAnniversaryDates} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards} setFirstYearCards={dirtySetFirstYearCards}/>}
-            {tab==="household"&&<HouseholdTab myCards={myCards} p2Cards={p2Cards} setP2Cards={dirtySetP2Cards} p2Name={p2Name} setP2Name={dirtySetP2Name} householdSetup={householdSetup} setHouseholdSetup={dirtySetHouseholdSetup} checkedSet={checkedSet} user={user} onAuthClick={()=>setAuthModal(true)} setTab={setTab} firstYearCards={firstYearCards} anniversaryDates={anniversaryDates} setAnniversaryDates={dirtySetAnniversaryDates}/>}
+        {tab==="home"&&    <HomeTab myCards={myCards} setMyCards={dirtySetMyCards} checkedSet={checkedSet} setTab={setTab} setStratModal={setStratModal} anniversaryDates={anniversaryDates} user={user} onAuthClick={()=>setAuthModal(true)} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards}/>}
+        {tab==="benefits"&&<RenewalAdvisorTab myCards={myCards} checkedSet={checkedSet} setCheckedBenefits={setCheckedBenefits} checkDates={checkDates} setCheckDates={setCheckDates} resetBadges={resetBadges} skippedSet={skippedSet} setSkippedBenefits={setSkippedBenefits} anniversaryDates={anniversaryDates} setAnniversaryDates={dirtySetAnniversaryDates} p2Cards={p2Cards} p2Name={p2Name} householdSetup={householdSetup} firstYearCards={firstYearCards} setFirstYearCards={dirtySetFirstYearCards}/>}
+        {tab==="household"&&<HouseholdTab myCards={myCards} p2Cards={p2Cards} setP2Cards={dirtySetP2Cards} p2Name={p2Name} setP2Name={dirtySetP2Name} householdSetup={householdSetup} setHouseholdSetup={dirtySetHouseholdSetup} checkedSet={checkedSet} user={user} onAuthClick={()=>setAuthModal(true)} setTab={setTab} firstYearCards={firstYearCards} anniversaryDates={anniversaryDates} setAnniversaryDates={dirtySetAnniversaryDates}/>}
 
-            {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={dirtySetMyCards} anniversaryDates={anniversaryDates} setAnniversaryDates={dirtySetAnniversaryDates}/>}
-          </>
-        )}
+        {tab==="wallet"&&  <WalletTab myCards={myCards} setMyCards={dirtySetMyCards} anniversaryDates={anniversaryDates} setAnniversaryDates={dirtySetAnniversaryDates}/>}
       </div>
       {stratModal&&<StratModal stratId={stratModal} myCards={myCards} onClose={()=>setStratModal(null)}/>}
       <NewsletterPopup user={user}/>

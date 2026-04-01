@@ -39,8 +39,9 @@
 </script>
 <!-- 1. Config (CSS vars, Firebase config, site metadata) -->
 <script src="config.js"></script>
-<!-- 2. Stylesheet -->
+<!-- 2. Stylesheets -->
 <link rel="stylesheet" href="styles.css"/>
+<link rel="stylesheet" href="landing.css"/>
 <!-- 3. Firebase auth (module — loads async, dispatches cs-firebase-ready) -->
 <script type="module" src="firebase-auth.js"></script>
 <!-- 4. CDN: React 18 + Babel Standalone (JSX transpilation) -->
@@ -70,7 +71,9 @@ window.addEventListener('appinstalled',function(){
 <script src="cards-data.js"></script>
 <!-- 6a. Auth + sync logic (useLS hook, useAuthSync hook — must load before components) -->
 <script type="text/babel" src="auth-sync.js"></script>
-<!-- 6b. All React components (transpiled by Babel Standalone) -->
+<!-- 6b. Landing page component (self-contained, shown to unauthenticated visitors) -->
+<script type="text/babel" src="landing.js"></script>
+<!-- 6c. All React components (transpiled by Babel Standalone) -->
 <script type="text/babel" src="components.js"></script>
 <!-- 7. Service worker registration + version check -->
 <script src="sw-register.js"></script>
