@@ -11,6 +11,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.feeworth.com/best-cards</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.feeworth.com/cards/chase-sapphire-reserve</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

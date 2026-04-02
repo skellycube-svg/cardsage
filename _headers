@@ -10,5 +10,8 @@
 /calculator.html
   Cache-Control: no-cache, no-store, must-revalidate
 
+/best-cards.html
+  Cache-Control: no-cache, no-store, must-revalidate
+
 /cards/*.html
   Cache-Control: no-cache, no-store, must-revalidate

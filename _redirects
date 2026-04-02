@@ -1,5 +1,6 @@
 # Clean URLs for SEO pages
 /calculator  /calculator.html  200
+/best-cards  /best-cards.html  200
 /cards/:slug  /cards/:slug.html  200
 
 /* /404.html 404
