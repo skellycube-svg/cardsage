@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-<title>FeeWorth — Is the fee worth it?</title>
+<title>Is Your Credit Card Fee Worth It? | FeeWorth</title>
 <meta name="theme-color" content="#0d7377"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -12,21 +12,21 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
 <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico"/>
-<meta name="description" content="FeeWorth's free Fee Check tells you in 60 seconds whether your credit card's annual fee is worth keeping. ROI tracking, renewal countdowns, and household optimization for couples."/>
+<meta name="description" content="Free tool that tells you in 60 seconds if your credit card annual fee is worth keeping. ROI tracking, renewal countdowns, and household optimization."/>
 <meta name="robots" content="index, follow"/>
 <link rel="canonical" href="https://www.feeworth.com/"/>
-<meta property="og:title" content="FeeWorth — Is the fee worth it?"/>
-<meta property="og:description" content="FeeWorth tells you which credit cards are worth keeping and which to cancel. Renewal countdowns, ROI tracking, and household optimization for couples."/>
+<meta property="og:title" content="Is Your Credit Card Fee Worth It? | FeeWorth"/>
+<meta property="og:description" content="Free tool that tells you in 60 seconds if your credit card annual fee is worth keeping. ROI tracking, renewal countdowns, and household optimization."/>
 <meta property="og:image" content="https://www.feeworth.com/icon-512.png"/>
 <meta property="og:url" content="https://www.feeworth.com/"/>
 <meta property="og:type" content="website"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:title" content="FeeWorth — Is the fee worth it?"/>
-<meta name="twitter:description" content="Know which credit cards to keep, cancel, or downgrade — before renewal day."/>
+<meta name="twitter:title" content="Is Your Credit Card Fee Worth It? | FeeWorth"/>
+<meta name="twitter:description" content="Free tool that tells you in 60 seconds if your credit card annual fee is worth keeping."/>
 <meta name="twitter:image" content="https://www.feeworth.com/icon-512.png"/>
 <meta name="fo-verify" content="0356b523-716e-41e4-86b1-bdf66762089b" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"FeeWorth","url":"https://www.feeworth.com","description":"FeeWorth tells you which credit cards are worth keeping and which to cancel. Renewal countdowns, ROI tracking, and household optimization for couples.","applicationCategory":"FinanceApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"browserRequirements":"Requires a modern web browser"}
+{"@context":"https://schema.org","@type":"WebApplication","name":"FeeWorth","url":"https://www.feeworth.com","description":"Free tool that tells you in 60 seconds if your credit card annual fee is worth keeping. ROI tracking, renewal countdowns, and household optimization.","applicationCategory":"FinanceApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"browserRequirements":"Requires a modern web browser"}
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,18 +42,361 @@
 <!-- 2. Stylesheets -->
 <link rel="stylesheet" href="styles.css"/>
 <link rel="stylesheet" href="landing.css"/>
-<!-- 3. Firebase auth (module — loads async, dispatches cs-firebase-ready) -->
-<script type="module" src="firebase-auth.js"></script>
-<!-- 4. CDN: React 18 + Babel Standalone (JSX transpilation) -->
-<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<!-- 5. EmailJS — browser-side email for feedback form -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 <canvas id="bg"></canvas>
+<!-- ── STATIC LANDING PAGE (renders before any JS loads) ── -->
+<div id="landing-static" class="lp">
+  <nav class="lp-nav">
+    <div class="lp-container">
+      <div class="lp-nav-logo">FeeWorth</div>
+      <button class="lp-nav-cta" id="lp-nav-cta">Check Your Cards Free</button>
+    </div>
+  </nav>
+  <section class="lp-hero">
+    <div class="lp-container">
+      <div class="lp-hero-text">
+        <div class="lp-hero-badge">Free credit card fee analyzer</div>
+        <h1>Is Your Credit Card Annual Fee <em>Worth It?</em></h1>
+        <p class="lp-hero-sub">
+          Track every credit card benefit, see your real ROI, and never overpay for a card again.
+        </p>
+        <div class="lp-hero-cta-group">
+          <button class="lp-btn-primary" id="lp-hero-cta">
+            Check Your Cards Free
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+          <button class="lp-btn-secondary" id="lp-how-btn">See how it works</button>
+        </div>
+        <p class="lp-hero-note">No credit card required. Works with any card.</p>
+      </div>
+      <div class="lp-hero-visual">
+        <div class="lp-screenshot-frame">
+          <div class="lp-browser-bar">
+            <span class="lp-browser-dot lp-browser-dot-red"></span>
+            <span class="lp-browser-dot lp-browser-dot-yellow"></span>
+            <span class="lp-browser-dot lp-browser-dot-green"></span>
+            <div class="lp-browser-url">feeworth.com/fee-check</div>
+          </div>
+          <div class="lp-screenshot-content">
+            <div class="lp-sim-card-header">
+              <div class="lp-sim-card-img">VISA</div>
+              <div>
+                <div class="lp-sim-card-name">Sapphire Reserve</div>
+                <div class="lp-sim-card-issuer">Chase &middot; Visa</div>
+              </div>
+            </div>
+            <div class="lp-sim-metrics">
+              <div class="lp-sim-metric">
+                <div class="lp-sim-metric-label">Annual Fee</div>
+                <div class="lp-sim-metric-value lp-sim-metric-value-fee">$795</div>
+              </div>
+              <div class="lp-sim-metric">
+                <div class="lp-sim-metric-label">Total Credits</div>
+                <div class="lp-sim-metric-value lp-sim-metric-value-credits">$2,598</div>
+              </div>
+              <div class="lp-sim-net-box">
+                <div class="lp-sim-metric-label">Net Value</div>
+                <div class="lp-sim-metric-value lp-sim-metric-value-net">+$1,803</div>
+              </div>
+            </div>
+            <div class="lp-sim-verdict">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a6b5a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+              This card pays for itself &mdash; you're $1,803 ahead
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="lp-value-props">
+    <div class="lp-container">
+      <div class="lp-section-label">Why FeeWorth</div>
+      <h2 class="lp-section-title">Stop guessing if your card is worth keeping</h2>
+      <p class="lp-section-subtitle">
+        Most people pay annual fees without knowing if they're getting their money's worth. FeeWorth shows you the real numbers.
+      </p>
+      <div class="lp-props-grid">
+        <div class="lp-prop-card">
+          <div class="lp-prop-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+          </div>
+          <div class="lp-prop-title">See your real ROI</div>
+          <div class="lp-prop-desc">
+            Know exactly whether each card pays for itself. See your annual fee vs. total credits at a glance, with a clear net value number you can act on.
+          </div>
+        </div>
+        <div class="lp-prop-card">
+          <div class="lp-prop-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+          <div class="lp-prop-title">Never miss a benefit</div>
+          <div class="lp-prop-desc">
+            Track every credit, perk, and deadline. Check off benefits as you use them and see your actual ROI update in real time. Monthly reminders included.
+          </div>
+        </div>
+        <div class="lp-prop-card">
+          <div class="lp-prop-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <div class="lp-prop-title">Know when to keep, cancel, or switch</div>
+          <div class="lp-prop-desc">
+            Get personalized recommendations: retention offers to try, downgrade options, and replacement cards that could save you money.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="lp-features">
+    <div class="lp-container">
+      <div class="lp-section-label">Features</div>
+      <h2 class="lp-section-title">Everything you need to make the call</h2>
+      <p class="lp-section-subtitle">
+        FeeWorth goes beyond simple fee comparisons with tools that give you the full picture.
+      </p>
+      <div class="lp-feature-row">
+        <div class="lp-feature-text">
+          <div class="lp-feature-tag">Benefit Tracker</div>
+          <h3 class="lp-feature-title">Check off benefits. Watch your ROI climb.</h3>
+          <p class="lp-feature-desc">
+            Every card comes with credits you might be leaving on the table. FeeWorth lists every benefit, lets you check off what you've used, and shows your real ROI — not the theoretical maximum.
+          </p>
+          <ul class="lp-feature-bullets">
+            <li><svg class="lp-feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 20 7"/></svg> Track travel credits, dining credits, streaming credits, and more</li>
+            <li><svg class="lp-feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 20 7"/></svg> See monthly vs. annual benefits with deadline reminders</li>
+            <li><svg class="lp-feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 20 7"/></svg> Transfer partner value insights that most tools miss</li>
+          </ul>
+        </div>
+        <div class="lp-feature-visual">
+          <div class="lp-feature-screenshot">
+            <div class="lp-fs-header">
+              <div class="lp-fs-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 20 7"/></svg>
+              </div>
+              <div>
+                <div class="lp-fs-title">Benefit Tracker</div>
+                <div class="lp-fs-subtitle">4/12 checked &middot; $1,520 of $2,598 captured</div>
+              </div>
+            </div>
+            <div class="lp-bt-row">
+              <div class="lp-bt-check lp-bt-check-on"></div>
+              <div class="lp-bt-name">$300 Travel Credit</div>
+              <span class="lp-bt-tag lp-bt-tag-travel">Travel</span>
+              <div class="lp-bt-value">$300/yr</div>
+            </div>
+            <div class="lp-bt-row">
+              <div class="lp-bt-check lp-bt-check-on"></div>
+              <div class="lp-bt-name">DoorDash Credit</div>
+              <span class="lp-bt-tag lp-bt-tag-dining">Dining</span>
+              <div class="lp-bt-value">$300/yr</div>
+            </div>
+            <div class="lp-bt-row">
+              <div class="lp-bt-check lp-bt-check-on"></div>
+              <div class="lp-bt-name">$10 Lyft Credit</div>
+              <span class="lp-bt-tag lp-bt-tag-travel">Travel</span>
+              <div class="lp-bt-value">$120/yr</div>
+            </div>
+            <div class="lp-bt-row">
+              <div class="lp-bt-check lp-bt-check-on"></div>
+              <div class="lp-bt-name">Global Entry / TSA PreCheck</div>
+              <span class="lp-bt-tag lp-bt-tag-travel">Travel</span>
+              <div class="lp-bt-value">$120/yr</div>
+            </div>
+            <div class="lp-bt-row">
+              <div class="lp-bt-check"></div>
+              <div class="lp-bt-name">$500 The Edit Hotel Credit</div>
+              <span class="lp-bt-tag lp-bt-tag-travel">Travel</span>
+              <div class="lp-bt-value">$500/yr</div>
+            </div>
+            <div class="lp-bt-row">
+              <div class="lp-bt-check"></div>
+              <div class="lp-bt-name">Priority Pass Lounge</div>
+              <span class="lp-bt-tag lp-bt-tag-travel">Travel</span>
+              <div class="lp-bt-value">Included</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lp-feature-row lp-feature-row-reverse">
+        <div class="lp-feature-text">
+          <div class="lp-feature-tag">Decision Tools</div>
+          <h3 class="lp-feature-title">The guidance people are actually Googling for</h3>
+          <p class="lp-feature-desc">
+            Thinking about canceling? Not sure if you should downgrade? FeeWorth gives you every option — retention offers, what you'll lose, downgrade paths, and better alternatives — all in one place.
+          </p>
+          <ul class="lp-feature-bullets">
+            <li><svg class="lp-feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 20 7"/></svg> Retention offer scripts and tips before you call</li>
+            <li><svg class="lp-feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 20 7"/></svg> Exactly what you'll lose if you cancel</li>
+            <li><svg class="lp-feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 20 7"/></svg> No-hard-pull downgrade options from your issuer</li>
+            <li><svg class="lp-feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 20 7"/></svg> Better replacement cards ranked by net value</li>
+          </ul>
+        </div>
+        <div class="lp-feature-visual">
+          <div class="lp-feature-screenshot">
+            <div class="lp-dt-row">
+              <div class="lp-dt-icon lp-dt-icon-green">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </div>
+              <div>
+                <div class="lp-dt-label">Beyond the Numbers</div>
+                <div class="lp-dt-sub">Transfer partners, insurance, status perks &amp; more</div>
+              </div>
+              <div class="lp-dt-arrow">&rsaquo;</div>
+            </div>
+            <div class="lp-dt-row">
+              <div class="lp-dt-icon lp-dt-icon-green">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              </div>
+              <div>
+                <div class="lp-dt-label">Retention Offers</div>
+                <div class="lp-dt-sub">Call before you cancel — most people get an offer</div>
+              </div>
+              <div class="lp-dt-arrow">&rsaquo;</div>
+            </div>
+            <div class="lp-dt-row">
+              <div class="lp-dt-icon lp-dt-icon-red">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div>
+                <div class="lp-dt-label">If You Cancel</div>
+                <div class="lp-dt-sub">What you'll lose and what happens to your points</div>
+              </div>
+              <div class="lp-dt-arrow">&rsaquo;</div>
+            </div>
+            <div class="lp-dt-row">
+              <div class="lp-dt-icon lp-dt-icon-green">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <div>
+                <div class="lp-dt-label">Downgrade Options</div>
+                <div class="lp-dt-sub">3 product changes available &middot; No hard pull</div>
+              </div>
+              <div class="lp-dt-arrow">&rsaquo;</div>
+            </div>
+            <div class="lp-dt-row">
+              <div class="lp-dt-icon lp-dt-icon-green">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+              </div>
+              <div>
+                <div class="lp-dt-label">Recommended Replacement</div>
+                <div class="lp-dt-sub">Amex Platinum &middot; +$2,034 net value</div>
+              </div>
+              <div class="lp-dt-arrow">&rsaquo;</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lp-feature-row">
+        <div class="lp-feature-text">
+          <div class="lp-feature-tag">Household View</div>
+          <h3 class="lp-feature-title">Manage cards together as a household</h3>
+          <p class="lp-feature-desc">
+            Couples and families often share card strategies. FeeWorth's household view tracks all your cards in one place — yours and your partner's — so you can optimize your total annual fees as a team.
+          </p>
+          <ul class="lp-feature-bullets">
+            <li><svg class="lp-feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 20 7"/></svg> See combined fees, credits, and net value at a glance</li>
+            <li><svg class="lp-feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 20 7"/></svg> Tag cards as "You" or "Partner" for clear ownership</li>
+            <li><svg class="lp-feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 20 7"/></svg> Renewal timeline across all household cards</li>
+          </ul>
+        </div>
+        <div class="lp-feature-visual">
+          <div class="lp-feature-screenshot">
+            <div class="lp-fs-header">
+              <div class="lp-fs-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l2-2m0 0l7-7 7 7m-14 0v8a1 1 0 0 0 1 1h3m10-9l2 2m-2-2v8a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1m-4 0h4"/></svg>
+              </div>
+              <div>
+                <div class="lp-fs-title">Fee Dashboard</div>
+                <div class="lp-fs-subtitle">6 cards (household) &middot; 4 with annual fees</div>
+              </div>
+            </div>
+            <div class="lp-sim-metrics" style="margin-bottom:20px">
+              <div class="lp-sim-metric">
+                <div class="lp-sim-metric-label">Total Fees</div>
+                <div class="lp-sim-metric-value lp-sim-metric-value-fee" style="font-size:1.3rem">$1,080</div>
+              </div>
+              <div class="lp-sim-metric">
+                <div class="lp-sim-metric-label">Credits</div>
+                <div class="lp-sim-metric-value lp-sim-metric-value-credits" style="font-size:1.3rem">$4,196</div>
+              </div>
+              <div class="lp-sim-net-box">
+                <div class="lp-sim-metric-label">Net ROI</div>
+                <div class="lp-sim-metric-value lp-sim-metric-value-net" style="font-size:1.3rem">+$3,116</div>
+              </div>
+            </div>
+            <div class="lp-hh-timeline-label">Renewal Timeline</div>
+            <div class="lp-bt-row">
+              <div class="lp-hh-bar lp-hh-bar-you"></div>
+              <div class="lp-bt-name">Sapphire Reserve <span class="lp-hh-tag lp-hh-tag-you">YOU</span></div>
+              <div class="lp-bt-value">$795/yr</div>
+            </div>
+            <div class="lp-bt-row">
+              <div class="lp-hh-bar lp-hh-bar-partner"></div>
+              <div class="lp-bt-name">Hyatt Card <span class="lp-hh-tag lp-hh-tag-partner">PARTNER</span></div>
+              <div class="lp-bt-value">$95/yr</div>
+            </div>
+            <div class="lp-bt-row">
+              <div class="lp-hh-bar lp-hh-bar-you"></div>
+              <div class="lp-bt-name">Bilt Obsidian <span class="lp-hh-tag lp-hh-tag-you">YOU</span></div>
+              <div class="lp-bt-value">$95/yr</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="lp-how-it-works" id="lp-how-it-works">
+    <div class="lp-container">
+      <div class="lp-section-label">How it works</div>
+      <h2 class="lp-section-title">Get your answer in 2 minutes</h2>
+      <div class="lp-steps-grid">
+        <div class="lp-step">
+          <div class="lp-step-number">1</div>
+          <div class="lp-step-title">Add your cards</div>
+          <div class="lp-step-desc">Select your credit cards from our database of 100+ cards with pre-loaded benefits.</div>
+        </div>
+        <div class="lp-step">
+          <div class="lp-step-number">2</div>
+          <div class="lp-step-title">Check off what you use</div>
+          <div class="lp-step-desc">Mark the benefits you actually redeem. Your real ROI updates instantly.</div>
+        </div>
+        <div class="lp-step">
+          <div class="lp-step-number">3</div>
+          <div class="lp-step-title">Get your verdict</div>
+          <div class="lp-step-desc">See whether to keep, cancel, downgrade, or switch — with the exact options to do it.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="lp-final-cta">
+    <div class="lp-container">
+      <h2>Stop guessing. Start knowing.</h2>
+      <p>Find out if your credit card fees are actually worth it — in under 2 minutes, completely free.</p>
+      <button class="lp-btn-primary" id="lp-final-cta">
+        Check Your Cards Free
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+      <p class="lp-final-note">No account required to start. Works with all major credit cards.</p>
+    </div>
+  </section>
+  <footer class="lp-footer">
+    <div class="lp-container">
+      <div class="lp-footer-logo">FeeWorth</div>
+      <div class="lp-footer-links">
+        <a href="./privacy-policy.html" target="_blank" rel="noopener">Privacy Policy</a>
+        <a href="./terms.html" target="_blank" rel="noopener">Terms of Service</a>
+        <a href="./affiliate-disclosure.html" target="_blank" rel="noopener">Affiliate Disclosure</a>
+      </div>
+      <div class="lp-footer-disclosure">
+        FeeWorth may earn a commission from card applications. This does not influence our recommendations. All card data is stored locally on your device and synced securely to your account.
+      </div>
+    </div>
+  </footer>
+</div>
+<!-- ── React app mount point (hidden until user authenticates) ── -->
 <div id="root"></div>
+<!-- Landing page interactivity (vanilla JS, no dependencies) -->
+<script src="landing.js"></script>
 <!-- Capture beforeinstallprompt before React mounts — it can fire very early -->
 <script>
 window._pwaPrompt=null;
@@ -67,14 +410,6 @@ window.addEventListener('appinstalled',function(){
   window.dispatchEvent(new CustomEvent('cs-pwa-installed'));
 });
 </script>
-<!-- 5. Card data (CARDS, STRATS, TIPS_DB, etc.) -->
-<script src="cards-data.js"></script>
-<!-- 6a. Auth + sync logic (useLS hook, useAuthSync hook — must load before components) -->
-<script type="text/babel" src="auth-sync.js"></script>
-<!-- 6b. Landing page component (self-contained, shown to unauthenticated visitors) -->
-<script type="text/babel" src="landing.js"></script>
-<!-- 6c. All React components (transpiled by Babel Standalone) -->
-<script type="text/babel" src="components.js"></script>
 <!-- 7. Service worker registration + version check -->
 <script src="sw-register.js"></script>
 </body>

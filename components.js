@@ -6109,7 +6109,16 @@ function AuthModal({onClose}){
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(false);
   const [nlChecked,setNlChecked]=useState(true);
-  const fb=window.CS_FB;
+  const [fbState,setFbState]=useState(window.CS_FB||null);
+  const fb=fbState;
+
+  // Wait for Firebase if it hasn't loaded yet (lazy-load path)
+  useEffect(()=>{
+    if(window.CS_FB){setFbState(window.CS_FB);return;}
+    const h=()=>setFbState(window.CS_FB);
+    window.addEventListener('cs-firebase-ready',h);
+    return()=>window.removeEventListener('cs-firebase-ready',h);
+  },[]);
 
   const subscribeNewsletter=async(user)=>{
     if(!fb||!user) return;
@@ -6169,7 +6178,8 @@ function AuthModal({onClose}){
         <button className="auth-modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={18}/></button>
         <h2>Sign in to FeeWorth</h2>
         <p className="auth-modal-sub">Sync your wallet &amp; benefits across devices</p>
-        <button className="auth-google-btn" onClick={signInGoogle} disabled={loading}>
+        {!fb&&<p style={{textAlign:'center',color:'var(--tx3)',fontSize:13,padding:'16px 0'}}>Loading authentication...</p>}
+        <button className="auth-google-btn" onClick={signInGoogle} disabled={loading||!fb}>
           <svg width="16" height="16" viewBox="0 0 48 48" style={{flexShrink:0}}>
             <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
             <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -6508,6 +6518,21 @@ function App(){
   useEffect(()=>{if(!user) setTab("home");},[user]);
 
   useEffect(()=>{window.scrollTo({top:0,behavior:"smooth"});},[tab]);
+
+  // ── Signal that React app is mounted (used by landing.js to know when to hide static landing) ──
+  useEffect(()=>{
+    window._fwAppMounted=true;
+    // Hide the static landing page now that React has taken over
+    var sl=document.getElementById('landing-static');
+    if(sl) sl.style.display='none';
+  },[]);
+
+  // ── Listen for fw-open-auth event from landing.js CTA clicks ──
+  useEffect(()=>{
+    const handler=()=>setAuthModal(true);
+    window.addEventListener('fw-open-auth',handler);
+    return()=>window.removeEventListener('fw-open-auth',handler);
+  },[]);
 
   // ── Landing page for unauthenticated visitors ──────────────────────────
   if(!user){
