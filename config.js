@@ -12,7 +12,7 @@ const CS_CONFIG = {
   // ── Versioning ──────────────────────────────────────────────────────────────
   // The current app version. Incrementing this forces all users' browsers to
   // download fresh files instead of using old cached copies.
-  CACHE_VERSION: 'v158',
+  CACHE_VERSION: 'v159',
 
   // ── Site Metadata ───────────────────────────────────────────────────────────
   // Basic info about the site — name, URL, contact email, and descriptions

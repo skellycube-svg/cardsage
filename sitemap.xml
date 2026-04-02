@@ -11,6 +11,56 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.feeworth.com/cards/chase-sapphire-reserve</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.feeworth.com/cards/amex-platinum</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.feeworth.com/cards/amex-gold</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.feeworth.com/cards/capital-one-venture-x</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.feeworth.com/cards/hilton-honors-aspire</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.feeworth.com/cards/marriott-bonvoy-brilliant</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.feeworth.com/cards/chase-sapphire-preferred</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.feeworth.com/cards/citi-strata-premier</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.feeworth.com/cards/amex-blue-cash-preferred</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.feeworth.com/cards/chase-ink-business-preferred</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.feeworth.com/privacy-policy.html</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
