@@ -72,7 +72,10 @@
       "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"fintech landing page clean modern\" --design-system -p \"FeeWorth Landing\")",
       "Bash(node -e \"eval\\(require\\('fs'\\).readFileSync\\('cards-data.js','utf8'\\)\\); console.log\\('Card count:', CARDS.length\\);\")",
       "Bash(grep -c '\"id\":' cards-data.js || grep -c \"id:\" cards-data.js)",
-      "Bash(node -e \"\nconst fs = require\\('fs'\\);\nconst src = fs.readFileSync\\('cards-data.js','utf8'\\);\n// Extract just the CARDS array by finding the pattern\nconst match = src.match\\(/const CARDS=\\\\[/\\);\nif \\(!match\\) { console.log\\('not found'\\); process.exit\\(1\\); }\n// Count lines that start a new card object with {id:\nlet inCards = false;\nlet count = 0;\nsrc.split\\('\\\\n'\\).forEach\\(line => {\n  if \\(line.includes\\('const CARDS=['\\)\\) inCards = true;\n  if \\(inCards && /^\\\\{id:\\\\\"/.test\\(line.trim\\(\\)\\)\\) count++;\n  if \\(inCards && /^const [A-Z]/.test\\(line\\) && !line.includes\\('CARDS'\\)\\) inCards = false;\n}\\);\nconsole.log\\('Cards in CARDS array:', count\\);\n\")"
+      "Bash(node -e \"\nconst fs = require\\('fs'\\);\nconst src = fs.readFileSync\\('cards-data.js','utf8'\\);\n// Extract just the CARDS array by finding the pattern\nconst match = src.match\\(/const CARDS=\\\\[/\\);\nif \\(!match\\) { console.log\\('not found'\\); process.exit\\(1\\); }\n// Count lines that start a new card object with {id:\nlet inCards = false;\nlet count = 0;\nsrc.split\\('\\\\n'\\).forEach\\(line => {\n  if \\(line.includes\\('const CARDS=['\\)\\) inCards = true;\n  if \\(inCards && /^\\\\{id:\\\\\"/.test\\(line.trim\\(\\)\\)\\) count++;\n  if \\(inCards && /^const [A-Z]/.test\\(line\\) && !line.includes\\('CARDS'\\)\\) inCards = false;\n}\\);\nconsole.log\\('Cards in CARDS array:', count\\);\n\")",
+      "Read(//Users/Brittany/.claude/skills/ui-ux-pro-max/**)",
+      "Bash(python3 scripts/search.py \"construction contractor service professional bold\" --design-system -p \"FC Gen Contractor\")",
+      "Bash(cd /Users/Brittany/.claude/skills/ui-ux-pro-max && python3 scripts/search.py \"animation scroll intersection\" --domain ux)"
     ]
   }
 }
