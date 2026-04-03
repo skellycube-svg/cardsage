@@ -165,7 +165,7 @@ const HIDDEN_VALUES={
   },
   "Citi Strata Premier℠ Card":{
     transferEcosystem:"Citi ThankYou Points",
-    intangibleNote:"The Strata Premier unlocks Citi's transfer partners for all your ThankYou points. Turkish Miles&Smiles at 1:1 means 7,500 points gets you a $300-500 United domestic flight — over 4cpp. Choice Privileges at 1:2 ratio unlocks Tokyo Comfort Hotels at just 6,000 points/night. The 3-hour trip delay trigger is the best in the industry — most cards require 6-12 hours.",
+    intangibleNote:"The Strata Premier unlocks Citi's transfer partners for all your ThankYou points. Turkish Miles&Smiles at 1:1 means 7,500 points gets you a $300-500 United domestic flight — over 4cpp. Choice Privileges at 1:1.5 ratio (devalued from 1:2 on April 19, 2026) still offers value at Tokyo Comfort Hotels for ~8,000 points/night. The 3-hour trip delay trigger is the best in the industry — most cards require 6-12 hours.",
     hiddenPerks:[
       {category:"transferPartners",perk:"Unlocks Transfers for All TY Points",estimatedValue:"$500-2,000+/yr",details:"Turkish 7,500mi for United domestics, Choice for Tokyo hotels, Air France promos. This is why you keep this card."},
       {category:"insurance",perk:"Trip Delay — 3hr Trigger (Best in Industry)",estimatedValue:"$0-500/yr",details:"$500 reimbursement kicks in after just 3 hours. Most competitors require 6-12 hours."},
@@ -706,9 +706,9 @@ const CARDS=[
  downgradePaths:[],
  ifYouCancel:null},
 {id:"united-club-inf",name:"United Club℠ Infinite Card",short:"United Club Infinite",issuer:"Chase",isBiz:false,fee:695,network:"Visa",cur:"United MileagePlus",c1:"#002050",c2:"#001030",
- annual:[{n:"United Club Membership",v:700,d:"Full United Club membership — unlimited access to United Clubs and Star Alliance affiliated lounges.",cat:"status",type:"perk",reset:"annual",enroll:false,enrollUrl:"",useUrl:""},{n:"2 Free Checked Bags",v:70,d:"First and second checked bags free for cardholder + companion.",cat:"travel",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:""}],
+ annual:[{n:"United Club Membership",v:700,d:"Full United Club membership — unlimited access to United Clubs and Star Alliance affiliated lounges.",cat:"status",type:"perk",reset:"annual",enroll:false,enrollUrl:"",useUrl:""},{n:"2 Free Checked Bags",v:70,d:"First and second checked bags free for cardholder + companion.",cat:"travel",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:""},{n:"$240 Instacart Credit",v:240,d:"Up to $240 in annual Instacart credits plus complimentary Instacart+ membership.",cat:"statement",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:"https://www.instacart.com"},{n:"Purchase Protection",v:null,d:"Covers new purchases against damage or theft for 120 days, up to $10,000 per claim.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Extended Warranty",v:null,d:"Adds 1 extra year to manufacturer warranties of 3 years or less.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Trip Cancellation/Interruption",v:null,d:"Up to $10,000 per person for non-refundable travel expenses due to covered reasons.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Trip Delay Reimbursement",v:null,d:"Up to $500 per traveler after 6-hour delay for meals, lodging, and essentials.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""},{n:"Primary Car Rental Insurance",v:null,d:"Primary CDW coverage for theft/collision on rental vehicles.",cat:"protection",type:"perk",reset:"one-time",enroll:false,enrollUrl:"",useUrl:""}],
  monthly:[],strat:[],signup:"80,000 miles after $5k in 3 mo",
- earn:{d:"2x",g:"1x",gas:"1x",t:"4x",s:"1x",a:"1x",tr:"1x",p:"1x",o:"1x"},confidence:"estimated",
+ earn:{d:"2x",g:"1x",gas:"1x",t:"5x",s:"1x",a:"1x",tr:"1x",p:"1x",o:"1x"},confidence:"verified",
  retentionOffers:[],
  downgradePaths:[],
  ifYouCancel:null},
