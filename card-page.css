@@ -77,6 +77,22 @@ body:has(.cp) #bg { display: none; }
 .cp-benefit-tag-awards { background: #fce8eb; color: #991b1b; }
 .cp-benefit-value { font-weight: 700; font-size: 0.9rem; color: #1a6b5a; white-space: nowrap; }
 
+/* Multi-period benefit rows */
+.cp-benefit-multi { flex-wrap: wrap; }
+.cp-benefit-multi .cp-benefit-name { flex: 1 1 auto; }
+.cp-benefit-value-done { text-decoration: line-through; opacity: 0.5; }
+.cp-period-checks { display: flex; gap: 16px; width: 100%; padding: 8px 0 2px 0; margin-top: 2px; }
+.cp-period-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
+.cp-period-box { width: 24px; height: 24px; border-radius: 6px; border: 2px solid #d0d5dd; position: relative; transition: all 0.15s; }
+.cp-period-box:hover { border-color: #1a6b5a; }
+.cp-period-box.checked { background: #1a6b5a; border-color: #1a6b5a; }
+.cp-period-box.checked::after { content: ""; position: absolute; top: 3px; left: 6px; width: 6px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.cp-period-box.current { border-color: #1a6b5a; box-shadow: 0 0 0 2px rgba(26,107,90,0.2); }
+.cp-period-box.past { opacity: 0.45; }
+.cp-period-label { font-size: 0.72rem; font-weight: 600; color: #8a94a6; }
+.cp-period-label.cp-period-current { color: #1a6b5a; font-weight: 700; }
+.cp-period-sub { font-size: 0.62rem; color: #b0b8c4; }
+
 /* Verdict */
 .cp-verdict { margin-top: 24px; padding: 20px; border-radius: 12px; text-align: center; }
 .cp-verdict-keep { background: #e6f5f0; border: 1px solid #c8e6dc; }

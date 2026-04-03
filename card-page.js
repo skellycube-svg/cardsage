@@ -48,10 +48,22 @@
     var totalUsed = 0;
     Object.keys(checkedBenefits).forEach(function(key) {
       if (!checkedBenefits[key]) return;
+      // Period-specific keys (e.g. a-Dining Credit-2026-H1) are handled below
+      if (key.match(/-\d{4}-(Q\d|H\d)$/)) return;
+      // Single-key annual benefit
       var found = annualBenefits.find(function(b) { return bk(b, false) === key; });
-      if (found) { totalUsed += found.v * annualMultiplier(found); return; }
+      if (found) { totalUsed += found.v; return; }
+      // Monthly benefit
       found = monthlyBenefits.find(function(b) { return bk(b, true) === key; });
       if (found) totalUsed += found.v * 12;
+    });
+    // Multi-period benefits: each checked period adds one period's value
+    annualBenefits.forEach(function(b) {
+      var pk = periodKeys(b);
+      if (!pk) return;
+      pk.forEach(function(p) {
+        if (checkedBenefits[p.key]) totalUsed += b.v;
+      });
     });
 
     var net = totalUsed - card.fee;
@@ -88,10 +100,19 @@
 
     toolBody.innerHTML = h;
 
-    // Bind
-    toolBody.querySelectorAll('.cp-benefit-row').forEach(function(row) {
+    // Bind single-checkbox rows
+    toolBody.querySelectorAll('.cp-benefit-row:not([data-multi])').forEach(function(row) {
       row.addEventListener('click', function() {
         checkedBenefits[row.getAttribute('data-key')] = !checkedBenefits[row.getAttribute('data-key')];
+        renderCalculator();
+      });
+    });
+    // Bind multi-period checkboxes
+    toolBody.querySelectorAll('.cp-period-item').forEach(function(item) {
+      item.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var pkey = item.getAttribute('data-pkey');
+        checkedBenefits[pkey] = !checkedBenefits[pkey];
         renderCalculator();
       });
     });
@@ -100,6 +121,34 @@
   }
 
   function benefitRow(b, isMonthly) {
+    var pk = isMonthly ? null : periodKeys(b);
+
+    if (pk) {
+      // Multi-period row (semi-annual or quarterly)
+      var allChecked = pk.every(function(p) { return !!checkedBenefits[p.key]; });
+      var periodLabel = b.reset === 'quarterly' ? 'quarter' : '6 mo';
+      var h = '<div class="cp-benefit-row cp-benefit-multi" data-multi="true">';
+      h += '<div class="cp-benefit-name">' + esc(b.n) + '</div>';
+      h += '<span class="cp-benefit-tag cp-benefit-tag-' + (b.cat || 'statement') + '">' + cap(b.cat || '') + '</span>';
+      h += '<div class="cp-benefit-value' + (allChecked ? ' cp-benefit-value-done' : '') + '">$' + b.v + '/' + periodLabel + '</div>';
+      h += '<div class="cp-period-checks">';
+      pk.forEach(function(p) {
+        var pd = !!checkedBenefits[p.key];
+        var classes = 'cp-period-box';
+        if (pd) classes += ' checked';
+        if (p.current && !pd) classes += ' current';
+        if (p.past && !pd) classes += ' past';
+        h += '<div class="cp-period-item" data-pkey="' + p.key + '">';
+        h += '<div class="' + classes + '"></div>';
+        h += '<span class="cp-period-label' + (p.current ? ' cp-period-current' : '') + '">' + p.label + '</span>';
+        if (p.sub) h += '<span class="cp-period-sub">' + p.sub + '</span>';
+        h += '</div>';
+      });
+      h += '</div></div>';
+      return h;
+    }
+
+    // Single-checkbox row (monthly, annual, one-time)
     var key = bk(b, isMonthly);
     var checked = !!checkedBenefits[key];
     return '<div class="cp-benefit-row" data-key="' + key + '">' +
@@ -213,6 +262,25 @@
     if (r === 'quarterly') return '/quarter';
     if (r === 'semi-annual') return '/semi-annually';
     return '/yr';
+  }
+  function periodKeys(b) {
+    var year = new Date().getFullYear();
+    var month = new Date().getMonth();
+    var base = 'a-' + b.n;
+    if (b.reset === 'quarterly') {
+      var cq = Math.floor(month / 3);
+      return [0,1,2,3].map(function(i) {
+        return { key: base + '-' + year + '-Q' + (i+1), label: 'Q' + (i+1), current: i === cq, past: i < cq };
+      });
+    }
+    if (b.reset === 'semi-annual') {
+      var ch = month < 6 ? 0 : 1;
+      return [
+        { key: base + '-' + year + '-H1', label: 'H1', sub: 'Jan\u2013Jun', current: ch === 0, past: false },
+        { key: base + '-' + year + '-H2', label: 'H2', sub: 'Jul\u2013Dec', current: ch === 1, past: ch > 1 }
+      ];
+    }
+    return null;
   }
   function freqSuffixFromPeriod(period) {
     if (period === 'monthly') return '/mo';
