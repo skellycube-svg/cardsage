@@ -734,7 +734,7 @@ const CARDS=[
  ifYouCancel:null},
 {id:"hyatt-biz",name:"World of Hyatt Business Credit Card",short:"Hyatt Business",issuer:"Chase",isBiz:true,fee:199,network:"Visa",cur:"Hyatt Points",c1:"#111111",c2:"#1e1030",
  partners:["World of Hyatt"],
- annual:[{n:"$100 Hyatt Credit",v:100,d:"$50 semi-annual statement credits at Hyatt properties.",cat:"travel",type:"credit",reset:"annual",enroll:false,enrollUrl:"",useUrl:""},{n:"5 Tier-Qualifying Night Credits",v:null,d:"5 qualifying night credits toward status for every $10k spent.",cat:"status",type:"perk",reset:"annual",enroll:false,enrollUrl:"",useUrl:""}],
+ annual:[{n:"$50 Hyatt Credit",v:50,d:"$50 semi-annual statement credits at Hyatt properties.",cat:"travel",type:"credit",reset:"semi-annual",enroll:false,enrollUrl:"",useUrl:""},{n:"5 Tier-Qualifying Night Credits",v:null,d:"5 qualifying night credits toward status for every $10k spent.",cat:"status",type:"perk",reset:"annual",enroll:false,enrollUrl:"",useUrl:""}],
  monthly:[],strat:[],signup:"60,000 pts after $5k in 3 mo",
  earn:{d:"4x",g:"1x",gas:"1x",t:"2x",s:"1x",a:"1x",tr:"2x",p:"1x",o:"1x"},confidence:"estimated",
  retentionOffers:[],

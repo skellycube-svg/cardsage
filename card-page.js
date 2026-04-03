@@ -49,7 +49,7 @@
     Object.keys(checkedBenefits).forEach(function(key) {
       if (!checkedBenefits[key]) return;
       var found = annualBenefits.find(function(b) { return bk(b, false) === key; });
-      if (found) { totalUsed += found.v; return; }
+      if (found) { totalUsed += found.v * annualMultiplier(found); return; }
       found = monthlyBenefits.find(function(b) { return bk(b, true) === key; });
       if (found) totalUsed += found.v * 12;
     });
@@ -106,7 +106,7 @@
       '<div class="cp-benefit-check' + (checked ? ' checked' : '') + '"></div>' +
       '<div class="cp-benefit-name">' + esc(b.n) + '</div>' +
       '<span class="cp-benefit-tag cp-benefit-tag-' + (b.cat || 'statement') + '">' + cap(b.cat || '') + '</span>' +
-      '<div class="cp-benefit-value">$' + b.v + (isMonthly ? '/mo' : '/yr') + '</div></div>';
+      '<div class="cp-benefit-value">$' + b.v + freqSuffix(b, isMonthly) + '</div></div>';
   }
 
   function verdict(pos, title, desc) {
@@ -124,7 +124,7 @@
     );
     if (all.length === 0) { benefitsGrid.innerHTML = '<p style="color:#8a94a6">This card has no recurring credits — its value comes from points earnings and protections.</p>'; return; }
     benefitsGrid.innerHTML = all.map(function(b) {
-      var valStr = b.v ? '$' + b.v + (b.period === 'monthly' ? '/mo' : '/yr') : 'Included';
+      var valStr = b.v ? '$' + b.v + freqSuffixFromPeriod(b.period) : 'Included';
       return '<div class="cp-bg-card' + (!b.v ? ' cp-bg-perk' : '') + '">' +
         '<div class="cp-bg-name">' + esc(b.n) + '</div>' +
         '<div class="cp-bg-value">' + valStr + '</div>' +
@@ -137,7 +137,7 @@
   function renderBreakeven() {
     if (!breakeven || card.fee === 0) { if (breakeven) breakeven.style.display = 'none'; return; }
     var valued = [].concat(
-      (card.annual || []).filter(function(b) { return b.v > 0; }),
+      (card.annual || []).filter(function(b) { return b.v > 0; }).map(function(b) { return Object.assign({}, b, { v: b.v * annualMultiplier(b) }); }),
       (card.monthly || []).filter(function(b) { return b.v > 0; }).map(function(b) { return Object.assign({}, b, { v: b.v * 12, _monthly: true }); })
     ).sort(function(a, b) { return b.v - a.v; });
 
@@ -156,7 +156,7 @@
   function renderFaqAnswers() {
     // Worth it answer
     var valued = [].concat(
-      (card.annual || []).filter(function(b) { return b.v > 0; }),
+      (card.annual || []).filter(function(b) { return b.v > 0; }).map(function(b) { return Object.assign({}, b, { v: b.v * annualMultiplier(b) }); }),
       (card.monthly || []).filter(function(b) { return b.v > 0; }).map(function(b) { return Object.assign({}, b, { v: b.v * 12 }); })
     ).sort(function(a, b) { return b.v - a.v; });
     var topNames = valued.slice(0, 2).map(function(b) { return b.n; }).join(' and ');
@@ -201,4 +201,23 @@
   function bk(b, m) { return (m ? 'm-' : 'a-') + b.n; }
   function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function annualMultiplier(b) {
+    var r = b.reset || 'annual';
+    if (r === 'quarterly') return 4;
+    if (r === 'semi-annual') return 2;
+    return 1;
+  }
+  function freqSuffix(b, isMonthly) {
+    if (isMonthly) return '/mo';
+    var r = b.reset || 'annual';
+    if (r === 'quarterly') return '/quarter';
+    if (r === 'semi-annual') return '/semi-annually';
+    return '/yr';
+  }
+  function freqSuffixFromPeriod(period) {
+    if (period === 'monthly') return '/mo';
+    if (period === 'quarterly') return '/quarter';
+    if (period === 'semi-annual') return '/semi-annually';
+    return '/yr';
+  }
 })();
